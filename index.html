@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillStamp Fixed</title>
+<style>
+body{font-family:Arial;margin:0}
+.bottom-nav{position:fixed;bottom:0;width:100%;background:#fff;border-top:1px solid #ccc;padding:10px;text-align:center}
+.chat-box{margin-bottom:70px;padding:10px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<h2>SkillStamp (Updated)</h2>
+
+<!-- Talent Section -->
+<div id="talent">
+<h3>Talent</h3>
+<button>Endorse</button>
+<button>View Profile</button>
+<!-- Message button removed -->
+</div>
+
+<!-- Clients Section -->
+<div id="clients">
+<h3>Clients</h3>
+<p>Clients can post jobs. Freelancers can send proposals.</p>
+</div>
+
+<!-- Gig Section -->
+<div id="gigs">
+<h3>Gigs</h3>
+<div>
+<p><b>Client:</b> John Doe</p>
+<p>Need logo design</p>
+</div>
+</div>
+
+<!-- Profile Fix -->
+<div id="profile">
+<h3>Profile</h3>
+<p id="earned">₦0 Earned</p>
+</div>
+
+<!-- Chat Fix -->
+<div class="chat-box">
+<input type="text" placeholder="Type message..." style="width:80%">
+<button>Send</button>
+</div>
+
+<div class="bottom-nav">Nav Bar (fixed not covering chat)</div>
+
+<script>
+// Fix NaN bug
+let earnings = 0;
+if(isNaN(earnings)){ earnings = 0; }
+document.getElementById("earned").innerText = "₦" + earnings + " Earned";
+
+// Fix logout glitch
+function logout(){
+  localStorage.clear();
+  sessionStorage.clear();
+  location.reload();
+}
+
+// Algorithm: verified first
+function sortFreelancers(list){
+  return list.sort((a,b)=> b.verified - a.verified);
+}
+</script>
+
+</body>
+</html>
