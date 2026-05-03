@@ -117,7 +117,7 @@ function fHero() {
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
   html += '<div>';
   html += '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:3px;">'+greetingWord()+'</div>';
-  html += '<div style="'+D.font+';font-weight:800;font-size:20px;color:#fff;line-height:1.2;">'+firstName+' <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></div>';
+  html += '<div style="'+D.font+';font-weight:800;font-size:20px;color:#fff;line-height:1.2;">'+firstName+' 👋</div>';
   if (isVerif) {
     html += '<div style="margin-top:5px;">'+verifiedChip()+'</div>';
   } else {
@@ -155,8 +155,8 @@ function fHero() {
 
   // CTA buttons
   html += '<div style="display:flex;gap:8px;margin-top:12px;">';
-  html += '<button onclick="showPage(\'gigs\')" style="flex:1;'+D.font+';font-weight:700;font-size:11px;color:#fff;background:#e8c547;border:none;padding:10px;border-radius:10px;cursor:pointer;'+D.trans+'" onmouseover="this.style.background=\'#f5d460\'" onmouseout="this.style.background=\'#e8c547\'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Browse Gigs</button>';
-  html += '<button onclick="showPage(\'myprofile\')" style="flex:1;'+D.font+';font-weight:700;font-size:11px;color:rgba(255,255,255,.9);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);padding:10px;border-radius:10px;cursor:pointer;'+D.trans+'" onmouseover="this.style.background=\'rgba(255,255,255,.15)\'" onmouseout="this.style.background=\'rgba(255,255,255,.1)\'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> My Profile</button>';
+  html += '<button onclick="showPage(\'gigs\')" style="flex:1;'+D.font+';font-weight:700;font-size:11px;color:#fff;background:#e8c547;border:none;padding:10px;border-radius:10px;cursor:pointer;'+D.trans+'" onmouseover="this.style.background=\'#f5d460\'" onmouseout="this.style.background=\'#e8c547\'">💼 Browse Gigs</button>';
+  html += '<button onclick="showPage(\'myprofile\')" style="flex:1;'+D.font+';font-weight:700;font-size:11px;color:rgba(255,255,255,.9);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);padding:10px;border-radius:10px;cursor:pointer;'+D.trans+'" onmouseover="this.style.background=\'rgba(255,255,255,.15)\'" onmouseout="this.style.background=\'rgba(255,255,255,.1)\'">👤 My Profile</button>';
   html += '</div>';
   html += '</div>';
   return html;
@@ -218,7 +218,7 @@ function fActiveWork() {
     html += statusPill(sm.label, sm.color, sm.bg);
     html += '</div>';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
-    html += '<div style="font-size:10px;color:var(--td);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> '+(g.posterName||'Client')+' &nbsp;·&nbsp; <span style="color:var(--grn);font-weight:700;">$'+(g.pay||g.escrowAmount||'—')+'</span></div>';
+    html += '<div style="font-size:10px;color:var(--td);">📌 '+(g.posterName||'Client')+' &nbsp;·&nbsp; <span style="color:var(--grn);font-weight:700;">$'+(g.pay||g.escrowAmount||'—')+'</span></div>';
     html += '<button onclick="event.stopPropagation();openGigWorkspace(\''+g.id+'\')" style="'+D.font+';font-size:10px;font-weight:700;color:var(--gld);background:rgba(232,197,71,.1);border:1px solid rgba(232,197,71,.2);padding:5px 10px;border-radius:8px;cursor:pointer;">Workspace →</button>';
     html += '</div></div>';
   });
@@ -264,10 +264,10 @@ function fRecommendedGigs() {
   var applied = (ME.applications||[]).map(function(a){return a.gigId;});
 
   var html = '<div style="margin-bottom:16px;">';
-  html += sectionHeader(cat ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Recommended for You' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Open Gigs', 'See all', "showPage('gigs')");
+  html += sectionHeader(cat ? '✨ Recommended for You' : '💼 Open Gigs', 'See all', "showPage('gigs')");
 
   shown.forEach(function(g) {
-    var icon = CAT_ICONS[g.category] || '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>';
+    var icon = CAT_ICONS[g.category] || '💼';
     var isApplied = applied.indexOf(g.id) >= 0;
     html += '<div style="background:var(--s);border:1px solid var(--br);'+D.r16+';padding:14px;margin-bottom:8px;'+D.shadow+';'+D.trans+'" onmouseover="this.style.borderColor=\'rgba(232,197,71,.4)\';this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.borderColor=\'var(--br)\';this.style.transform=\'\'">';
     html += '<div style="display:flex;align-items:flex-start;gap:11px;">';
@@ -292,13 +292,13 @@ function fRecommendedGigs() {
 // Daily tip
 function fTipCard() {
   var tips = [
-    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>',title:'Win more proposals',body:'Personalise every cover note. Mention the client\'s specific project — generic proposals get ignored.'},
-    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',title:'Photo = 60% more clicks',body:'Profiles with a real photo get significantly more client views than those without.'},
-    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',title:'Verification = visibility',body:'Verified freelancers appear first in searches and get unlimited proposals.'},
-    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',title:'Speed matters',body:'Replying to client messages within an hour dramatically improves your hire rate.'},
-    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>',title:'Build your portfolio',body:'Aim for at least 3 portfolio items. Clients want proof of work before hiring.'},
-    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',title:'Escrow protects you',body:'Funds are locked before work starts. You always get paid when work is approved.'},
-    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',title:'Quality over quantity',body:'One strong, tailored proposal beats ten generic ones every time.'},
+    {icon:'💡',title:'Win more proposals',body:'Personalise every cover note. Mention the client\'s specific project — generic proposals get ignored.'},
+    {icon:'📸',title:'Photo = 60% more clicks',body:'Profiles with a real photo get significantly more client views than those without.'},
+    {icon:'⚡',title:'Verification = visibility',body:'Verified freelancers appear first in searches and get unlimited proposals.'},
+    {icon:'⏱️',title:'Speed matters',body:'Replying to client messages within an hour dramatically improves your hire rate.'},
+    {icon:'🎨',title:'Build your portfolio',body:'Aim for at least 3 portfolio items. Clients want proof of work before hiring.'},
+    {icon:'🔒',title:'Escrow protects you',body:'Funds are locked before work starts. You always get paid when work is approved.'},
+    {icon:'📊',title:'Quality over quantity',body:'One strong, tailored proposal beats ten generic ones every time.'},
   ];
   var tip = tips[Math.floor(Date.now()/86400000) % tips.length];
   var key = 'tip_d_'+Math.floor(Date.now()/86400000);
@@ -345,7 +345,7 @@ function cHero() {
 
   html += '<div style="margin-bottom:16px;">';
   html += '<div style="font-size:11px;color:rgba(255,255,255,.45);margin-bottom:3px;">'+greetingWord()+'</div>';
-  html += '<div style="'+D.font+';font-weight:800;font-size:20px;color:#fff;margin-bottom:6px;">'+firstName+' <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></div>';
+  html += '<div style="'+D.font+';font-weight:800;font-size:20px;color:#fff;margin-bottom:6px;">'+firstName+' 👋</div>';
   html += '<div style="font-size:10px;color:rgba(255,255,255,.4);">Client &nbsp;·&nbsp; SkillStamp</div>';
   html += '</div>';
 
@@ -381,7 +381,7 @@ function cActiveGigs() {
     var html = '<div style="margin-bottom:16px;">';
     html += sectionHeader('Your Gigs', null, '');
     html += '<div onclick="openPostGig()" style="background:var(--s);border:2px dashed rgba(232,197,71,.25);'+D.r16+';padding:24px 16px;text-align:center;cursor:pointer;'+D.trans+'" onmouseover="this.style.borderColor=\'rgba(232,197,71,.5)\'" onmouseout="this.style.borderColor=\'rgba(232,197,71,.25)\'">';
-    html += '<div style="font-size:32px;margin-bottom:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div>';
+    html += '<div style="font-size:32px;margin-bottom:8px;">💼</div>';
     html += '<div style="'+D.font+';font-weight:700;font-size:13px;margin-bottom:4px;">Post your first gig</div>';
     html += '<div style="font-size:11px;color:var(--td);margin-bottom:14px;">Connect with verified African talent for your project</div>';
     html += btnPrimary('+ Post a Gig', 'openPostGig()');
@@ -409,9 +409,9 @@ function cActiveGigs() {
     // Action
     html += '<div style="display:flex;gap:6px;">';
     if (g.status === 'open' && apCount > 0) {
-      html += btnPrimary('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Review ('+apCount+')', "openHireModal('"+g.id+"')");
+      html += btnPrimary('👥 Review ('+apCount+')', "openHireModal('"+g.id+"')");
     } else if (g.status === 'hired' || g.status === 'delivered') {
-      html += btnPrimary('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Workspace', "openGigWorkspace('"+g.id+"')");
+      html += btnPrimary('📁 Workspace', "openGigWorkspace('"+g.id+"')");
     } else {
       html += btnGhost('View Details', "showPage('gigs')");
     }
@@ -476,7 +476,7 @@ function cRecentTransactions() {
   txns.forEach(function(t, i) {
     var isOut = t.type === 'out';
     html += '<div style="display:flex;align-items:center;gap:11px;padding:12px 14px;'+(i<txns.length-1?'border-bottom:1px solid var(--br);':'')+';">';
-    html += '<div style="width:34px;height:34px;border-radius:10px;background:'+(isOut?'rgba(248,113,113,.1)':'rgba(74,222,128,.1)')+';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">'+(isOut?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>':'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>')+'</div>';
+    html += '<div style="width:34px;height:34px;border-radius:10px;background:'+(isOut?'rgba(248,113,113,.1)':'rgba(74,222,128,.1)')+';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">'+(isOut?'📤':'📥')+'</div>';
     html += '<div style="flex:1;min-width:0;">';
     html += '<div style="'+D.font+';font-size:12px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+(t.desc||(isOut?'Payment sent':'Funds received'))+'</div>';
     html += '<div style="font-size:9px;color:var(--td);margin-top:1px;">'+timeAgo(t.ts)+'</div>';

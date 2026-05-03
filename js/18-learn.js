@@ -19,18 +19,18 @@ var CENTERS=[
 ];
 
 var COURSES=[
-  {id:'oc1',title:'Complete React Developer Bootcamp',tutor:'Dr. Amara Diallo',cat:'Tech',level:'Beginner',weeks:'12 weeks',price:0,free:true,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5z"/><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5z"/></svg>',bg:'#1e3a5f',students:3200,rating:4.9,lessons:48,desc:'Master React from zero to hero. Build 5 real projects. Fully certified.',skills:['React','JavaScript','CSS']},
+  {id:'oc1',title:'Complete React Developer Bootcamp',tutor:'Dr. Amara Diallo',cat:'Tech',level:'Beginner',weeks:'12 weeks',price:0,free:true,emoji:'⚛️',bg:'#1e3a5f',students:3200,rating:4.9,lessons:48,desc:'Master React from zero to hero. Build 5 real projects. Fully certified.',skills:['React','JavaScript','CSS']},
   {id:'oc2',title:'Python for Data Science and ML',tutor:'Dr. Amara Diallo',cat:'Data',level:'Intermediate',weeks:'10 weeks',price:89,free:false,emoji:'🐍',bg:'#1a3a1a',students:2800,rating:4.8,lessons:42,desc:'Learn Python, Pandas, TensorFlow and deploy ML models to production.',skills:['Python','TensorFlow','SQL']},
-  {id:'oc3',title:'Solidity and Smart Contracts',tutor:'Kofi Asante',cat:'Blockchain',level:'Advanced',weeks:'8 weeks',price:149,free:false,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',bg:'#1a1040',students:1400,rating:4.8,lessons:36,desc:'Build DeFi protocols and NFT platforms on Ethereum. Real deployments.',skills:['Solidity','Web3.js','Ethereum']},
-  {id:'oc4',title:'UI/UX Design with Figma',tutor:'Zanele Dlamini',cat:'Design',level:'Beginner',weeks:'6 weeks',price:0,free:true,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>',bg:'#3a1a30',students:4100,rating:4.7,lessons:28,desc:'Design beautiful digital products from scratch using Figma.',skills:['Figma','UI/UX','Prototyping']},
-  {id:'oc5',title:'Digital Marketing and SEO',tutor:'Moussa Traore',cat:'Marketing',level:'Beginner',weeks:'6 weeks',price:59,free:false,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>',bg:'#3a2a0a',students:2200,rating:4.6,lessons:32,desc:'Grow any business online with proven SEO, Google Ads and email strategy.',skills:['SEO','Google Ads','Analytics']},
-  {id:'oc6',title:'AWS Cloud Solutions Architect',tutor:'Dr. Amara Diallo',cat:'Tech',level:'Advanced',weeks:'14 weeks',price:199,free:false,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>',bg:'#0a2a3a',students:980,rating:4.9,lessons:56,desc:'Prepare for AWS certification with real architecture projects.',skills:['AWS','DevOps','Cloud']},
-  {id:'oc7',title:'Content Writing and Copywriting',tutor:'Adaeze Nwachukwu',cat:'Writing',level:'Beginner',weeks:'4 weeks',price:0,free:true,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',bg:'#2a1a0a',students:1800,rating:4.5,lessons:18,desc:'Write compelling content that converts. Real client briefs included.',skills:['Copywriting','SEO Writing','Strategy']},
-  {id:'oc8',title:'Power BI and Data Visualization',tutor:'Wanjiru Kamau',cat:'Data',level:'Intermediate',weeks:'6 weeks',price:79,free:false,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',bg:'#1a0a3a',students:1600,rating:4.7,lessons:30,desc:'Turn raw data into powerful business dashboards with Power BI.',skills:['Power BI','SQL','Tableau']},
-  {id:'oc9',title:'Flutter Mobile App Development',tutor:'Dr. Amara Diallo',cat:'Tech',level:'Intermediate',weeks:'10 weeks',price:119,free:false,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',bg:'#1a2a3a',students:1200,rating:4.8,lessons:44,desc:'Build iOS and Android apps with one codebase in Flutter and Dart.',skills:['Flutter','Dart','Firebase']},
-  {id:'oc10',title:'NFT Creation and Web3 Business',tutor:'Kofi Asante',cat:'Blockchain',level:'Beginner',weeks:'5 weeks',price:0,free:true,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',bg:'#2a0a1a',students:3500,rating:4.6,lessons:22,desc:'Create, list and sell NFTs. Build a Web3 personal brand.',skills:['NFT','Web3','Marketing']},
-  {id:'oc11',title:'Brand Identity Design',tutor:'Zanele Dlamini',cat:'Design',level:'Intermediate',weeks:'7 weeks',price:89,free:false,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>️',bg:'#3a0a2a',students:920,rating:4.8,lessons:35,desc:'Create full brand identities from logo to style guide.',skills:['Figma','Branding','Illustration']},
-  {id:'oc12',title:'Growth Hacking for Startups',tutor:'Moussa Traore',cat:'Marketing',level:'Advanced',weeks:'8 weeks',price:129,free:false,emoji:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',bg:'#2a3a0a',students:760,rating:4.9,lessons:38,desc:'Scale a startup from 0 to 10,000 users with zero budget.',skills:['Growth','Analytics','Email']}
+  {id:'oc3',title:'Solidity and Smart Contracts',tutor:'Kofi Asante',cat:'Blockchain',level:'Advanced',weeks:'8 weeks',price:149,free:false,emoji:'⛓️',bg:'#1a1040',students:1400,rating:4.8,lessons:36,desc:'Build DeFi protocols and NFT platforms on Ethereum. Real deployments.',skills:['Solidity','Web3.js','Ethereum']},
+  {id:'oc4',title:'UI/UX Design with Figma',tutor:'Zanele Dlamini',cat:'Design',level:'Beginner',weeks:'6 weeks',price:0,free:true,emoji:'🎨',bg:'#3a1a30',students:4100,rating:4.7,lessons:28,desc:'Design beautiful digital products from scratch using Figma.',skills:['Figma','UI/UX','Prototyping']},
+  {id:'oc5',title:'Digital Marketing and SEO',tutor:'Moussa Traore',cat:'Marketing',level:'Beginner',weeks:'6 weeks',price:59,free:false,emoji:'📣',bg:'#3a2a0a',students:2200,rating:4.6,lessons:32,desc:'Grow any business online with proven SEO, Google Ads and email strategy.',skills:['SEO','Google Ads','Analytics']},
+  {id:'oc6',title:'AWS Cloud Solutions Architect',tutor:'Dr. Amara Diallo',cat:'Tech',level:'Advanced',weeks:'14 weeks',price:199,free:false,emoji:'☁️',bg:'#0a2a3a',students:980,rating:4.9,lessons:56,desc:'Prepare for AWS certification with real architecture projects.',skills:['AWS','DevOps','Cloud']},
+  {id:'oc7',title:'Content Writing and Copywriting',tutor:'Adaeze Nwachukwu',cat:'Writing',level:'Beginner',weeks:'4 weeks',price:0,free:true,emoji:'✍️',bg:'#2a1a0a',students:1800,rating:4.5,lessons:18,desc:'Write compelling content that converts. Real client briefs included.',skills:['Copywriting','SEO Writing','Strategy']},
+  {id:'oc8',title:'Power BI and Data Visualization',tutor:'Wanjiru Kamau',cat:'Data',level:'Intermediate',weeks:'6 weeks',price:79,free:false,emoji:'📊',bg:'#1a0a3a',students:1600,rating:4.7,lessons:30,desc:'Turn raw data into powerful business dashboards with Power BI.',skills:['Power BI','SQL','Tableau']},
+  {id:'oc9',title:'Flutter Mobile App Development',tutor:'Dr. Amara Diallo',cat:'Tech',level:'Intermediate',weeks:'10 weeks',price:119,free:false,emoji:'📱',bg:'#1a2a3a',students:1200,rating:4.8,lessons:44,desc:'Build iOS and Android apps with one codebase in Flutter and Dart.',skills:['Flutter','Dart','Firebase']},
+  {id:'oc10',title:'NFT Creation and Web3 Business',tutor:'Kofi Asante',cat:'Blockchain',level:'Beginner',weeks:'5 weeks',price:0,free:true,emoji:'🖼️',bg:'#2a0a1a',students:3500,rating:4.6,lessons:22,desc:'Create, list and sell NFTs. Build a Web3 personal brand.',skills:['NFT','Web3','Marketing']},
+  {id:'oc11',title:'Brand Identity Design',tutor:'Zanele Dlamini',cat:'Design',level:'Intermediate',weeks:'7 weeks',price:89,free:false,emoji:'🏷️',bg:'#3a0a2a',students:920,rating:4.8,lessons:35,desc:'Create full brand identities from logo to style guide.',skills:['Figma','Branding','Illustration']},
+  {id:'oc12',title:'Growth Hacking for Startups',tutor:'Moussa Traore',cat:'Marketing',level:'Advanced',weeks:'8 weeks',price:129,free:false,emoji:'🚀',bg:'#2a3a0a',students:760,rating:4.9,lessons:38,desc:'Scale a startup from 0 to 10,000 users with zero budget.',skills:['Growth','Analytics','Email']}
 ];
 
 function getEnrollments(){return LOCAL.get('enr_'+ME.uid)||[];}
@@ -91,7 +91,7 @@ function renderLearnV6(){
 
   return '<div class="learn-hero">'
     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">'
-    +'<span style="font-size:32px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span>'
+    +'<span style="font-size:32px;">🎓</span>'
     +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:22px;letter-spacing:-.5px;">SkillStamp <span style="color:var(--blu);">Learn</span></div>'
     +'<div style="font-size:11px;color:var(--td);margin-top:2px;">Master skills. Get verified. Get hired.</div></div></div>'
     +'<div style="display:flex;gap:18px;flex-wrap:wrap;">'
@@ -137,7 +137,7 @@ function openCourseV6(cid){
   for(var li=0;li<Math.min(8,c.lessons);li++){
     var done=prog>=Math.round((li+1)/8*100);
     lsH+='<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:6px;margin-bottom:5px;">'
-      +'<span style="font-size:14px;">'+(done?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>':'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>')+'</span>'
+      +'<span style="font-size:14px;">'+(done?'✅':'🔒')+'</span>'
       +'<div style="flex:1;font-size:11px;color:'+(done?'#f0ede6':'var(--td)')+';">Lesson '+(li+1)+': '+lessonNames[li]+'</div>'
       +(done?'<span style="font-size:9px;color:var(--grn);">Done ✓</span>':'')
       +'</div>';
@@ -166,7 +166,7 @@ function openCourseV6(cid){
     if(prog<100){
       body+='<button class="btn" style="margin-top:12px;" onclick="doLessonV6(\''+c.id+'\')">Continue Learning</button>';
     } else {
-      body+='<div style="padding:14px;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.2);border-radius:var(--r);text-align:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;color:var(--grn);margin-top:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="18" width="12" height="4"/></svg> Course Completed!</div>';
+      body+='<div style="padding:14px;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.2);border-radius:var(--r);text-align:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;color:var(--grn);margin-top:12px;">🏆 Course Completed!</div>';
     }
   } else {
     body+='<button class="btn" onclick="enrollCourseV6(\''+c.id+'\')">'+(c.free?'Enrol Free →':'Enrol Now — $'+c.price+' →')+'</button>';
@@ -180,7 +180,7 @@ function enrollCourseV6(cid){
   if(enr.indexOf(cid)<0){enr.push(cid);saveEnrollments(enr);}
   saveCProg(cid,5);
   ME.repPoints=(ME.repPoints||0)+3;saveUser(ME);
-  closeModal();toast('+3 rep pts — enrolled! <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>');
+  closeModal();toast('+3 rep pts — enrolled! 🎓');
   var p=document.getElementById('page-learn');if(p)p.innerHTML=renderLearnV6();
 }
 window.enrollCourseV6=enrollCourseV6;
@@ -191,10 +191,10 @@ function doLessonV6(cid){
   saveCProg(cid,prog);
   ME.repPoints=(ME.repPoints||0)+2;saveUser(ME);
   if(prog>=100){
-    toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="18" width="12" height="4"/></svg> Course complete! +15 pts');
+    toast('🏆 Course complete! +15 pts');
     ME.repPoints=(ME.repPoints||0)+13;saveUser(ME);
   } else {
-    toast('Lesson done! '+prog+'% complete <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>');
+    toast('Lesson done! '+prog+'% complete 📚');
   }
   closeModal();
   var p=document.getElementById('page-learn');if(p)p.innerHTML=renderLearnV6();

@@ -41,7 +41,7 @@ window.renderTalent = function() {
 
   const grid = document.getElementById('tgrid');
   if (!users.length) {
-    grid.innerHTML = '<div style="padding:48px 16px;text-align:center;"><div style="font-size:40px;margin-bottom:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;">No talent found</div><div style="font-size:12px;color:var(--td);">Try a different category or search term</div></div>';
+    grid.innerHTML = '<div style="padding:48px 16px;text-align:center;"><div style="font-size:40px;margin-bottom:12px;">🔍</div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;">No talent found</div><div style="font-size:12px;color:var(--td);">Try a different category or search term</div></div>';
     return;
   }
   grid.innerHTML = users.slice(0, 60).map(u => talentCard(u)).join('');

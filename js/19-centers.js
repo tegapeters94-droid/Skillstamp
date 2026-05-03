@@ -6,7 +6,7 @@
 function renderCentersV6(){
   var ac=LOCAL.get('ctcat')||'All';
   var cats=['All','Tech','Data','Design','Blockchain','Marketing'];
-  var icons={Tech:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',Data:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',Design:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>',Blockchain:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',Marketing:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>'};
+  var icons={Tech:'💻',Data:'📊',Design:'🎨',Blockchain:'⛓️',Marketing:'📣'};
   var fil=ac==='All'?CENTERS:CENTERS.filter(function(c){return c.category===ac;});
 
   var catH='';
@@ -17,7 +17,7 @@ function renderCentersV6(){
   var cardsH='';
   for(var i=0;i<fil.length;i++){
     var c=fil[i];
-    var icon=icons[c.category]||'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+    var icon=icons[c.category]||'🏫';
     var crsH='';
     for(var j=0;j<c.courses.length;j++) crsH+='<span class="chip" style="font-size:9px;">'+c.courses[j]+'</span>';
     cardsH+='<div class="center-card">'
@@ -33,13 +33,13 @@ function renderCentersV6(){
       +'<div style="display:flex;align-items:center;font-size:10px;color:var(--td);margin-bottom:10px;"><span class="clive"></span>'+c.address+'</div>'
       +'<div style="display:flex;gap:7px;">'
       +'<button class="hbtn" style="flex:1;padding:9px;font-size:11px;" onclick="openCenterV6(\''+c.id+'\')">Enrol Here</button>'
-      +'<button class="hbtn2" style="padding:9px 12px;font-size:11px;" onclick="contactCenterV6(\''+c.id+'\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.1 6.1l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>'
+      +'<button class="hbtn2" style="padding:9px 12px;font-size:11px;" onclick="contactCenterV6(\''+c.id+'\')">📞</button>'
       +'</div></div>';
   }
 
   return '<div style="padding:18px 16px 0;">'
     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">'
-    +'<span style="font-size:30px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>'
+    +'<span style="font-size:30px;">🏫</span>'
     +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:20px;">Training Centers</div>'
     +'<div style="font-size:10px;color:var(--td);">Find a SkillStamp-certified center near you</div></div></div>'
     +'<input class="fi" placeholder="Search city, country or skill..." style="margin-bottom:10px;" oninput="searchCentersV6(this.value)">'
@@ -61,7 +61,7 @@ function searchCentersV6(q){
       +'<div style="display:flex;justify-content:space-between;align-items:center;">'
       +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;">'+c.name+'</div>'
       +'<div style="font-size:10px;color:var(--td);">'+flag(c.country)+' '+c.city+' · '+c.rating+'★</div></div>'
-      +'<span style="font-size:22px;">'+(({Tech:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',Data:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',Design:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>',Blockchain:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',Marketing:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>'})[c.category]||'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>')+'</span>'
+      +'<span style="font-size:22px;">'+(({Tech:'💻',Data:'📊',Design:'🎨',Blockchain:'⛓️',Marketing:'📣'})[c.category]||'🏫')+'</span>'
       +'</div></div>';
   }
   g.innerHTML=h;
@@ -92,7 +92,7 @@ window.openCenterV6=openCenterV6;
 function confirmCenterV6(cid){
   var c=null;for(var i=0;i<CENTERS.length;i++) if(CENTERS[i].id===cid){c=CENTERS[i];break;}
   ME.repPoints=(ME.repPoints||0)+2;saveUser(ME);
-  closeModal();toast('Enrollment request sent to '+c.name+'! +2 pts <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>');
+  closeModal();toast('Enrollment request sent to '+c.name+'! +2 pts 🏫');
 }
 window.confirmCenterV6=confirmCenterV6;
 
@@ -111,7 +111,7 @@ window.contactCenterV6=contactCenterV6;
 function sendCenterMsgV6(cid){
   var msg=document.getElementById('ctr-msg');
   if(!msg||!msg.value.trim()){toast('Write a message first.','bad');return;}
-  closeModal();toast('Message sent! The center will contact you within 24hrs <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>');
+  closeModal();toast('Message sent! The center will contact you within 24hrs ✅');
 }
 window.sendCenterMsgV6=sendCenterMsgV6;
 

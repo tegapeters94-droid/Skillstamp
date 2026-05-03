@@ -42,7 +42,7 @@ function renderGigs(){
   var rows='';
   gigs.filter(function(g){return g.title&&g.title.trim();}).slice(0,40).forEach(function(g,i){
     var statusTag=g.status&&g.status!=='open'?'<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(77,159,255,.1);color:#4d9fff;border:1px solid rgba(77,159,255,.2);margin-left:5px;">'+g.status+'</span>':'';
-    var escrowTag=g.escrowAmount?'<span style="font-size:9px;color:#ffa500;margin-left:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> $'+g.escrowAmount.toLocaleString()+'</span>':'';
+    var escrowTag=g.escrowAmount?'<span style="font-size:9px;color:#ffa500;margin-left:4px;">🔒 $'+g.escrowAmount.toLocaleString()+'</span>':'';
     var skills='';
     (g.skills||[]).slice(0,3).forEach(function(s){
       skills+='<span style="display:inline-block;font-size:9px;background:rgba(232,197,71,.07);border:1px solid rgba(232,197,71,.2);color:var(--gld);padding:1px 6px;border-radius:3px;margin:2px;">'+s+'</span>';
@@ -50,7 +50,7 @@ function renderGigs(){
     rows+='<div class="gig-item" data-gid="'+g.id+'">';
     rows+='<div class="gig-icon" style="background:'+GIG_COLS[i%GIG_COLS.length]+'">'+GIG_ICONS[i%GIG_ICONS.length]+'</div>';
     rows+='<div style="flex:1;min-width:0;">';
-    var vaultTag=g.isVaultGig?'<span style="font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(232,197,71,.15);color:var(--gld);border:1px solid rgba(232,197,71,.3);margin-left:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Vault</span>':'';    var boostedTag=g.boostedUntil&&g.boostedUntil>Date.now()?'<span style="font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.3);margin-left:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Boosted</span>':'';    rows+='<div class="gig-title">'+g.title+statusTag+vaultTag+boostedTag+'</div>';
+    var vaultTag=g.isVaultGig?'<span style="font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(232,197,71,.15);color:var(--gld);border:1px solid rgba(232,197,71,.3);margin-left:5px;">🔒 Vault</span>':'';    var boostedTag=g.boostedUntil&&g.boostedUntil>Date.now()?'<span style="font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.3);margin-left:5px;">⚡ Boosted</span>':'';    rows+='<div class="gig-title">'+g.title+statusTag+vaultTag+boostedTag+'</div>';
     rows+='<div style="font-size:10px;color:var(--td);">'+g.posterName+' · '+g.category+' · '+timeAgo(g.created)+'</div>';
     rows+='<div style="margin-top:4px;">'+skills+'</div>';
     if(escrowTag) rows+='<div style="margin-top:2px;">'+escrowTag+'</div>';
@@ -297,7 +297,7 @@ function _gwRender() {
   var back = document.getElementById('gw-back');
   var next = document.getElementById('gw-next');
   if (back) back.style.display = step === 1 ? 'none' : '';
-  if (next) { next.textContent = step === 5 ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Post Gig & Lock Escrow' : 'Continue →'; next.disabled = false; }
+  if (next) { next.textContent = step === 5 ? '🔒 Post Gig & Lock Escrow' : 'Continue →'; next.disabled = false; }
 
   var body = document.getElementById('gw-body');
   if (!body) return;
@@ -326,7 +326,7 @@ function _gwStep1(d) {
   var sug  = d.title && d.title.length > 5 ? _gwSuggestCategory(d.title) : null;
   var sugH = '';
   if (sug) {
-    var icon = (typeof CAT_ICONS !== 'undefined' && CAT_ICONS[sug]) || '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+    var icon = (typeof CAT_ICONS !== 'undefined' && CAT_ICONS[sug]) || '🌐';
     sugH = '<div class="gw-cat-badge" id="gw-sug">' + icon + ' Suggested: ' + sug
       + ' <button onclick="(function(){document.getElementById(\'gw-cat\').value=\'' + sug.replace(/'/g,"\\'") + '\';document.getElementById(\'gw-sug\').style.display=\'none\';})();" style="background:none;border:none;color:#059669;font-size:10px;font-weight:700;cursor:pointer;margin-left:4px;">Apply ✓</button></div>';
   }
@@ -337,7 +337,7 @@ function _gwStep1(d) {
     + sugH
     + '</div>'
     + '<div class="gw-field">'
-    + '<label class="gw-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg> Try an example</label>'
+    + '<label class="gw-label">💡 Try an example</label>'
     + '<div>' + exs.map(function(e) { return '<span class="gw-example" data-ex="' + e.replace(/"/g,'&quot;') + '">' + e + '</span>'; }).join('') + '</div>'
     + '</div>'
     + '<div class="gw-field">'
@@ -346,7 +346,7 @@ function _gwStep1(d) {
     + cats.map(function(c) { return '<option value="' + c + '"' + (c === d.category ? ' selected' : '') + '>' + ((typeof CAT_ICONS !== 'undefined' && CAT_ICONS[c]) || '') + ' ' + c + '</option>'; }).join('')
     + '</select>'
     + '</div>'
-    + '<div class="gw-tip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg> <div><strong>Pro Tip:</strong> A specific title gets 3× more professional bids than a vague one.</div></div>';
+    + '<div class="gw-tip">💡 <div><strong>Pro Tip:</strong> A specific title gets 3× more professional bids than a vague one.</div></div>';
 }
 
 // ─ Step 2: Brief ─────────────────────────────────────────────
@@ -367,15 +367,15 @@ function _gwStep2(d) {
     + '<label class="gw-label">Screening Question <span style="font-size:10px;font-weight:400;color:var(--td);">(optional)</span></label>'
     + '<input id="gw-sq" class="gw-input" placeholder="e.g. How many similar projects have you completed?" value="' + (d.screeningQ||'') + '">'
     + '</div>'
-    + '<div class="gw-tip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> <div><strong>Pro Tip:</strong> A screening question filters low-effort applicants and saves review time.</div></div>';
+    + '<div class="gw-tip">🎯 <div><strong>Pro Tip:</strong> A screening question filters low-effort applicants and saves review time.</div></div>';
 }
 
 // ─ Step 3: Scope ─────────────────────────────────────────────
 function _gwStep3(d) {
   var scopes = [
-    {id:'small', icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>', name:'Small',  desc:'Quick, well-defined task. Deliverable within days.'},
-    {id:'medium',icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M7 12h.01"/><path d="M17 12h.01"/></svg>',name:'Medium', desc:'Standard project with clear milestones.'},
-    {id:'large', icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>', name:'Large',  desc:'Long-term initiative requiring ongoing collaboration.'}
+    {id:'small', icon:'⚡', name:'Small',  desc:'Quick, well-defined task. Deliverable within days.'},
+    {id:'medium',icon:'🏗️',name:'Medium', desc:'Standard project with clear milestones.'},
+    {id:'large', icon:'🚀', name:'Large',  desc:'Long-term initiative requiring ongoing collaboration.'}
   ];
   var durs = ['Less than 1 week','1–4 weeks','1–3 months','3–6 months','6+ months'];
   return '<div class="gw-field">'
@@ -393,7 +393,7 @@ function _gwStep3(d) {
     + '<select id="gw-duration" class="gw-input gw-select">'
     + durs.map(function(du) { return '<option' + (du === d.duration ? ' selected' : '') + '>' + du + '</option>'; }).join('')
     + '</select></div>'
-    + '<div class="gw-tip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> <div><strong>Pro Tip:</strong> Realistic timelines improve freelancer commitment rates significantly.</div></div>';
+    + '<div class="gw-tip">📅 <div><strong>Pro Tip:</strong> Realistic timelines improve freelancer commitment rates significantly.</div></div>';
 }
 
 // ─ Step 4: Budget ────────────────────────────────────────────
@@ -407,15 +407,15 @@ function _gwStep4(d) {
     + '<label class="gw-label">Budget ($) <span style="color:#ef4444;">*</span></label>'
     + '<input id="gw-budget" class="gw-input" type="number" placeholder="e.g. 150000" value="' + (d.budget||'') + '" min="1" inputmode="numeric">'
     + '<div style="font-size:11px;color:var(--td);margin-top:4px;">Wallet balance: <strong style="color:' + (low ? '#ef4444' : '#059669') + ';">$' + bal.toLocaleString() + '</strong></div>'
-    + (low ? '<div class="gw-wallet-warn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <div>Your balance is below this budget. <span onclick="showPage(\'wallet\');" style="color:#ea580c;font-weight:700;cursor:pointer;text-decoration:underline;">Top up →</span></div></div>' : '')
+    + (low ? '<div class="gw-wallet-warn">⚠️ <div>Your balance is below this budget. <span onclick="showPage(\'wallet\');" style="color:#ea580c;font-weight:700;cursor:pointer;text-decoration:underline;">Top up →</span></div></div>' : '')
     + '</div>'
     + '<div id="gw-bp" style="' + (num ? '' : 'display:none') + '">'
-    + '<div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Escrow Breakdown</div>'
+    + '<div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px;">💰 Escrow Breakdown</div>'
     + '<div class="gw-brow"><span style="color:var(--td);">Contract Value</span><span id="gw-bp-t">$' + num.toLocaleString() + '</span></div>'
     + '<div class="gw-brow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span id="gw-bp-f" style="color:#ef4444;">-$' + fee.toLocaleString() + '</span></div>'
     + '<div class="gw-brow total"><span>Freelancer Receives</span><span id="gw-bp-p" style="color:#059669;">$' + pay.toLocaleString() + '</span></div>'
     + '</div>'
-    + '<div class="gw-tip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> <div>Budget is <strong>locked in escrow</strong> when you post. Released only after you confirm delivery.</div></div>';
+    + '<div class="gw-tip">🔒 <div>Budget is <strong>locked in escrow</strong> when you post. Released only after you confirm delivery.</div></div>';
 }
 
 // ─ Step 5: Review ────────────────────────────────────────────
@@ -446,9 +446,9 @@ function _gwStep5(d) {
     + '</div>'
     + (isBusiness ? '<div id="gw-vault-row" style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:rgba(232,197,71,.05);border:1px solid rgba(232,197,71,.2);border-radius:12px;margin-top:8px;cursor:pointer;">'
       + '<input type="checkbox" id="gw-vault-cb"' + (d.isVaultGig ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:#e8c547;flex-shrink:0;margin-top:1px;cursor:pointer;">'
-      + '<label for="gw-vault-cb" style="font-size:12px;color:var(--tx);line-height:1.5;cursor:pointer;"><strong style="color:var(--gld);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Post to Vetted Vault</strong> — Only Verified freelancers (Elite & Whale tier) can see and apply to this gig. Ensures premium quality applicants.</label>'
+      + '<label for="gw-vault-cb" style="font-size:12px;color:var(--tx);line-height:1.5;cursor:pointer;"><strong style="color:var(--gld);">🔒 Post to Vetted Vault</strong> — Only Verified freelancers (Elite & Whale tier) can see and apply to this gig. Ensures premium quality applicants.</label>'
       + '</div>' : '')
-    + '<div class="gw-tip" style="margin-top:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>️ <div>Your money is <strong>protected</strong>. SkillStamp holds funds securely until you are satisfied.</div></div>';
+    + '<div class="gw-tip" style="margin-top:12px;">🛡️ <div>Your money is <strong>protected</strong>. SkillStamp holds funds securely until you are satisfied.</div></div>';
 }
 
 // ─ Wire interactions ──────────────────────────────────────────
@@ -463,7 +463,7 @@ function _gwWireStep(step, d) {
         var badge = document.getElementById('gw-sug');
         if (sug) {
           if (!badge) { badge = document.createElement('div'); badge.id='gw-sug'; badge.className='gw-cat-badge'; tEl.parentNode.appendChild(badge); }
-          badge.innerHTML = ((typeof CAT_ICONS !== 'undefined' && CAT_ICONS[sug]) || '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>') + ' Suggested: ' + sug
+          badge.innerHTML = ((typeof CAT_ICONS !== 'undefined' && CAT_ICONS[sug]) || '🌐') + ' Suggested: ' + sug
             + ' <button onclick="(function(){document.getElementById(\'gw-cat\').value=\'' + sug.replace(/'/g,"\\'") + '\';document.getElementById(\'gw-sug\').style.display=\'none\';})();" style="background:none;border:none;color:#059669;font-size:10px;font-weight:700;cursor:pointer;margin-left:4px;">Apply ✓</button>';
           badge.style.display = '';
         } else if (badge) { badge.style.display = 'none'; }
@@ -502,7 +502,7 @@ function _gwWireStep(step, d) {
         var p=document.getElementById('gw-bp-p'); if(p) p.textContent='$'+pay.toLocaleString();
         var bal=(ME.wallet&&ME.wallet.balance)||0;
         var warn=document.querySelector('.gw-wallet-warn');
-        if(num>bal&&num>0){if(!warn){warn=document.createElement('div');warn.className='gw-wallet-warn';warn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <div>Balance <strong>$'+bal.toLocaleString()+'</strong> is below this budget. <span onclick="showPage(\'wallet\');" style="color:#ea580c;font-weight:700;cursor:pointer;text-decoration:underline;">Top up →</span></div>';bEl.parentNode.appendChild(warn);}}
+        if(num>bal&&num>0){if(!warn){warn=document.createElement('div');warn.className='gw-wallet-warn';warn.innerHTML='⚠️ <div>Balance <strong>$'+bal.toLocaleString()+'</strong> is below this budget. <span onclick="showPage(\'wallet\');" style="color:#ea580c;font-weight:700;cursor:pointer;text-decoration:underline;">Top up →</span></div>';bEl.parentNode.appendChild(warn);}}
         else if(warn){warn.remove();}
         _GW.data.budget=bEl.value;
       });
@@ -549,11 +549,11 @@ async function _gwSubmit() {
     // Notify matching-category freelancers (up to 40)
     getAllUsers().filter(function(u) { return u.role==='freelancer' && u.uid!==ME.uid && u.category===d.category; })
       .slice(0, 40).forEach(function(u) {
-        pushNotif(u.uid, 'gig_posted', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> New Gig: '+d.title, ME.name+' posted a '+d.category+' gig — $'+num.toLocaleString(), {type:'gig_posted',gigId:gig.id});
+        pushNotif(u.uid, 'gig_posted', '💼 New Gig: '+d.title, ME.name+' posted a '+d.category+' gig — $'+num.toLocaleString(), {type:'gig_posted',gigId:gig.id});
       });
 
     _gwClose();
-    toast('Gig posted! $'+num.toLocaleString()+' locked in escrow. <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>');
+    toast('Gig posted! $'+num.toLocaleString()+' locked in escrow. ✅');
     showPage('gigs');
     if (typeof renderWallet === 'function') setTimeout(renderWallet, 500);
 
@@ -562,7 +562,7 @@ async function _gwSubmit() {
     ME.wallet.balance  = bal;
     ME.wallet.pending  = Math.max(0, (ME.wallet.pending||0) - num);
     ME.wallet.transactions.shift();
-    if (btn) { btn.disabled = false; btn.textContent = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Post Gig & Lock Escrow'; }
+    if (btn) { btn.disabled = false; btn.textContent = '🔒 Post Gig & Lock Escrow'; }
     toast('Failed to post gig. Please try again.', 'bad');
   }
 }
@@ -580,7 +580,7 @@ window.showGigDetail=function(gid){
 
   // Build modal HTML using variable concatenation — no inline onclick
   var mh='<button class="mclose" id="gd-close">✕</button>';
-  mh+='<div style="font-size:22px;margin-bottom:8px;">'+(CAT_ICONS[g.category]||'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>')+'</div>';
+  mh+='<div style="font-size:22px;margin-bottom:8px;">'+(CAT_ICONS[g.category]||'💼')+'</div>';
   mh+='<h3>'+g.title+'</h3>';
   mh+='<p>'+g.posterName+' · '+g.category+' · '+g.type+' · '+timeAgo(g.created)+'</p>';
   if(g.description) mh+='<div style="font-size:11px;color:var(--td);line-height:1.75;margin-bottom:13px;padding:12px;background:var(--s2);border-radius:6px;">'+g.description+'</div>';
@@ -589,7 +589,7 @@ window.showGigDetail=function(gid){
   if(skillTags) mh+='<div style="margin-bottom:14px;">'+skillTags+'</div>';
   // Escrow breakdown
   mh+='<div class="escrow">';
-  mh+='<div style="font-size:11px;font-weight:600;margin-bottom:9px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Escrow Breakdown</div>';
+  mh+='<div style="font-size:11px;font-weight:600;margin-bottom:9px;">💰 Escrow Breakdown</div>';
   mh+='<div class="erow"><span style="color:var(--td);">Contract Value</span><span>'+g.pay+'</span></div>';
   mh+='<div class="erow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-$'+fee+'</span></div>';
   mh+='<div class="erow" style="border-top:1px solid var(--br);padding-top:6px;margin-top:4px;font-weight:700;"><span>Freelancer Receives</span><span style="color:var(--grn);">$'+payout+'</span></div>';
@@ -610,11 +610,11 @@ window.showGigDetail=function(gid){
     // Client view
     var status=g.status||'open';
     var statusColor={open:'#4ade80',hired:'#4d9fff',completed:'var(--gld)',disputed:'#ef4444',cancelled:'var(--td)'}[status]||'var(--td)';
-    acts.innerHTML='<div style="margin-bottom:10px;"><span style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.06);color:'+statusColor+';">'+status+'</span>'+(g.escrowAmount?'<span style="font-size:10px;color:#ffa500;margin-left:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> $'+g.escrowAmount.toLocaleString()+' in escrow</span>':'')+'</div>';
+    acts.innerHTML='<div style="margin-bottom:10px;"><span style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.06);color:'+statusColor+';">'+status+'</span>'+(g.escrowAmount?'<span style="font-size:10px;color:#ffa500;margin-left:8px;">🔒 $'+g.escrowAmount.toLocaleString()+' in escrow</span>':'')+'</div>';
     if(status==='open'){
       var hBtn=document.createElement('button');
       hBtn.className='btn';hBtn.style.cssText='width:100%;margin-bottom:8px;';
-      hBtn.textContent='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Review Applicants ('+(g.applicants||[]).length+')';
+      hBtn.textContent='👤 Review Applicants ('+(g.applicants||[]).length+')';
       hBtn.onclick=function(){openHireModal(gid);};
       acts.appendChild(hBtn);
     }
@@ -631,7 +631,7 @@ window.showGigDetail=function(gid){
       acts.appendChild(cBtn);
       var dBtn=document.createElement('button');
       dBtn.className='btn2';dBtn.style.cssText='width:100%;margin-bottom:8px;border-color:rgba(239,68,68,.4);color:#ef4444;';
-      dBtn.textContent='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Raise Dispute';
+      dBtn.textContent='⚠️ Raise Dispute';
       dBtn.onclick=function(){openDispute(gid);};
       acts.appendChild(dBtn);
     }
@@ -640,7 +640,7 @@ window.showGigDetail=function(gid){
       var boostBtn=document.createElement('button');
       boostBtn.className='btn2';boostBtn.style.cssText='width:100%;margin-bottom:8px;font-size:11px;';
       var isBoosted=g.boostedUntil&&g.boostedUntil>Date.now();
-      boostBtn.textContent=isBoosted?'<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Boosted (active until '+new Date(g.boostedUntil).toLocaleTimeString()+')':'<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Boost Gig for $1 (24h)';
+      boostBtn.textContent=isBoosted?'⚡ Boosted (active until '+new Date(g.boostedUntil).toLocaleTimeString()+')':'⚡ Boost Gig for $1 (24h)';
       boostBtn.disabled=!!isBoosted;
       if(!isBoosted) boostBtn.onclick=function(){boostGig(gid);};
       acts.appendChild(boostBtn);
@@ -725,7 +725,7 @@ function openProposalCredits(){
   var tier=getTierLabel(ME);
   setModal('<button class="mclose" onclick="closeModal()">✕</button>'
     +'<div style="text-align:center;padding:8px 0 14px;">'
-    +'<div style="font-size:40px;margin-bottom:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>'
+    +'<div style="font-size:40px;margin-bottom:12px;">📦</div>'
     +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;margin-bottom:6px;">Bid Limit Reached</div>'
     +'<div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:10px;margin-bottom:12px;font-size:11px;color:var(--td);"><strong>Your tier:</strong> '+tier+' · <strong>'+limit+' bids/month</strong></div>'
     +'<p style="font-size:12px;color:var(--td);line-height:1.7;margin-bottom:18px;">You\'ve used all your monthly bids. Buy extra at <strong style="color:var(--gld);">$0.50 each</strong>, upgrade to Pro for more bids, or get Verified to level up your tier.</p>'
@@ -753,7 +753,7 @@ window.applyGig=async function(gid,title,posterUid){
   // Shadow Guard check — 48hr cooldown for low-effort bids
   if(isOnShadowGuard()){
     var hoursLeft=Math.ceil((ME.shadowGuardUntil-Date.now())/(1000*60*60));
-    toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Shadow Guard active. You can bid again in '+hoursLeft+'h.','bad');
+    toast('⚠️ Shadow Guard active. You can bid again in '+hoursLeft+'h.','bad');
     return;
   }
   var isVerified=userIsVerified(ME);
@@ -774,7 +774,7 @@ window.applyGig=async function(gid,title,posterUid){
   var timelineSection='<div class="fg">'
     +'<label class="fl">Project Timeline</label>'
     +'<div style="background:var(--s2);border:1.5px solid var(--br);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--tx);display:flex;align-items:center;gap:8px;">'
-    +'<span style="font-size:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>'
+    +'<span style="font-size:14px;">📅</span>'
     +'<span style="font-weight:600;">'+gigDuration+'</span>'
     +'<span style="font-size:10px;color:var(--td);margin-left:auto;">Set by client</span>'
     +'</div>'
@@ -803,7 +803,7 @@ window.applyGig=async function(gid,title,posterUid){
     +'</div></div>';
 
   var mh='<button class="mclose" onclick="closeModal()">✕</button>';
-  mh+='<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Submit Proposal</h3>';
+  mh+='<h3>📋 Submit Proposal</h3>';
   mh+='<p style="font-size:11px;color:var(--td);margin-bottom:16px;">Applying for: <strong style="color:var(--tx);">'+title+'</strong></p>';
   mh+=proposalNotice;
   mh+='<div class="fg"><label class="fl">Cover Note <span style="font-size:9px;color:var(--acc);">*required · min 50 chars</span></label>';
@@ -869,13 +869,13 @@ window.applyGig=async function(gid,title,posterUid){
         }
         // Fire-and-forget messaging — never let this block the success screen
         try {
-          var appMsg='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg> Hi! I\'d like to apply for: '+title+'\n\n'+cover;
-          if(screeningAnswer) appMsg+='\n\n<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> '+gig.screeningQ+'\n→ '+screeningAnswer;
-          appMsg+='\n\n<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Project timeline: '+gigDuration;
-          if(rate) appMsg+='\n<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Proposed rate: $'+rate;
-          appMsg+='\n\n<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> SkillID: '+(ME.skillId||'Pending Verification')+' · '+(isVerified?'✓ Verified':'Unverified');
+          var appMsg='👋 Hi! I\'d like to apply for: '+title+'\n\n'+cover;
+          if(screeningAnswer) appMsg+='\n\n❓ '+gig.screeningQ+'\n→ '+screeningAnswer;
+          appMsg+='\n\n📅 Project timeline: '+gigDuration;
+          if(rate) appMsg+='\n💰 Proposed rate: $'+rate;
+          appMsg+='\n\n🏷 SkillID: '+(ME.skillId||'Pending Verification')+' · '+(isVerified?'✓ Verified':'Unverified');
           sendAutoMsg(posterUid,appMsg);
-          pushNotif(posterUid,'gig_application','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> New Proposal',ME.name+' submitted a proposal for: '+title+'. Tap to review.',{type:'gig_application',gigId:gid,applicantUid:ME.uid});
+          pushNotif(posterUid,'gig_application','💼 New Proposal',ME.name+' submitted a proposal for: '+title+'. Tap to review.',{type:'gig_application',gigId:gid,applicantUid:ME.uid});
         } catch(msgErr){ console.warn('Messaging failed (non-critical)', msgErr); }
 
         // ── SUCCESS ──────────────────────────────────────────
@@ -922,7 +922,7 @@ window.boostGig=async function(gid){
     if(ci>=0) CACHE.gigs[ci]=gig;
   }
   closeModal();
-  toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Gig boosted! It will appear at the top for 24 hours.');
+  toast('⚡ Gig boosted! It will appear at the top for 24 hours.');
   renderGigs();
 };
 

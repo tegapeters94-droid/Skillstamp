@@ -47,7 +47,7 @@ function renderDashboard(){
   document.getElementById('d-skills').innerHTML=top.map(([s,f])=>`<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;"><span>${s}</span><span style="color:var(--td);">${f}x</span></div><div style="height:3px;background:var(--br);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${Math.round(f/maxF*100)}%;background:linear-gradient(90deg,var(--gld),var(--acc));border-radius:3px;"></div></div></div>`).join('');
   const cats={};users.forEach(u=>{if(u.category)cats[u.category]=(cats[u.category]||0)+1;});
   const catTotal=Object.values(cats).reduce((a,b)=>a+b,0)||1;
-  document.getElementById('d-cats').innerHTML=Object.entries(cats).map(([c,n])=>'<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;"><span style="font-size:12px;">'+(CAT_ICONS[c]||\'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>\')+'</span><div style="flex:1;"><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;"><span>'+(c)+'</span><span style="color:var(--td);">'+(n)+'</span></div><div style="height:3px;background:var(--br);border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+(Math.round(n/catTotal*100))+'%;background:var(--pur);border-radius:3px;"></div></div></div></div>').join('');
+  document.getElementById('d-cats').innerHTML=Object.entries(cats).map(([c,n])=>`<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;"><span style="font-size:12px;">${CAT_ICONS[c]||'🌐'}</span><div style="flex:1;"><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;"><span>${c}</span><span style="color:var(--td);">${n}</span></div><div style="height:3px;background:var(--br);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${Math.round(n/catTotal*100)}%;background:var(--pur);border-radius:3px;"></div></div></div></div>`).join('');
 }
 
 // ══════════════════════════════════════════════
@@ -62,14 +62,14 @@ window.adminApprove=function(pid){
   p.status='approved';savePending(pending);
   const u=getUser(p.uid);
   if(u){if(!u.skills.includes(p.skill))u.skills.push(p.skill);u.repPoints=(u.repPoints||0)+10;if(u.badgeStatus==='beginner')u.badgeStatus='review';saveUser(u);if(u.uid===ME.uid)ME=u;}
-  toast("\""+p.skill+"\" approved! +10 pts");renderAdmin();
+  toast(`✅ "${p.skill}" approved! +10 pts`);renderAdmin();
 };
 
 window.adminReject=function(pid){
   const pending=getPending();const p=pending.find(x=>x.id===pid);if(!p)return;
   p.status='rejected';
   const u=getUser(p.uid);if(u){u.repPoints=Math.max(0,(u.repPoints||0)-10);saveUser(u);}
-  savePending(pending);toast("Rejected. -10 pts.",'bad');renderAdmin();
+  savePending(pending);toast(`❌ Rejected. -10 pts.`,'bad');renderAdmin();
 };
 
 window.adminSetBadge=function(uid,badge){
@@ -178,7 +178,7 @@ window.adminToggleBanInline=function(uid,ban){
   if(ban&&!confirm('Ban '+u.name+'? They will lose access to the platform.'))return;
   u.badgeStatus=ban?'suspended':'beginner';
   saveUser(u);
-  toast((ban?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Banned: ':'✓ Unbanned: ')+u.name);
+  toast((ban?'🚫 Banned: ':'✓ Unbanned: ')+u.name);
   renderAdminV6(); adminTab('users');
 };
 
@@ -200,7 +200,7 @@ window.adminPromoteInline=function(uid){
   if(!confirm('Grant admin access to '+u.name+'? They will control the entire platform.'))return;
   u.isAdmin=true;
   saveUser(u);
-  toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> '+u.name+' is now an admin');
+  toast('🛡 '+u.name+' is now an admin');
   renderAdminV6(); adminTab('users');
 };
 
@@ -230,7 +230,7 @@ window.adminEditUser=function(uid){
   if(!m)return;
   m.innerHTML='<div class="modal-overlay" onclick="closeModal()">'
     +'<div class="modal-box" onclick="event.stopPropagation()">'
-    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit: '+u.name+'</div>'
+    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;margin-bottom:14px;">✏ Edit: '+u.name+'</div>'
     +'<div class="fg"><label class="fl">Full Name</label><input class="fi" id="ae-name" value="'+u.name+'"></div>'
     +'<div class="fg"><label class="fl">Title / Headline</label><input class="fi" id="ae-title" value="'+(u.title||'')+'"></div>'
     +'<div class="fg"><label class="fl">Bio</label><textarea class="fi" id="ae-bio" rows="3">'+( u.bio||'')+'</textarea></div>'
@@ -238,7 +238,7 @@ window.adminEditUser=function(uid){
     +'<div class="fg"><label class="fl">Rep Points</label><input class="fi" type="number" id="ae-rep" value="'+(u.repPoints||0)+'"></div>'
     +'<div style="display:flex;gap:8px;margin-top:12px;">'
     +'<button class="hbtn" onclick="adminSaveEdit(\''+uid+'\')" style="flex:1;padding:10px;">Save Changes</button>'
-    +'<button class="hbtn2" onclick="adminDeleteUser(\''+uid+'\')" style="padding:10px 14px;border-color:var(--acc);color:var(--acc);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete User</button>'
+    +'<button class="hbtn2" onclick="adminDeleteUser(\''+uid+'\')" style="padding:10px 14px;border-color:var(--acc);color:var(--acc);">🗑 Delete User</button>'
     +'</div>'
     +'</div></div>';
   m.style.display='flex';
@@ -268,7 +268,7 @@ window.adminDeleteUser=function(uid){
   // Remove from Firebase
   fbDelete('users',uid);
   closeModal();
-  toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> User deleted: '+u.name);
+  toast('🗑 User deleted: '+u.name);
   renderAdminV6(); adminTab('users');
 };
 
@@ -296,7 +296,7 @@ window.adminFlagPost=function(pid){
   if(already) p.flags=p.flags.filter(function(f){return f!=='admin';});
   else p.flags.push('admin');
   fbSet('posts',pid,p);
-  toast(already?'Flag removed.':'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Post flagged.');
+  toast(already?'Flag removed.':'⚠ Post flagged.');
   renderAdminV6(); adminTab('content');
 };
 
@@ -334,7 +334,7 @@ window.adminExportCSV=function(){
     rows.push([u.name,u.email,u.role,u.country||'',u.category||'',u.badgeStatus,u.skillId,u.repPoints||0,(u.score||0).toFixed(1),u.gigsCount||0,new Date(u.created||Date.now()).toLocaleDateString()]);
   });
   downloadCSV('skillstamp_users.csv',rows);
-  toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Downloading users CSV…');
+  toast('⬇ Downloading users CSV…');
 };
 
 window.adminExportPostsCSV=function(){
@@ -343,7 +343,7 @@ window.adminExportPostsCSV=function(){
     rows.push([p.userName,(p.content||'').replace(/,/g,' '),p.type||'general',p.likes||0,(p.comments||[]).length,new Date(p.ts||Date.now()).toLocaleString()]);
   });
   downloadCSV('skillstamp_posts.csv',rows);
-  toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Downloading posts CSV…');
+  toast('⬇ Downloading posts CSV…');
 };
 
 window.adminExportGigsCSV=function(){
@@ -352,7 +352,7 @@ window.adminExportGigsCSV=function(){
     rows.push([g.title,g.pay,g.category||'',g.type||'',g.posterName,(g.applicants||[]).length,new Date(g.created||Date.now()).toLocaleString()]);
   });
   downloadCSV('skillstamp_gigs.csv',rows);
-  toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Downloading gigs CSV…');
+  toast('⬇ Downloading gigs CSV…');
 };
 
 function downloadCSV(filename,rows){
@@ -374,7 +374,7 @@ window.postAnnV6=async function(){
   var bar=document.getElementById('ann-bar');
   var txt=document.getElementById('ann-text');
   if(bar&&txt){txt.textContent=text;bar.style.display='flex';}
-  toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Announcement broadcast!');
+  toast('📢 Announcement broadcast!');
 };
 
 window.clearAnnV6=async function(){
@@ -411,7 +411,7 @@ window.adminDeleteGig=async function(gid){
 window.adminEditUser=function(uid){
   var u=getUser(uid);if(!u)return;
   setModal('<button class="mclose" onclick="closeModal()">✕</button>'
-    +'<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit User — '+u.name+'</h3>'
+    +'<h3>✏️ Edit User — '+u.name+'</h3>'
     +'<div class="fg"><label class="fl">Display Name</label><input class="fi" id="ae-name" value="'+u.name+'"></div>'
     +'<div class="fg"><label class="fl">Professional Title</label><input class="fi" id="ae-title" value="'+(u.title||'')+'"></div>'
     +'<div class="fg"><label class="fl">Tagline</label><input class="fi" id="ae-tagline" placeholder="e.g. I make brands unforgettable" value="'+(u.tagline||'')+'"></div>'
@@ -449,7 +449,7 @@ window.adminPromote=function(){
   if(!confirm('Make '+u.name+' ('+u.email+') an admin? They will have full admin access.')) return;
   u.isAdmin=true;
   saveUser(u);
-  toast(u.name+' is now an admin <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>');
+  toast(u.name+' is now an admin 🛡');
   renderAdminV6();
 };
 
@@ -473,7 +473,7 @@ window.adminExportCSV=function(){
   a.href=URL.createObjectURL(blob);
   a.download='skillstamp_users_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
-  toast('CSV exported — '+users.length+' users <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>');
+  toast('CSV exported — '+users.length+' users 📥');
 };
 
 // Refresh admin view
@@ -490,7 +490,7 @@ function renderAdminV6(){
   var root=document.getElementById('admin-root');
   if(!root) return;
   if(!ME||!ME.isAdmin){
-    root.innerHTML='<div style="padding:60px;text-align:center;color:var(--td);font-size:13px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Access denied. Admins only.</div>';
+    root.innerHTML='<div style="padding:60px;text-align:center;color:var(--td);font-size:13px;">🔒 Access denied. Admins only.</div>';
     return;
   }
   root.innerHTML=buildAdminHTML();
@@ -536,14 +536,14 @@ function buildAdminHTML(){
 
   // ── Tab nav ──────────────────────────────────────────────────────────────
   var tabs=['overview','users','content','skills','business','announce'];
-  var tabIcons={overview:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',users:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',content:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',skills:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',business:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="1"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>',announce:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>'};
+  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',business:'🏢',announce:'📢'};
   var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',business:'Business',announce:'Broadcast'};
 
   var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">'
-    +'<span style="font-size:24px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>'
+    +'<span style="font-size:24px;">⚙️</span>'
     +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;color:var(--acc);">SkillStamp Admin</div>'
     +'<div style="font-size:10px;color:var(--td);">Signed in as '+ME.name+' · Admin Portal</div></div>'
-    +'<button onclick="adminExportCSV()" style="margin-left:auto;background:var(--s);border:1px solid var(--br);border-radius:6px;padding:7px 12px;font-size:11px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;color:var(--fg);cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Export CSV</button>'
+    +'<button onclick="adminExportCSV()" style="margin-left:auto;background:var(--s);border:1px solid var(--br);border-radius:6px;padding:7px 12px;font-size:11px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;color:var(--fg);cursor:pointer;">⬇ Export CSV</button>'
     +'</div>';
 
   h+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:18px;" id="adm-tabs">';
@@ -588,7 +588,7 @@ function buildAdminHTML(){
     days.push({label:label,count:count});
   }
   var maxDay=Math.max(1,...days.map(function(d){return d.count;}));
-  h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>','Post Activity — Last 7 Days');
+  h+=sHead('📈','Post Activity — Last 7 Days');
   h+='<div style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:14px;">'
     +'<div style="display:flex;align-items:flex-end;gap:6px;height:70px;">';
   days.forEach(function(d){
@@ -608,7 +608,7 @@ function buildAdminHTML(){
   users.forEach(function(u){if(u.country)countries[u.country]=(countries[u.country]||0)+1;});
   var topCountries=Object.entries(countries).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
   if(topCountries.length){
-    h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>','Users by Country');
+    h+=sHead('🌍','Users by Country');
     h+='<div style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:14px;">';
     topCountries.forEach(function(e){
       var pct=Math.round(e[1]/users.length*100);
@@ -627,7 +627,7 @@ function buildAdminHTML(){
   users.forEach(function(u){if(u.category)cats[u.category]=(cats[u.category]||0)+1;});
   var topCats=Object.entries(cats).sort(function(a,b){return b[1]-a[1];}).slice(0,6);
   if(topCats.length){
-    h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>','Users by Category');
+    h+=sHead('🎯','Users by Category');
     h+='<div style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:14px;">';
     topCats.forEach(function(e){
       var pct=Math.round(e[1]/users.length*100);
@@ -643,7 +643,7 @@ function buildAdminHTML(){
 
   // Recent activity log
   var actLog=LOCAL.get('activity_log')||[];
-  h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>','Recent Activity');
+  h+=sHead('⚡','Recent Activity');
   h+='<div style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:14px;">';
   if(!actLog.length){
     h+='<div style="text-align:center;font-size:12px;color:var(--td);padding:10px;">No activity yet</div>';
@@ -663,7 +663,7 @@ function buildAdminHTML(){
   //  TAB 2 — USERS
   // ════════════════════════════════════════════════════════════════
   h+='<div id="admtab-users" style="display:none;">';
-  h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>','Search & Filter Users');
+  h+=sHead('🔍','Search & Filter Users');
   h+='<div style="display:flex;gap:7px;margin-bottom:10px;">'
     +'<input class="fi" id="adm-user-search" placeholder="Search by name or email…" oninput="adminFilterUsers()" style="flex:1;">'
     +'<select class="fi" id="adm-user-role" onchange="adminFilterUsers()" style="flex:0 0 110px;padding:0 8px;">'
@@ -702,14 +702,14 @@ function buildAdminHTML(){
         +'<option value="review">In Review</option>'
         +'<option value="verified">✓ Verified</option>'
         +'<option value="expert">⭐ Expert</option>'
-        +'<option value="suspended"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Suspend</option>'
+        +'<option value="suspended">🚫 Suspend</option>'
         +'</select>'
-        +'<button onclick="adminEditUser(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--br);border-radius:5px;background:var(--s);color:var(--fg);cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>'
+        +'<button onclick="adminEditUser(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--br);border-radius:5px;background:var(--s);color:var(--fg);cursor:pointer;">✏ Edit</button>'
         +(isBanned
           ?'<button onclick="adminToggleBanInline(\''+u.uid+'\',false)" style="font-size:10px;padding:5px 10px;border:1px solid var(--grn);border-radius:5px;background:rgba(39,174,96,.1);color:var(--grn);cursor:pointer;">✓ Unban</button>'
           :u.uid===ME.uid?''
-          :'<button onclick="adminToggleBanInline(\''+u.uid+'\',true)" style="font-size:10px;padding:5px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Ban</button>')
-        +(u.uid!==ME.uid&&!u.isAdmin?'<button onclick="adminPromoteInline(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--pur);border-radius:5px;background:rgba(155,89,182,.08);color:var(--pur);cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin</button>':'')
+          :'<button onclick="adminToggleBanInline(\''+u.uid+'\',true)" style="font-size:10px;padding:5px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🚫 Ban</button>')
+        +(u.uid!==ME.uid&&!u.isAdmin?'<button onclick="adminPromoteInline(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--pur);border-radius:5px;background:rgba(155,89,182,.08);color:var(--pur);cursor:pointer;">🛡 Admin</button>':'')
         +(u.isAdmin&&u.uid!==ME.uid?'<button onclick="adminDemoteInline(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--td);border-radius:5px;background:var(--s);color:var(--td);cursor:pointer;">Remove Admin</button>':'')
         +'</div>'
         +'</div>';
@@ -725,7 +725,7 @@ function buildAdminHTML(){
   //  TAB 3 — CONTENT MODERATION
   // ════════════════════════════════════════════════════════════════
   h+='<div id="admtab-content" style="display:none;">';
-  h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>','Posts ('+posts.length+')');
+  h+=sHead('📝','Posts ('+posts.length+')');
   h+='<div style="margin-bottom:14px;">';
   if(!posts.length){
     h+='<div style="text-align:center;padding:20px;font-size:12px;color:var(--td);">No posts yet</div>';
@@ -736,20 +736,20 @@ function buildAdminHTML(){
     h+='<div id="postcrd-'+p.id+'" style="background:var(--s);border:1px solid '+(flagged?'var(--acc)':'var(--br)')+';border-radius:var(--r);padding:11px;margin-bottom:7px;">'
       +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
       +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;">'+p.userName+'</div>'
-      +(flagged?'<span style="font-size:9px;background:rgba(255,107,53,.15);color:var(--acc);border-radius:3px;padding:1px 5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Flagged</span>':'')
+      +(flagged?'<span style="font-size:9px;background:rgba(255,107,53,.15);color:var(--acc);border-radius:3px;padding:1px 5px;">⚠ Flagged</span>':'')
       +'<div style="margin-left:auto;font-size:9px;color:var(--td);">'+timeAgo(p.ts||Date.now())+'</div>'
       +'</div>'
       +'<div style="font-size:12px;color:var(--fg);margin-bottom:8px;line-height:1.5;">'+p.content.slice(0,200)+(p.content.length>200?'…':'')+'</div>'
       +'<div style="display:flex;gap:6px;align-items:center;">'
-      +'<span style="font-size:10px;color:var(--td);"><svg width="14" height="14" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> '+( p.likes||0)+' · <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> '+(p.comments||[]).length+'</span>'
-      +'<button onclick="adminDeletePost(\''+p.id+'\')" style="margin-left:auto;font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete</button>'
-      +'<button onclick="adminFlagPost(\''+p.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--br);border-radius:5px;background:var(--s);color:var(--td);cursor:pointer;">'+(flagged?'✓ Unflag':'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Flag')+'</button>'
+      +'<span style="font-size:10px;color:var(--td);">❤ '+( p.likes||0)+' · 💬 '+(p.comments||[]).length+'</span>'
+      +'<button onclick="adminDeletePost(\''+p.id+'\')" style="margin-left:auto;font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🗑 Delete</button>'
+      +'<button onclick="adminFlagPost(\''+p.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--br);border-radius:5px;background:var(--s);color:var(--td);cursor:pointer;">'+(flagged?'✓ Unflag':'⚠ Flag')+'</button>'
       +'</div>'
       +'</div>';
   });
   h+='</div>';
 
-  h+=sHead('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>','Gigs ('+gigs.length+')');
+  h+=sHead('💼','Gigs ('+gigs.length+')');
   h+='<div style="margin-bottom:14px;">';
   if(!gigs.length){
     h+='<div style="text-align:center;padding:20px;font-size:12px;color:var(--td);">No gigs yet</div>';
@@ -761,7 +761,7 @@ function buildAdminHTML(){
       +'<span style="font-size:10px;color:var(--grn);font-weight:700;">'+g.pay+'</span>'
       +'</div>'
       +'<div style="font-size:10px;color:var(--td);margin-bottom:8px;">By: '+g.posterName+' · '+(g.category||'General')+' · '+g.type+'</div>'
-      +'<button onclick="adminDeleteGig(\''+g.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete Gig</button>'
+      +'<button onclick="adminDeleteGig(\''+g.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🗑 Delete Gig</button>'
       +'</div>';
   });
   h+='</div>';
@@ -776,9 +776,9 @@ function buildAdminHTML(){
     +statCard('Approved',pending.filter(function(p){return p.status==='approved';}).length,'var(--grn)')
     +statCard('Rejected',pending.filter(function(p){return p.status==='rejected';}).length,'var(--td)')
     +'</div>';
-  h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>','Pending Submissions ('+pendingList.length+')');
+  h+=sHead('⏳','Pending Submissions ('+pendingList.length+')');
   if(!pendingList.length){
-    h+='<div style="text-align:center;padding:30px;font-size:13px;color:var(--td);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> All caught up — no pending skill submissions</div>';
+    h+='<div style="text-align:center;padding:30px;font-size:13px;color:var(--td);">✅ All caught up — no pending skill submissions</div>';
   }
   pendingList.forEach(function(p){
     var submitter=users.find(function(u){return u.uid===p.uid;})||{name:p.userName||'Unknown',gradient:'#ccc'};
@@ -790,11 +790,11 @@ function buildAdminHTML(){
       +'<div style="margin-left:auto;background:var(--acc);color:#fff;border-radius:5px;padding:3px 9px;font-size:10px;font-weight:700;">'+p.skill+'</div>'
       +'</div>'
       +(p.evidence?'<div style="font-size:11px;color:var(--fg);margin-bottom:8px;background:var(--bg);border-radius:5px;padding:9px;line-height:1.5;"><strong>Evidence:</strong> '+p.evidence+'</div>':'')
-      +(p.link?'<a href="'+p.link+'" target="_blank" style="font-size:10px;color:var(--blu);display:block;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> View Portfolio Link</a>':'')
+      +(p.link?'<a href="'+p.link+'" target="_blank" style="font-size:10px;color:var(--blu);display:block;margin-bottom:8px;">🔗 View Portfolio Link</a>':'')
       +'<div style="display:flex;gap:7px;">'
       +'<button onclick="adminApprove(\''+p.id+'\')" style="flex:1;padding:8px;font-size:11px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;background:var(--grn);color:#fff;border:none;border-radius:6px;cursor:pointer;">✓ Approve</button>'
       +'<button onclick="adminReject(\''+p.id+'\')" style="flex:1;padding:8px;font-size:11px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;background:rgba(255,107,53,.15);color:var(--acc);border:1px solid var(--acc);border-radius:6px;cursor:pointer;">✕ Reject</button>'
-      +'<button onclick="adminViewProfile(\''+p.uid+'\')" style="padding:8px 12px;font-size:11px;border:1px solid var(--br);border-radius:6px;background:var(--s);color:var(--fg);cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Profile</button>'
+      +'<button onclick="adminViewProfile(\''+p.uid+'\')" style="padding:8px 12px;font-size:11px;border:1px solid var(--br);border-radius:6px;background:var(--s);color:var(--fg);cursor:pointer;">👤 Profile</button>'
       +'</div>'
       +'</div>';
   });
@@ -802,7 +802,7 @@ function buildAdminHTML(){
   // Approved / Rejected history
   var approved=pending.filter(function(p){return p.status!=='pending';}).slice(-20).reverse();
   if(approved.length){
-    h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>','Recent Decisions');
+    h+=sHead('📜','Recent Decisions');
     h+='<div style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:12px;">';
     approved.forEach(function(p){
       var col=p.status==='approved'?'var(--grn)':'var(--td)';
@@ -820,7 +820,7 @@ function buildAdminHTML(){
   //  TAB 5 — BUSINESS VERIFICATION
   // ════════════════════════════════════════════════════════════════
   h+='<div id="admtab-business" style="display:none;">';
-  h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="1"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>','Business Client Verifications');
+  h+=sHead('🏢','Business Client Verifications');
   h+='<div id="biz-verif-panel"><div style="font-size:12px;color:var(--td);text-align:center;padding:20px;">Loading business applications…</div></div>';
   h+='</div>';
 
@@ -831,13 +831,13 @@ function buildAdminHTML(){
 
   var ann=CACHE.announcement||null;
   var currentAnn=ann&&ann.text?ann.text:'';
-  h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>','Platform Announcement');
+  h+=sHead('📢','Platform Announcement');
   h+='<div style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:14px;">'
     +'<div style="font-size:11px;color:var(--td);margin-bottom:10px;">This appears as a banner to ALL users at the top of the app.</div>'
-    +(currentAnn?'<div style="background:rgba(232,197,32,.1);border:1px solid rgba(232,197,32,.3);border-radius:6px;padding:9px;font-size:12px;margin-bottom:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Current: '+currentAnn+'</div>':'')
+    +(currentAnn?'<div style="background:rgba(232,197,32,.1);border:1px solid rgba(232,197,32,.3);border-radius:6px;padding:9px;font-size:12px;margin-bottom:10px;">📢 Current: '+currentAnn+'</div>':'')
     +'<textarea class="fi" id="ann-inp" placeholder="SkillStamp is now live in Ghana 🇬🇭" rows="3" style="width:100%;resize:vertical;margin-bottom:8px;">'+currentAnn+'</textarea>'
     +'<div style="display:flex;gap:7px;">'
-    +'<button class="hbtn" onclick="postAnnV6()" style="flex:1;padding:10px;font-size:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Broadcast to All Users</button>'
+    +'<button class="hbtn" onclick="postAnnV6()" style="flex:1;padding:10px;font-size:12px;">📢 Broadcast to All Users</button>'
     +(currentAnn?'<button class="hbtn2" onclick="clearAnnV6()" style="padding:10px 14px;font-size:12px;">✕ Clear</button>':'')
     +'</div></div>';
 
@@ -851,23 +851,23 @@ function buildAdminHTML(){
     +'<button class="hbtn" onclick="adminSendDM()" style="width:100%;padding:10px;font-size:12px;">✉ Send Message</button>'
     +'</div>';
 
-  h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>','Export Platform Data');
+  h+=sHead('⬇','Export Platform Data');
   h+='<div style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:14px;">'
     +'<div style="font-size:11px;color:var(--td);margin-bottom:10px;">Download platform data as CSV files. Opens in Excel / Google Sheets.</div>'
     +'<div style="display:flex;flex-direction:column;gap:7px;">'
-    +'<button onclick="adminExportCSV()" style="padding:10px;font-size:12px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border:1px solid var(--br);border-radius:6px;background:var(--s);color:var(--fg);cursor:pointer;text-align:left;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Users CSV — '+users.length+' users</button>'
-    +'<button onclick="adminExportPostsCSV()" style="padding:10px;font-size:12px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border:1px solid var(--br);border-radius:6px;background:var(--s);color:var(--fg);cursor:pointer;text-align:left;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Posts CSV — '+posts.length+' posts</button>'
-    +'<button onclick="adminExportGigsCSV()" style="padding:10px;font-size:12px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border:1px solid var(--br);border-radius:6px;background:var(--s);color:var(--fg);cursor:pointer;text-align:left;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Gigs CSV — '+gigs.length+' gigs</button>'
+    +'<button onclick="adminExportCSV()" style="padding:10px;font-size:12px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border:1px solid var(--br);border-radius:6px;background:var(--s);color:var(--fg);cursor:pointer;text-align:left;">⬇ Users CSV — '+users.length+' users</button>'
+    +'<button onclick="adminExportPostsCSV()" style="padding:10px;font-size:12px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border:1px solid var(--br);border-radius:6px;background:var(--s);color:var(--fg);cursor:pointer;text-align:left;">⬇ Posts CSV — '+posts.length+' posts</button>'
+    +'<button onclick="adminExportGigsCSV()" style="padding:10px;font-size:12px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border:1px solid var(--br);border-radius:6px;background:var(--s);color:var(--fg);cursor:pointer;text-align:left;">⬇ Gigs CSV — '+gigs.length+' gigs</button>'
     +'</div></div>';
 
-  h+=sHead('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>','Grant / Revoke Admin Access');
+  h+=sHead('🛡','Grant / Revoke Admin Access');
   h+='<div style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:14px;">'
-    +'<div style="font-size:11px;color:var(--acc);margin-bottom:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Admin access gives full control over all users and content.</div>'
+    +'<div style="font-size:11px;color:var(--acc);margin-bottom:10px;">⚠ Admin access gives full control over all users and content.</div>'
     +'<select class="fi" id="promote-user-select" style="margin-bottom:8px;">'
     +'<option value="">Select user to promote…</option>'
     +users.filter(function(u){return u.uid!==ME.uid&&!u.isAdmin;}).map(function(u){return '<option value="'+u.uid+'">'+u.name+' ('+u.email+')</option>';}).join('')
     +'</select>'
-    +'<button class="hbtn" onclick="adminPromoteFromSelect()" style="width:100%;padding:10px;font-size:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Grant Admin Access</button>'
+    +'<button class="hbtn" onclick="adminPromoteFromSelect()" style="width:100%;padding:10px;font-size:12px;">🛡 Grant Admin Access</button>'
     +'</div>';
 
   h+='</div>'; // end announce tab
@@ -902,11 +902,11 @@ function buildUsersList(users){
       +'</div></div></div>'
       // Actions row
       +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'
-      +'<button onclick="adminToggleBanV6(\''+u.uid+'\')" style="flex:1;padding:6px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid '+(isBanned?'rgba(46,213,115,.35)':'rgba(255,107,53,.35)')+';background:'+(isBanned?'rgba(46,213,115,.08)':'rgba(255,107,53,.08)')+';color:'+(isBanned?'var(--grn)':'var(--acc)') +';font-family:Plus Jakarta Sans,sans-serif;font-weight:700;">'+(isBanned?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Unban':'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Ban')+'</button>'
+      +'<button onclick="adminToggleBanV6(\''+u.uid+'\')" style="flex:1;padding:6px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid '+(isBanned?'rgba(46,213,115,.35)':'rgba(255,107,53,.35)')+';background:'+(isBanned?'rgba(46,213,115,.08)':'rgba(255,107,53,.08)')+';color:'+(isBanned?'var(--grn)':'var(--acc)') +';font-family:Plus Jakarta Sans,sans-serif;font-weight:700;">'+(isBanned?'✅ Unban':'🚫 Ban')+'</button>'
       +'<select onchange="adminSetBadge(\''+u.uid+'\',this.value)" style="flex:1;padding:6px;font-size:10px;border-radius:4px;border:1px solid var(--br);background:var(--s2);color:var(--t);cursor:pointer;">'
       +['beginner','review','verified','expert','suspended'].map(function(b){return '<option value="'+b+'"'+(u.badgeStatus===b?' selected':'')+'>'+b+'</option>';}).join('')
       +'</select>'
-      +'<button onclick="adminEditUser(\''+u.uid+'\')" style="padding:6px 10px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid var(--br);background:var(--s2);color:var(--t);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>'
+      +'<button onclick="adminEditUser(\''+u.uid+'\')" style="padding:6px 10px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid var(--br);background:var(--s2);color:var(--t);">✏️ Edit</button>'
       +'<button onclick="adminAdjRep(\''+u.uid+'\')" style="padding:6px 10px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid var(--br);background:var(--s2);color:var(--t);">⭐ Rep</button>'
       +'</div></div>';
   }
@@ -921,7 +921,7 @@ window.adminApproveBiz=async function(uid){
     // Also update user record
     var u=getUser(uid);
     if(u){u.isBusiness=true;u.bizVerified=true;await fbSet('users',uid,u);}
-    pushNotif(uid,'system','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="1"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg> Business Mode Approved','Your business verification was approved! You now have access to Vault Jobs.',{type:'system'});
+    pushNotif(uid,'system','🏢 Business Mode Approved','Your business verification was approved! You now have access to Vault Jobs.',{type:'system'});
     toast('✓ Business mode approved for '+uid);
     adminTab('business');
   } catch(e){toast('Error: '+e.message,'bad');}
@@ -935,7 +935,7 @@ window.adminRejectBiz=async function(uid){
     await fbSet('business_verifications',uid,biz);
     var u=getUser(uid);
     if(u){u.isBusiness=false;await fbSet('users',uid,u);}
-    pushNotif(uid,'system','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="1"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg> Business Verification Update','Your business verification could not be confirmed. Please resubmit with valid documents.',{type:'system'});
+    pushNotif(uid,'system','🏢 Business Verification Update','Your business verification could not be confirmed. Please resubmit with valid documents.',{type:'system'});
     toast('Business mode rejected for '+uid);
     adminTab('business');
   } catch(e){toast('Error: '+e.message,'bad');}
@@ -951,7 +951,7 @@ function adminToggleBanV6(uid){
   var log=LOCAL.get('activity_log')||[];
   log.unshift({msg:'Admin '+(wasBanned?'unbanned':'banned')+' '+u.name,ts:Date.now(),col:'var(--acc)'});
   LOCAL.set('activity_log',log.slice(0,50));
-  toast(u.name+' '+(wasBanned?'unbanned <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>':'banned <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>'));
+  toast(u.name+' '+(wasBanned?'unbanned ✅':'banned ⛔'));
   var p=document.getElementById('page-admin');if(p)p.innerHTML=renderAdminV6();
 }
 window.adminToggleBanV6=adminToggleBanV6;
@@ -990,7 +990,7 @@ function postAnnV6(){
   var log=LOCAL.get('activity_log')||[];
   log.unshift({msg:'Admin broadcast: '+text.slice(0,40),ts:Date.now(),col:'var(--acc)'});
   LOCAL.set('activity_log',log.slice(0,50));
-  toast('Announcement sent to all users! <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>');
+  toast('Announcement sent to all users! 📢');
 }
 window.postAnnV6=postAnnV6;
 

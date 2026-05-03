@@ -20,10 +20,8 @@ function enterApp(){
     if(fresh&&fresh.applications) ME.applications=fresh.applications;
   },2000);
   const av=document.getElementById('nav-av');
-  if(av){
-    if(ME.avatar){av.innerHTML=`<img src="${ME.avatar}" style="width:100%;height:100%;object-fit:cover;">`;}
-    else{av.textContent=initials(ME.name);av.style.background=`linear-gradient(135deg,${ME.gradient},${ME.gradient}88)`;}
-  }
+  if(ME.avatar){av.innerHTML=`<img src="${ME.avatar}" style="width:100%;height:100%;object-fit:cover;">`;}
+  else{av.textContent=initials(ME.name);av.style.background=`linear-gradient(135deg,${ME.gradient},${ME.gradient}88)`;}
   // Admin tab permanently hidden — use admin.html portal instead
   updateHomeStats();
   startRealtimeListeners();
@@ -193,7 +191,7 @@ function maybeShowVerifNudge(){
   var html=
     '<button class="mclose" id="vn-close" style="z-index:2;">✕</button>'
     +'<div style="text-align:center;padding:8px 0 18px;">'
-    +'<div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,rgba(26,107,60,.3),rgba(26,107,60,.1));border:1.5px solid rgba(26,107,60,.4);margin-bottom:14px;font-size:30px;backdrop-filter:blur(8px);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="15" r="5"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/><path d="M12 3l2.5 5H20l-4 3.5 1.5 5.5L12 14l-5.5 3 1.5-5.5L4 8h5.5z"/></svg></div>'
+    +'<div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,rgba(26,107,60,.3),rgba(26,107,60,.1));border:1.5px solid rgba(26,107,60,.4);margin-bottom:14px;font-size:30px;backdrop-filter:blur(8px);">🏅</div>'
     +(isInReview
       ?'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:17px;margin-bottom:6px;color:var(--tx);">Verification in Progress</div>'
        +'<div style="font-size:11px;color:var(--td);line-height:1.6;max-width:280px;margin:0 auto 16px;">Our team is reviewing your submission. You\'ll be notified the moment your SkillID badge is live.</div>'
@@ -203,9 +201,9 @@ function maybeShowVerifNudge(){
     +(isInReview?'':
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">'
       +[
-        {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"/><polyline points="22 6 12 13 2 6"/><path d="M19 16v6M16 19h6"/></svg>',label:'Unlimited Proposals',desc:'No proposal cap — apply to every gig.'},
-        {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="18" x2="12" y2="6"/></svg>',label:'Priority Placement',desc:'Appear first in talent search results.'},
-        {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',label:'Escrow Protected',desc:'Full payment protection on all gigs.'},
+        {icon:'📬',label:'Unlimited Proposals',desc:'No proposal cap — apply to every gig.'},
+        {icon:'🔝',label:'Priority Placement',desc:'Appear first in talent search results.'},
+        {icon:'🔒',label:'Escrow Protected',desc:'Full payment protection on all gigs.'},
         {icon:'💎',label:'Premium Badge',desc:'SkillID badge on your profile + QR card.'}
       ].map(function(b){
         return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 10px;backdrop-filter:blur(4px);">'
@@ -216,7 +214,7 @@ function maybeShowVerifNudge(){
       }).join('')
       +'</div>'
       +'<div style="background:rgba(26,107,60,.1);border:1px solid rgba(26,107,60,.2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:16px;">'
-      +'<div style="font-size:13px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>'
+      +'<div style="font-size:13px;">📈</div>'
       +'<div style="font-size:11px;color:var(--td);line-height:1.5;"><strong style="color:#4ade80;">Verified freelancers earn 2.8× more</strong> on average than unverified profiles.</div>'
       +'</div>'
     )
@@ -385,35 +383,35 @@ function _buildOnboarding() {
       tag: 'The Platform',
       title: 'Welcome to the\nFuture of Work.',
       sub: 'SkillStamp connects Africa\'s verified digital talent with global opportunities through a high-trust ecosystem.',
-      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+      icon: '🌐',
       src: 'https://assets10.lottiefiles.com/packages/lf20_uwWgICKCxj.json'
     },
     {
       tag: 'Smart Matching',
       title: 'Precision\nMatching.',
       sub: 'No more bidding wars. Our engine pairs your exact skills to the right gigs — instantly.',
-      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+      icon: '🎯',
       src: 'https://assets9.lottiefiles.com/packages/lf20_qp1q7mct.json'
     },
     {
       tag: 'Security',
       title: 'Work with\nPeace of Mind.',
       sub: 'Our Communication Guard and Escrow system ensure you get paid for every milestone delivered.',
-      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>️',
+      icon: '🛡️',
       src: 'https://assets5.lottiefiles.com/packages/lf20_xvmprfgt.json'
     },
     {
       tag: 'Verification',
       title: 'Stand Out\nfrom the Crowd.',
       sub: 'Earn your SkillID badge and unlock 3× more visibility from premium clients worldwide.',
-      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="15" r="5"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/><path d="M12 3l2.5 5H20l-4 3.5 1.5 5.5L12 14l-5.5 3 1.5-5.5L4 8h5.5z"/></svg>',
+      icon: '🏅',
       src: 'https://assets6.lottiefiles.com/packages/lf20_jcikwtux.json'
     },
     {
       tag: 'Get Started',
       title: 'Ready to Build\nYour Legacy?',
       sub: 'Thousands of verified African professionals are already here. Your first gig is waiting.',
-      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+      icon: '✅',
       src: 'https://assets2.lottiefiles.com/packages/lf20_jR229r.json',
       isCta: true
     }
@@ -597,7 +595,7 @@ function _buildOnboarding() {
   ctaCol.style.display = 'none';
   var ctaMain = document.createElement('button');
   ctaMain.id = 'ss-ob-cta-main';
-  ctaMain.textContent = isClient ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Post Your First Gig' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Browse Open Gigs';
+  ctaMain.textContent = isClient ? '💼 Post Your First Gig' : '🔍 Browse Open Gigs';
   var ctaSec = document.createElement('button');
   ctaSec.id = 'ss-ob-cta-sec';
   ctaSec.textContent = isClient ? 'Browse Talent' : 'Complete My Profile';
@@ -829,17 +827,17 @@ function renderMyApplications(){
   var apps=(ME.applications||[]).slice().reverse();
   if(!apps.length){
     content.innerHTML='<div style="padding:40px 20px;text-align:center;">'
-      +'<div style="font-size:40px;margin-bottom:12px;opacity:.3;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></div>'
+      +'<div style="font-size:40px;margin-bottom:12px;opacity:.3;">📋</div>'
       +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;">No applications yet</div>'
       +'<div style="font-size:12px;color:var(--td);">Browse gigs and apply to track your progress here.</div>'
       +'</div>';
     return;
   }
   var statusCfg={
-    pending:{label:"Pending",bg:"rgba(232,197,71,.1)",border:"rgba(232,197,71,.3)",color:"var(--gld)",icon:"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>"},
-    accepted:{label:"Hired!",bg:"rgba(74,222,128,.1)",border:"rgba(74,222,128,.3)",color:"var(--grn)",icon:"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>"},
-    delivered:{label:"Delivered",bg:"rgba(77,159,255,.1)",border:"rgba(77,159,255,.3)",color:"#4d9fff",icon:"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>"},
-    rejected:{label:"Not Selected",bg:"rgba(239,68,68,.08)",border:"rgba(239,68,68,.2)",color:"#ef4444",icon:"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>"}
+    pending:{label:"Pending",bg:"rgba(232,197,71,.1)",border:"rgba(232,197,71,.3)",color:"var(--gld)",icon:"⏳"},
+    accepted:{label:"Hired!",bg:"rgba(74,222,128,.1)",border:"rgba(74,222,128,.3)",color:"var(--grn)",icon:"✅"},
+    delivered:{label:"Delivered",bg:"rgba(77,159,255,.1)",border:"rgba(77,159,255,.3)",color:"#4d9fff",icon:"📦"},
+    rejected:{label:"Not Selected",bg:"rgba(239,68,68,.08)",border:"rgba(239,68,68,.2)",color:"#ef4444",icon:"❌"}
   };
   var h='<div style="padding:14px 16px;">';
   h+='<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;margin-bottom:14px;">My Applications ('+apps.length+')</div>';
@@ -856,12 +854,12 @@ function renderMyApplications(){
       +'<span style="flex-shrink:0;background:'+cfg.bg+';border:1px solid '+cfg.border+';color:'+cfg.color+';font-size:9px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;">'+cfg.icon+' '+cfg.label+'</span>'
       +'</div>'
       +(app.status==="accepted"||app.status==="delivered"?
-        '<div style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:8px;padding:10px;font-size:11px;color:var(--grn);margin-bottom:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> You were hired! Open the workspace to manage your delivery.</div>'
+        '<div style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:8px;padding:10px;font-size:11px;color:var(--grn);margin-bottom:10px;">🎉 You were hired! Open the workspace to manage your delivery.</div>'
         :app.status==="rejected"?
         '<div style="font-size:11px;color:var(--td);margin-bottom:10px;">The client selected another freelancer for this gig.</div>'
         :'<div style="font-size:11px;color:var(--td);margin-bottom:10px;">Your application is being reviewed by the client.</div>')
       +(gig&&(gig.status==="hired"||gig.status==="completed")&&gig.hiredUid===ME.uid?
-        '<button onclick="openGigWorkspace(\''+app.gigId+'\')" style="background:var(--gld);color:#000;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:10px;padding:6px 14px;border-radius:6px;cursor:pointer;margin-right:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Workspace</button>'
+        '<button onclick="openGigWorkspace(\''+app.gigId+'\')" style="background:var(--gld);color:#000;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:10px;padding:6px 14px;border-radius:6px;cursor:pointer;margin-right:6px;">💼 Workspace</button>'
         :'')
 
       +'</div>';
@@ -1140,7 +1138,7 @@ window.openDirectProposal = function(uid) {
     setModal(
       '<button class="mclose" onclick="closeModal()">✕</button>' +
       '<div style="text-align:center;padding:16px 0;">' +
-      '<div style="font-size:40px;margin-bottom:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>' +
+      '<div style="font-size:40px;margin-bottom:10px;">🔗</div>' +
       '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;margin-bottom:8px;">Already Working Together</div>' +
       '<div style="font-size:12px;color:var(--td);line-height:1.6;margin-bottom:16px;">You already have an active gig with ' + u.name + '. Use the Workspace to manage your current project.</div>' +
       '<button class="btn" onclick="closeModal();showPage(\'gigs\')" style="width:100%;">View Active Gig →</button>' +
@@ -1164,8 +1162,8 @@ window.openDirectProposal = function(uid) {
     : '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);color:var(--acc);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">Unverified</span>';
 
   var escrowNote = isVerif
-    ? '<div style="display:flex;align-items:flex-start;gap:9px;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.18);border-radius:10px;padding:11px 13px;margin-bottom:16px;"><div style="font-size:15px;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div style="font-size:11px;color:var(--td);line-height:1.55;"><strong style="color:var(--grn);">Escrow Protected</strong> — Your budget will be locked until you confirm delivery. The freelancer only gets paid after you approve.</div></div>'
-    : '<div style="display:flex;align-items:flex-start;gap:9px;background:rgba(255,107,53,.05);border:1px solid rgba(255,107,53,.18);border-radius:10px;padding:11px 13px;margin-bottom:16px;"><div style="font-size:15px;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div style="font-size:11px;color:var(--td);line-height:1.55;"><strong style="color:var(--acc);">Not Verified</strong> — This freelancer hasn\'t been verified yet. Your proposal will be sent as a direct enquiry without escrow.</div></div>';
+    ? '<div style="display:flex;align-items:flex-start;gap:9px;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.18);border-radius:10px;padding:11px 13px;margin-bottom:16px;"><div style="font-size:15px;flex-shrink:0;">🔒</div><div style="font-size:11px;color:var(--td);line-height:1.55;"><strong style="color:var(--grn);">Escrow Protected</strong> — Your budget will be locked until you confirm delivery. The freelancer only gets paid after you approve.</div></div>'
+    : '<div style="display:flex;align-items:flex-start;gap:9px;background:rgba(255,107,53,.05);border:1px solid rgba(255,107,53,.18);border-radius:10px;padding:11px 13px;margin-bottom:16px;"><div style="font-size:15px;flex-shrink:0;">⚠️</div><div style="font-size:11px;color:var(--td);line-height:1.55;"><strong style="color:var(--acc);">Not Verified</strong> — This freelancer hasn\'t been verified yet. Your proposal will be sent as a direct enquiry without escrow.</div></div>';
 
   panel.innerHTML =
     // ── Header ──
@@ -1236,7 +1234,7 @@ window.openDirectProposal = function(uid) {
 
     // ── Submit button ──
     '<button id="dp-submit-btn" style="width:100%;padding:14px;background:var(--gld);color:#fff;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;border:none;border-radius:12px;cursor:pointer;margin-top:8px;margin-bottom:32px;transition:background .2s;" onmouseover="this.style.background=\'#f5d460\'" onmouseout="this.style.background=\'var(--gld)\'">' +
-    (isVerif ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Send Proposal & Lock Escrow →' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg> Send Direct Enquiry →') +
+    (isVerif ? '💼 Send Proposal & Lock Escrow →' : '📩 Send Direct Enquiry →') +
     '</button>' +
     '</div>';
 
@@ -1318,7 +1316,7 @@ window.openDirectProposal = function(uid) {
       if (!result.ok) {
         toast(result.error || 'Could not send proposal.', 'bad');
         submitBtn.disabled = false;
-        submitBtn.textContent = isVerif ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Send Proposal & Lock Escrow →' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg> Send Direct Enquiry →';
+        submitBtn.textContent = isVerif ? '💼 Send Proposal & Lock Escrow →' : '📩 Send Direct Enquiry →';
         return;
       }
 
@@ -1335,12 +1333,12 @@ window.openDirectProposal = function(uid) {
       var panel = document.getElementById('proposal-panel');
       if (panel) panel.remove();
       window._dpImages = [];
-      toast(isVerif ? 'Proposal sent! $' + budget + ' held in escrow. <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : 'Proposal sent to ' + firstName + '! <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>');
+      toast(isVerif ? 'Proposal sent! $' + budget + ' held in escrow. ✅' : 'Proposal sent to ' + firstName + '! 📩');
 
     } catch(err) {
       console.error('Proposal submit failed', err);
       submitBtn.disabled = false;
-      submitBtn.textContent = isVerif ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Send Proposal & Lock Escrow →' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg> Send Direct Enquiry →';
+      submitBtn.textContent = isVerif ? '💼 Send Proposal & Lock Escrow →' : '📩 Send Direct Enquiry →';
       toast('Could not send proposal. Please check your connection and try again.', 'bad');
     }
   };
@@ -1515,7 +1513,7 @@ window.adminVerifDecision = async function(svId, uid, approved) {
         }
       } catch(e) {}
       pushNotif(uid, 'verification_approved', '&#x2B50; Verification Approved!', 'Congratulations! Your work has been verified by SkillStamp. Your verified badge is now live.', {type:'verification_approved'});
-      toast(u.name + ' approved <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>');
+      toast(u.name + ' approved ✅');
     } else {
       u.verificationStatus = 'rejected';
       u.verifBannedUntil = Date.now() + (30 * 24 * 60 * 60 * 1000); // 1 month

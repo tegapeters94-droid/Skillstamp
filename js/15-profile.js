@@ -19,7 +19,7 @@ window.viewProfile=function(uid){
     var lastView = parseInt(localStorage.getItem(throttleKey) || '0');
     if (Date.now() - lastView > 600000) {
       localStorage.setItem(throttleKey, Date.now());
-      pushNotif(uid, 'profile_view', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Profile View', ME.name + ' viewed your profile', {type:'profile_view', viewerUid: ME.uid});
+      pushNotif(uid, 'profile_view', '👁️ Profile View', ME.name + ' viewed your profile', {type:'profile_view', viewerUid: ME.uid});
     }
   } catch(e) {}
 };
@@ -172,7 +172,7 @@ function buildProfile(u,isOwn){
   }
 
   var editProfileBtn=isOwn?'<button class="prf-edit-btn" onclick="openEditProfile()">'+icon('edit',14,'currentColor')+' Edit Profile</button>':'';
-  var boostProfileBtn=isOwn&&!isClient?'<button class="prf-edit-btn" onclick="openProfileBoost()" style="background:rgba(232,197,71,.1);border-color:rgba(232,197,71,.3);color:var(--gld);"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Boost Profile</button>':'';
+  var boostProfileBtn=isOwn&&!isClient?'<button class="prf-edit-btn" onclick="openProfileBoost()" style="background:rgba(232,197,71,.1);border-color:rgba(232,197,71,.3);color:var(--gld);">⚡ Boost Profile</button>':'';
 
   // ── ABOUT section ─────────────────────────────────────────
   var bioText=u.bio||('No bio yet.'+(isOwn?' <a onclick="openEditProfile()" style="color:var(--gld);cursor:pointer;">Add one →</a>':''));
@@ -362,10 +362,10 @@ window.openChangePhoto=function(){
       +'<button class="bacc" style="width:100%;" id="remove-photo-btn">Remove Photo</button>';
   }
   var mh='<button class="mclose" id="cp-close">✕</button>';
-  mh+='<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Profile Photo</h3>';
+  mh+='<h3>📸 Profile Photo</h3>';
   mh+='<p>Upload a photo to personalise your profile.</p>';
   mh+='<label for="photo-input" style="border:2px dashed var(--br);border-radius:var(--r);padding:24px;text-align:center;margin-bottom:14px;cursor:pointer;display:block;">';
-  mh+='<div style="font-size:28px;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>';
+  mh+='<div style="font-size:28px;margin-bottom:8px;">📷</div>';
   mh+='<div style="font-size:12px;color:var(--td);font-weight:600;">Tap to choose from gallery</div>';
   mh+='<div style="font-size:10px;color:var(--td);margin-top:4px;">Or take a new photo · JPG, PNG — max 5MB</div>';
   mh+='</label>';
@@ -406,7 +406,7 @@ window.handlePhotoUpload=function(input){
           navAv.style.background='';
         }
         closeModal();
-        toast('Profile photo saved! <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>');
+        toast('Profile photo saved! 📸');
         if(document.getElementById('page-myprofile').classList.contains('active')) renderMyProfile();
       }).catch(function(err){
         console.error('Photo save failed:',err);
@@ -781,13 +781,13 @@ window.openProfileBoost = function() {
   var isBoosted = ME.profileBoostedUntil && ME.profileBoostedUntil > Date.now();
   if (isBoosted) {
     var hoursLeft = Math.ceil((ME.profileBoostedUntil - Date.now()) / (1000 * 60 * 60));
-    toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Profile boost is already active for ~' + hoursLeft + 'h more.', 'bad');
+    toast('⚡ Profile boost is already active for ~' + hoursLeft + 'h more.', 'bad');
     return;
   }
   setModal(
     '<button class="mclose" onclick="closeModal()">✕</button>'
     + '<div style="text-align:center;padding:8px 0 14px;">'
-    + '<div style="font-size:44px;margin-bottom:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>'
+    + '<div style="font-size:44px;margin-bottom:10px;">⚡</div>'
     + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:17px;margin-bottom:6px;">Boost Your Profile</div>'
     + '<div style="font-size:12px;color:var(--td);line-height:1.6;margin-bottom:16px;">Your profile will appear at the top of talent search results for <strong>24 hours</strong>. More visibility = more opportunities.</div>'
     + '<div style="background:var(--s2);border:1px solid var(--br);border-radius:12px;padding:14px;margin-bottom:16px;">'
@@ -827,7 +827,7 @@ window.openProfileBoost = function() {
         ME.profileBoostedUntil = Date.now() + (24 * 60 * 60 * 1000);
         await saveUser(ME);
         closeModal();
-        toast('<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Profile boosted for 24 hours!' + (isFree ? ' (Free Pro boost)' : ''));
+        toast('⚡ Profile boosted for 24 hours!' + (isFree ? ' (Free Pro boost)' : ''));
       } catch(e) {
         btn.disabled = false; btn.textContent = 'Boost for $1 →';
         toast('Boost failed. Try again.', 'bad');

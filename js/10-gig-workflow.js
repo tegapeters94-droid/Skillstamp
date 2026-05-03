@@ -12,10 +12,10 @@ window.openHireModal=async function(gid){
   var freshUsers=await fbGetAll('users');
   if(freshUsers&&freshUsers.length) CACHE.users=freshUsers;
   var mh='<button class="mclose" id="hire-close">✕</button>';
-  mh+='<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Hire a Freelancer</h3>';
+  mh+='<h3>👤 Hire a Freelancer</h3>';
   mh+='<p style="font-size:11px;color:var(--td);margin-bottom:12px;">Select who to hire for: '+gig.title+'</p>';
   mh+='<div id="hire-list"></div>';
-  if(gig.escrowAmount) mh+='<div style="background:rgba(255,165,0,.06);border:1px solid rgba(255,165,0,.18);border-radius:7px;padding:10px 12px;margin:12px 0;font-size:11px;color:#ffa500;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> $'+gig.escrowAmount.toLocaleString()+' held in escrow — released when you mark complete.</div>';
+  if(gig.escrowAmount) mh+='<div style="background:rgba(255,165,0,.06);border:1px solid rgba(255,165,0,.18);border-radius:7px;padding:10px 12px;margin:12px 0;font-size:11px;color:#ffa500;">🔒 $'+gig.escrowAmount.toLocaleString()+' held in escrow — released when you mark complete.</div>';
   mh+='<button class="btn" id="hire-confirm-btn" style="width:100%;">Hire & Notify →</button>';
   setModal(mh);
   document.getElementById('hire-close').onclick=closeModal;
@@ -46,25 +46,25 @@ window.openHireModal=async function(gid){
     var isApplicantVerif=userIsVerified(u);
     var isApplicantBoosted=!!(u.proposalBoosts&&u.proposalBoosts[gid]);
     var applicantBadge=isApplicantVerif?'<span style="font-size:8px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.3);padding:1px 5px;border-radius:6px;margin-left:4px;">✓ Verified</span>':'';
-    var boostBadge=isApplicantBoosted?'<span style="font-size:8px;background:rgba(96,165,250,.1);color:#60a5fa;border:1px solid rgba(96,165,250,.3);padding:1px 5px;border-radius:6px;margin-left:3px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Boosted</span>':'';
+    var boostBadge=isApplicantBoosted?'<span style="font-size:8px;background:rgba(96,165,250,.1);color:#60a5fa;border:1px solid rgba(96,165,250,.3);padding:1px 5px;border-radius:6px;margin-left:3px;">⚡ Boosted</span>':'';
     rows+='<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;font-family:Plus Jakarta Sans,sans-serif;">'+u.name+applicantBadge+boostBadge+'</div>';
-    rows+='<div style="font-size:10px;color:var(--td);">'+(u.skillId||'')+(timeline?' · <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> '+timeline:'')+(rate?' · '+rate:'')+'</div></div>';
+    rows+='<div style="font-size:10px;color:var(--td);">'+(u.skillId||'')+(timeline?' · 📅 '+timeline:'')+(rate?' · '+rate:'')+'</div></div>';
     // View Profile button
-    rows+='<button onclick="closeModal();viewProfile(\'' + uid + '\')" style="background:none;border:1px solid var(--br);border-radius:6px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--gld);cursor:pointer;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Profile</button>';
+    rows+='<button onclick="closeModal();viewProfile(\'' + uid + '\')" style="background:none;border:1px solid var(--br);border-radius:6px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--gld);cursor:pointer;flex-shrink:0;">👤 Profile</button>';
     // Radio select
     rows+='<label style="cursor:pointer;margin-left:6px;"><input type="radio" name="hire-pick" value="'+uid+'" style="width:18px;height:18px;accent-color:var(--grn);"></label>';
     rows+='</div>';
     // Proposal cover note
     if(cover){
       rows+='<div style="padding:10px 12px;border-top:1px solid var(--br);font-size:11px;color:var(--td);line-height:1.75;background:var(--bg);">';
-      rows+='<div style="font-size:9px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Proposal</div>';
+      rows+='<div style="font-size:9px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">📋 Proposal</div>';
       rows+=cover;
       rows+='</div>';
     }
     // Screening question answer
     if(gig.screeningQ&&gig.screeningQ.trim()&&screeningAnswer){
       rows+='<div style="padding:10px 12px;border-top:1px solid var(--br);background:rgba(5,150,105,.04);">';
-      rows+='<div style="font-size:9px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Screening Answer</div>';
+      rows+='<div style="font-size:9px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">❓ Screening Answer</div>';
       rows+='<div style="font-size:10px;color:var(--td);margin-bottom:4px;font-style:italic;">"'+gig.screeningQ+'"</div>';
       rows+='<div style="font-size:12px;color:var(--tx);line-height:1.6;">'+screeningAnswer+'</div>';
       rows+='</div>';
@@ -106,7 +106,7 @@ window.confirmHire=async function(gid){
   var notifMsg='Congratulations '+hiredUser.name+'! You have been hired for: '+gig.title+'. Budget: $'+(gig.escrowAmount||gig.payNum||0).toLocaleString()+'. Deliver your work and the client will release payment through escrow.';
   sendAutoMsg(hiredUid,notifMsg);
   // Push notification to freelancer
-  pushNotif(hiredUid,'hired','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> You Got Hired!','You have been hired for: '+gig.title+' — $'+(gig.escrowAmount||gig.payNum||0).toLocaleString()+'. Tap to open chat with client.',{type:'gig_hired',gigId:gid,clientUid:ME.uid});
+  pushNotif(hiredUid,'hired','🎉 You Got Hired!','You have been hired for: '+gig.title+' — $'+(gig.escrowAmount||gig.payNum||0).toLocaleString()+'. Tap to open chat with client.',{type:'gig_hired',gigId:gid,clientUid:ME.uid});
 
   // ── SUCCESS CONFIRMATION MODAL ──────────────────────────
   var hiredAv=hiredU&&hiredU.avatar?'<img src="'+hiredU.avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':initials(hiredUser.name);
@@ -140,7 +140,7 @@ window.openCompleteGig=function(gid){
   var fee=Math.round(payNum*commRateDisplay);
   var payout=payNum-fee;
   var mh='<button class="mclose" id="comp-close">✕</button>';
-  mh+='<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Release Payment</h3>';
+  mh+='<h3>✅ Release Payment</h3>';
   mh+='<p>Confirm you are satisfied with the work delivered by '+freelancer.name+'.</p>';
   mh+='<div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:14px;margin-bottom:14px;">';
   mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">Escrow Amount</span><span>$'+payNum.toLocaleString()+'</span></div>';
@@ -201,12 +201,12 @@ window.confirmComplete=async function(gid){
     var payNotifBody=holdDays===0
       ?'$'+payout.toLocaleString()+' has been sent to your wallet for: '+gig.title
       :'$'+payout.toLocaleString()+' will be released in '+holdDays+' days for: '+gig.title;
-    pushNotif(gig.hiredUid,'payment','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Payment '+( holdDays===0?'Received':'Pending'),payNotifBody,{type:'payment',gigId:gig.id});
-    pushNotif(ME.uid,'payment','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Payment Released','You released $'+payout.toLocaleString()+' to '+freelancer.name+' for: '+gig.title,{type:'payment',gigId:gig.id});
+    pushNotif(gig.hiredUid,'payment','💰 Payment '+( holdDays===0?'Received':'Pending'),payNotifBody,{type:'payment',gigId:gig.id});
+    pushNotif(ME.uid,'payment','✅ Payment Released','You released $'+payout.toLocaleString()+' to '+freelancer.name+' for: '+gig.title,{type:'payment',gigId:gig.id});
     renderWallet();
     // Show success confirmation modal immediately
     setModal('<div style="text-align:center;padding:10px 0 6px;">'
-      +'<div style="font-size:52px;margin-bottom:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>'
+      +'<div style="font-size:52px;margin-bottom:12px;">✅</div>'
       +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:18px;margin-bottom:6px;">Payment Released!</div>'
       +'<div style="font-size:12px;color:var(--td);margin-bottom:16px;line-height:1.7;">'
       +'<strong style="color:var(--grn);">$'+payout.toLocaleString()+'</strong> has been sent to '+freelancer.name+'\'s wallet.<br>'
@@ -229,7 +229,7 @@ window.confirmComplete=async function(gid){
 
 window.openDispute=function(gid){
   var mh='<button class="mclose" id="disp-close">✕</button>';
-  mh+='<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Raise a Dispute</h3>';
+  mh+='<h3>⚠️ Raise a Dispute</h3>';
   mh+='<p style="font-size:11px;color:var(--td);">Funds remain locked in escrow until our team resolves this within 24 hours.</p>';
   mh+='<div class="fg"><label class="fl">Reason</label><select class="fi" id="d-reason" style="width:100%;">';
   mh+='<option>Work not delivered</option><option>Work quality below standard</option>';
@@ -258,8 +258,8 @@ window.submitDispute=async function(gid){
   var disputeGig=getGigs().find(function(g){return g.id===gid;});
   if(disputeGig){
     var otherUid=ME.uid===disputeGig.posterUid?disputeGig.hiredUid:disputeGig.posterUid;
-    pushNotif(otherUid,'dispute_raised','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Dispute Raised',ME.name+' has raised a dispute on: '+disputeGig.title+'. Funds are frozen pending admin review.',{type:'dispute_raised',gigId:gid});
-    pushNotif(ME.uid,'dispute_raised','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Dispute Submitted','Your dispute on: '+disputeGig.title+' has been submitted. Admin will review within 24 hours.',{type:'dispute_raised',gigId:gid});
+    pushNotif(otherUid,'dispute_raised','⚠️ Dispute Raised',ME.name+' has raised a dispute on: '+disputeGig.title+'. Funds are frozen pending admin review.',{type:'dispute_raised',gigId:gid});
+    pushNotif(ME.uid,'dispute_raised','⚠️ Dispute Submitted','Your dispute on: '+disputeGig.title+' has been submitted. Admin will review within 24 hours.',{type:'dispute_raised',gigId:gid});
   }
   closeModal();
   toast('Dispute raised. Admin will review within 24 hours.','bad');
@@ -296,7 +296,7 @@ window.submitRating=async function(uid){
 window.openSubmitVerify=function(){
   var skillOpts=(ME.skills&&ME.skills.length?ME.skills:['General']).map(function(s){return '<option>'+s+'</option>';}).join('');
   var mh='<button class="mclose" id="sv-close">✕</button>';
-  mh+='<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Get Verified</h3>';
+  mh+='<h3>✅ Get Verified</h3>';
   mh+='<p style="font-size:11px;color:var(--td);margin-bottom:12px;">Submit proof of your skills. Our team reviews within 48 hours.</p>';
   mh+='<div class="fg"><label class="fl">Skill to Verify</label><select class="fi" id="sv-skill" style="width:100%;">'+skillOpts+'</select></div>';
   mh+='<div class="fg"><label class="fl">Proof Type</label><select class="fi" id="sv-type" style="width:100%;"><option>Portfolio Link</option><option>GitHub</option><option>LinkedIn</option><option>Certificate URL</option><option>Live Project URL</option></select></div>';
@@ -316,6 +316,6 @@ window.submitVerifyRequest=async function(){
   if(!proofLink){toast('Please provide a link or URL.','bad');return;}
   await fbSet('skillVerifications','sv_'+Date.now(),{uid:ME.uid,name:ME.name,skill:skill,proofType:proofType,proofLink:proofLink,description:description,status:'pending',ts:Date.now()});
   closeModal();
-  toast('Submitted! Our team will review within 48 hours. <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>');
+  toast('Submitted! Our team will review within 48 hours. ✅');
 };
 

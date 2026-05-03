@@ -64,7 +64,7 @@ function showContactWarning(label, originalText, maskedText, onSendAnyway, onCan
   banner.style.cssText = 'position:absolute;bottom:66px;left:0;right:0;z-index:10;padding:14px;background:#fff7ed;border-top:2px solid #ea580c;animation:slideUp .2s ease;';
   banner.innerHTML =
     '<div style="display:flex;align-items:flex-start;gap:10px;">'
-    + '<div style="font-size:20px;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>'
+    + '<div style="font-size:20px;flex-shrink:0;">⚠️</div>'
     + '<div style="flex:1;">'
     + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:#9a3412;margin-bottom:4px;">Off-Platform Contact Detected</div>'
     + '<div style="font-size:11px;color:#7c2d12;line-height:1.55;margin-bottom:10px;">'
@@ -100,7 +100,7 @@ function _buildFlaggedBubble(msg) {
     + '</div>'
     + (!isMe && msg._flagged
       ? '<div style="display:flex;align-items:flex-start;gap:6px;background:#fff1f2;border:1px solid #fecdd3;border-radius:0 0 8px 8px;padding:7px 10px;margin-top:-2px;">'
-        + '<span style="font-size:13px;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span>'
+        + '<span style="font-size:13px;flex-shrink:0;">🚩</span>'
         + '<div style="font-size:10px;color:#9f1239;line-height:1.4;"><strong>Safety Alert:</strong> This user is attempting to move communication off-platform. Your payments are only protected if work is kept on SkillStamp.</div>'
         + '</div>'
       : '')
@@ -315,7 +315,7 @@ window.openMsg = async function(uid) {
         c.lastTs = Date.now();
         return fbSet('conversations', cid, c);
       }).then(function() {
-        pushNotif(uid, 'message', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> New Message', ME.name + ': ' + text.slice(0, 80), { type: 'message', cid: cid, fromUid: ME.uid });
+        pushNotif(uid, 'message', '💬 New Message', ME.name + ': ' + text.slice(0, 80), { type: 'message', cid: cid, fromUid: ME.uid });
       }).catch(function(e) { console.warn('Send failed', e); toast('Failed to send. Try again.', 'bad'); });
     } // end actualSend
 
@@ -345,7 +345,7 @@ window.openMsg = async function(uid) {
   } catch(err) {
     console.error('openMsg failed', err);
     var mc3 = document.getElementById('mcontent');
-    if (mc3) { mc3.style.cssText = ''; mc3.innerHTML = '<button class="mclose" onclick="closeModal()">✕</button><div style="text-align:center;padding:24px 16px;"><div style="font-size:28px;margin-bottom:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div style="font-weight:700;margin-bottom:8px;font-size:14px;">Could not open chat</div><div style="font-size:12px;color:var(--td);margin-bottom:16px);">Check your connection and try again.</div><button class="btn" onclick="closeModal()" style="width:100%;">Close</button></div>'; }
+    if (mc3) { mc3.style.cssText = ''; mc3.innerHTML = '<button class="mclose" onclick="closeModal()">✕</button><div style="text-align:center;padding:24px 16px;"><div style="font-size:28px;margin-bottom:12px;">⚠️</div><div style="font-weight:700;margin-bottom:8px;font-size:14px;">Could not open chat</div><div style="font-size:12px;color:var(--td);margin-bottom:16px);">Check your connection and try again.</div><button class="btn" onclick="closeModal()" style="width:100%;">Close</button></div>'; }
     var ovErr = document.getElementById('moverlay');
     if (ovErr) { ovErr.style.padding = ''; ovErr.classList.add('show'); }
   }
