@@ -25,7 +25,7 @@
      SETUP BANNER — Remove this once Firebase is configured
      ══════════════════════════════════════════════════════ -->
 <div id="setup-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#e8c520;color:#000;padding:12px 16px;font-family:monospace;font-size:12px;align-items:center;gap:10px;">
-<span style="font-size:18px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>️</span>
+<span style="font-size:18px;">⚙️</span>
 <span><strong>Firebase not configured yet.</strong> Replace the REPLACE_WITH_YOUR_* values in the &lt;script type="module"&gt; block.
   <a href="https://console.firebase.google.com" style="color:#000;text-decoration:underline;" target="_blank">Open Firebase Console →</a></span>
 <button onclick="document.getElementById('setup-banner').style.display='none'" style="margin-left:auto;background:none;border:1px solid #000;border-radius:4px;padding:2px 8px;cursor:pointer;">✕</button>
@@ -98,7 +98,7 @@
 
     <div class="ls-scroll">
       <div class="ls-card">
-        <div class="ls-card-title">Welcome back <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></div>
+        <div class="ls-card-title">Welcome back 👋</div>
         <div class="ls-card-sub">Sign in to your SkillID dashboard</div>
 
         <div id="auth-login">
@@ -202,7 +202,7 @@
               <div class="ls-input-wrap">
                 <select class="ls-input ls-select" id="ri-cat">
                   <option value="" disabled selected>Category</option>
-                  <option value="Graphics Design"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg> Graphics Design</option><option value="UI/UX Design"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> UI/UX Design</option><option value="Content Writing"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg> Content Writing</option><option value="Data Analysis"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Data Analysis</option><option value="Digital Marketing"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Digital Marketing</option><option value="Web & Mobile Dev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Web & Mobile Dev</option>
+                  <option value="Graphics Design">🎨 Graphics Design</option><option value="UI/UX Design">🖥️ UI/UX Design</option><option value="Content Writing">✍️ Content Writing</option><option value="Data Analysis">📊 Data Analysis</option><option value="Digital Marketing">📣 Digital Marketing</option><option value="Web & Mobile Dev">💻 Web & Mobile Dev</option>
                 </select>
               </div>
             </div>
@@ -223,10 +223,10 @@
 </div><!-- end screen-login -->
 <!-- ════════ ADMIN BOOTSTRAP ════════ -->
 <div id="bootstrap-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99998;background:var(--s);border-top:2px solid var(--gld);padding:14px 16px;">
-<div style="font-family:monospace;font-size:11px;color:#e8c520;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> First-time setup: Make yourself admin</div>
+<div style="font-family:monospace;font-size:11px;color:#e8c520;margin-bottom:8px;">⚡ First-time setup: Make yourself admin</div>
 <div style="display:flex;gap:8px;">
 <input id="bootstrap-email" placeholder="Your account email" style="flex:1;background:#1a1a18;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#fff;font-size:12px;font-family:monospace;"/>
-<button onclick="runBootstrap()" style="background:#e8c520;color:#000;border:none;border-radius:6px;padding:9px 16px;font-family:monospace;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Make Admin</button>
+<button onclick="runBootstrap()" style="background:#e8c520;color:#000;border:none;border-radius:6px;padding:9px 16px;font-family:monospace;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">🛡 Make Admin</button>
 <button onclick="document.getElementById('bootstrap-panel').style.display='none'" style="background:none;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#666;font-size:12px;cursor:pointer;">✕</button>
 </div>
 <div id="bootstrap-msg" style="font-size:10px;color:#666;margin-top:6px;font-family:monospace;"></div>
@@ -241,11 +241,11 @@
 <button class="nt" id="tab-talent" onclick="showPage('talent')">Talent</button>
 <button class="nt" id="tab-gigs" onclick="showPage('gigs')">Gigs</button>
 
-<button class="nt" id="tab-wallet" onclick="showPage('wallet')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Wallet</button>
+<button class="nt" id="tab-wallet" onclick="showPage('wallet')">💳 Wallet</button>
 
 <button class="nt" id="tab-dashboard" onclick="showPage('dashboard')">Stats</button>
-<button class="nt" id="tab-myprofile" onclick="showPage('myprofile')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Me</button>
-<button class="nt" id="tab-admin" onclick="showPage('admin')" style="display:none !important;color:var(--acc);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Admin</button>
+<button class="nt" id="tab-myprofile" onclick="showPage('myprofile')">👤 Me</button>
+<button class="nt" id="tab-admin" onclick="showPage('admin')" style="display:none !important;color:var(--acc);">⚙ Admin</button>
 </div>
 <div class="nuser">
 <!-- Search -->
@@ -265,7 +265,7 @@
 </div>
 </nav>
 <!-- HOME -->
-<div class="ann-bar" id="ann-bar"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></span><span id="ann-text" style="flex:1;"></span><button onclick="document.getElementById('ann-bar').style.display='none'" style="background:none;border:none;color:var(--td);font-size:18px;cursor:pointer;line-height:1;">✕</button></div>
+<div class="ann-bar" id="ann-bar"><span>📢</span><span id="ann-text" style="flex:1;"></span><button onclick="document.getElementById('ann-bar').style.display='none'" style="background:none;border:none;color:var(--td);font-size:18px;cursor:pointer;line-height:1;">✕</button></div>
 <div class="page active" id="page-home"></div>
 <!-- TALENT -->
 <div class="page" id="page-talent">
@@ -282,12 +282,12 @@
   <div class="talent-cats-scroll">
     <div class="cats" id="talent-cats">
       <div class="cat active" onclick="filterCat('All',this)">All</div>
-      <div class="cat" onclick="filterCat('Graphics Design',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg> Design</div>
-      <div class="cat" onclick="filterCat('UI/UX Design',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> UI/UX</div>
-      <div class="cat" onclick="filterCat('Content Writing',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg> Writing</div>
-      <div class="cat" onclick="filterCat('Data Analysis',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Data</div>
-      <div class="cat" onclick="filterCat('Digital Marketing',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Marketing</div>
-      <div class="cat" onclick="filterCat('Web & Mobile Dev',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Dev</div>
+      <div class="cat" onclick="filterCat('Graphics Design',this)">🎨 Design</div>
+      <div class="cat" onclick="filterCat('UI/UX Design',this)">🖥️ UI/UX</div>
+      <div class="cat" onclick="filterCat('Content Writing',this)">✍️ Writing</div>
+      <div class="cat" onclick="filterCat('Data Analysis',this)">📊 Data</div>
+      <div class="cat" onclick="filterCat('Digital Marketing',this)">📣 Marketing</div>
+      <div class="cat" onclick="filterCat('Web & Mobile Dev',this)">💻 Dev</div>
     </div>
   </div>
   <!-- Grid -->
@@ -331,12 +331,12 @@
 </div>
 <div class="cats" id="gig-cats">
 <div class="cat active" onclick="filterGigCat('All',this)">All</div>
-<div class="cat" onclick="filterGigCat('Graphics Design',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg> Graphics Design</div>
-<div class="cat" onclick="filterGigCat('UI/UX Design',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> UI/UX Design</div>
-<div class="cat" onclick="filterGigCat('Content Writing',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg> Content Writing</div>
-<div class="cat" onclick="filterGigCat('Digital Marketing',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Digital Marketing</div>
-<div class="cat" onclick="filterGigCat('Data Analysis',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Data Analysis</div>
-<div class="cat" onclick="filterGigCat('Web & Mobile Dev',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Web & Mobile Dev</div>
+<div class="cat" onclick="filterGigCat('Graphics Design',this)">🎨 Graphics Design</div>
+<div class="cat" onclick="filterGigCat('UI/UX Design',this)">🖥️ UI/UX Design</div>
+<div class="cat" onclick="filterGigCat('Content Writing',this)">✍️ Content Writing</div>
+<div class="cat" onclick="filterGigCat('Digital Marketing',this)">📣 Digital Marketing</div>
+<div class="cat" onclick="filterGigCat('Data Analysis',this)">📊 Data Analysis</div>
+<div class="cat" onclick="filterGigCat('Web & Mobile Dev',this)">💻 Web & Mobile Dev</div>
 </div>
 <div id="gig-list"></div>
 </div>
@@ -345,7 +345,7 @@
 <!-- WALLET -->
 <div class="page" id="page-wallet">
 <div class="section">
-<div class="sh"><span class="st"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> SkillStamp Wallet</span><span class="sc">Your earnings dashboard</span></div>
+<div class="sh"><span class="st">💳 SkillStamp Wallet</span><span class="sc">Your earnings dashboard</span></div>
 <div style="max-width:700px;">
 <div class="wallet-card">
 <div class="w-label">Total Balance</div>
@@ -356,10 +356,10 @@
 <div class="w-mi"><span class="w-mv" id="w-address">SKL-XXXX</span>Wallet ID</div>
 </div>
 <div class="w-actions">
-<div class="w-btn" onclick="openReceive()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Receive</div>
-<div class="w-btn" onclick="openSend()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Send</div>
-<div class="w-btn" onclick="openWithdraw()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> Withdraw</div>
-<div class="w-btn" onclick="openTopUp()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Top Up</div>
+<div class="w-btn" onclick="openReceive()">📥 Receive</div>
+<div class="w-btn" onclick="openSend()">📤 Send</div>
+<div class="w-btn" onclick="openWithdraw()">🏦 Withdraw</div>
+<div class="w-btn" onclick="openTopUp()">➕ Top Up</div>
 </div>
 </div>
 <div class="card card-accent" style="margin-bottom:14px;">
@@ -386,10 +386,10 @@
 <div class="section">
 <div class="sh"><span class="st">Platform Statistics</span><span class="sc">Live demo metrics</span></div>
 <div class="dgrid">
-<div class="mc" data-i="<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>"><div class="mv" id="d-users" style="color:var(--gld);">0</div><div class="ml">Registered</div></div>
-<div class="mc" data-i="<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>"><div class="mv" id="d-gigs" style="color:var(--grn);">0</div><div class="ml">Gigs</div></div>
-<div class="mc" data-i="<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>"><div class="mv" id="d-endorse" style="color:var(--blu);">0</div><div class="ml">Endorsements</div></div>
-<div class="mc" data-i="<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>"><div class="mv" id="d-pts" style="color:var(--pur);">0</div><div class="ml">Rep Points</div></div>
+<div class="mc" data-i="👤"><div class="mv" id="d-users" style="color:var(--gld);">0</div><div class="ml">Registered</div></div>
+<div class="mc" data-i="💼"><div class="mv" id="d-gigs" style="color:var(--grn);">0</div><div class="ml">Gigs</div></div>
+<div class="mc" data-i="🤝"><div class="mv" id="d-endorse" style="color:var(--blu);">0</div><div class="ml">Endorsements</div></div>
+<div class="mc" data-i="⚡"><div class="mv" id="d-pts" style="color:var(--pur);">0</div><div class="ml">Rep Points</div></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;">
 <div class="card card-accent"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;margin-bottom:12px;font-size:12px;">Top Skills</div><div id="d-skills"></div></div>
@@ -408,14 +408,14 @@
 <div class="search-overlay" id="search-overlay" style="display:none;">
   <div class="search-header">
     <div class="search-input-wrap">
-      <span class="search-icon-abs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <span class="search-icon-abs">🔍</span>
       <input class="search-input-main" id="search-input-main" type="text" placeholder="Search people, skills, gigs…" oninput="runGlobalSearch(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <button onclick="closeGlobalSearch()" style="background:none;border:none;color:var(--td);font-size:22px;cursor:pointer;padding:4px 8px;line-height:1;flex-shrink:0;">✕</button>
   </div>
   <div class="search-results" id="search-results">
     <div class="search-empty">
-      <div style="font-size:40px;margin-bottom:12px;opacity:.3;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <div style="font-size:40px;margin-bottom:12px;opacity:.3;">🔍</div>
       <div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;">Search SkillStamp</div>
       <div style="font-size:12px;">Find people by name, skill, or country · Find gigs by title or category</div>
     </div>
