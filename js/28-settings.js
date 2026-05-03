@@ -1,0 +1,393 @@
+// SkillStamp — Settings Page
+
+window.openSettings = function() {
+  var isVerif = ME && (ME.badgeStatus === 'verified' || ME.badgeStatus === 'expert' || ME.badgeStatus === 'elite');
+  var isClient = ME && (ME.role === 'employer' || ME.role === 'client');
+
+  var html = '<div id="settings-panel" style="position:fixed;inset:0;z-index:2000;background:var(--bg);overflow-y:auto;animation:slideInRight .25s ease;">';
+
+  // ── Header ────────────────────────────────────────────────
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--br);background:var(--s);position:sticky;top:0;z-index:1;">';
+  html += '<button onclick="document.getElementById(\'settings-panel\').remove()" style="background:none;border:none;color:var(--fg);font-size:22px;cursor:pointer;line-height:1;padding:0 6px 0 0;">←</button>';
+  html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;color:var(--tx);">Settings</div>';
+  html += '</div>';
+
+  // ── Profile summary card ──────────────────────────────────
+  if (ME) {
+    var av = ME.avatar
+      ? '<img src="'+ME.avatar+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">'
+      : '<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,'+ME.gradient+','+ME.gradient+'88);display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:18px;color:#000;">'+initials(ME.name)+'</div>';
+    html += '<div style="margin:16px;background:var(--s);border:1px solid var(--br);border-radius:14px;padding:16px;display:flex;align-items:center;gap:13px;">';
+    html += av;
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--tx);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+ME.name+'</div>';
+    html += '<div style="font-size:11px;color:var(--td);margin-top:2px;">'+(ME.email||'')+'</div>';
+    if (isVerif) html += '<div style="margin-top:5px;display:inline-flex;align-items:center;gap:3px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);color:#4ade80;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">✓ Verified</div>';
+    var tier = getTierLabel(ME);
+    var isPro = userIsPro(ME);
+    // Only show tier badge to freelancers
+    if (!isClient) {
+    html += '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;">';
+    html += '<div style="display:inline-flex;align-items:center;background:rgba(232,197,71,.08);border:1px solid rgba(232,197,71,.2);color:var(--gld);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">' + tier + '</div>';
+    if (!isPro && !isClient) html += '<div onclick="document.getElementById(\'settings-panel\').remove();openProSubscribe();" style="display:inline-flex;align-items:center;background:rgba(232,197,71,.15);border:1px solid rgba(232,197,71,.4);color:var(--gld);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Go Pro</div>';
+    html += '</div>';
+    } // end tier block
+    html += '</div>';
+    html += '</div>';
+  }
+
+  // ── Section builder helper ────────────────────────────────
+  function section(title, items) {
+    var s = '<div style="margin:0 16px 8px;">';
+    s += '<div style="font-size:10px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.08em;padding:0 4px;margin-bottom:6px;">'+title+'</div>';
+    s += '<div style="background:var(--s);border:1px solid var(--br);border-radius:14px;overflow:hidden;">';
+    items.forEach(function(item, i) {
+      var border = i < items.length - 1 ? 'border-bottom:1px solid var(--br);' : '';
+      s += '<div onclick="'+item.onclick+'" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;'+border+'transition:background .15s;" onmouseover="this.style.background=\'var(--s2)\'" onmouseout="this.style.background=\'\'">';
+      s += '<div style="width:34px;height:34px;border-radius:10px;background:'+item.iconBg+';display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">'+item.icon+'</div>';
+      s += '<div style="flex:1;min-width:0;">';
+      s += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:'+(item.danger?'#ef4444':'var(--tx)')+';">'+item.label+'</div>';
+      if (item.sub) s += '<div style="font-size:10px;color:var(--td);margin-top:1px;">'+item.sub+'</div>';
+      s += '</div>';
+      s += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+(item.danger?'#ef4444':'var(--td)')+'" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+      s += '</div>';
+    });
+    s += '</div></div>';
+    return s;
+  }
+
+  // ── Account section ───────────────────────────────────────
+  var isPro = userIsPro(ME);
+  var isBusiness = userIsBusiness(ME);
+  // Pro subscription is only for freelancers — clients don't bid or earn commission
+  var proItem = !isClient ? (!isPro ? [{
+    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>', iconBg: 'rgba(232,197,71,.1)', label: 'Upgrade to Pro — $15/mo',
+    sub: '0% commission · More bids · Priority ranking',
+    onclick: "document.getElementById('settings-panel').remove();openProSubscribe();"
+  }] : [{
+    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="#e8c547" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>', iconBg: 'rgba(232,197,71,.1)', label: 'Pro Active ✓',
+    sub: getTierLabel(ME) + ' tier · Renews monthly',
+    onclick: ''
+  }]) : [];
+  var businessItem = isClient ? [{
+    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="1"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>', iconBg: 'rgba(96,165,250,.08)', label: isBusiness ? 'Business Mode Active ✓' : 'Activate Business Mode',
+    sub: isBusiness ? 'Vault Jobs · Multi-user dashboard' : 'Post Vault Jobs, verify company details',
+    onclick: isBusiness ? '' : "settingsNav('businessmode')"
+  }] : [];
+  html += section('Account', [
+    {
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>', iconBg: 'rgba(232,197,71,.1)', label: 'Edit Profile',
+      sub: 'Update your name, bio, skills and photo',
+      onclick: "settingsNav('editprofile')"
+    },
+    {
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>', iconBg: 'rgba(96,165,250,.1)', label: 'Change Password',
+      sub: 'Update your account password',
+      onclick: "settingsNav('changepassword')"
+    },
+    ...(ME && ME.avatar ? [{
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>', iconBg: 'rgba(74,222,128,.1)', label: 'Change Profile Photo',
+      sub: 'Update your profile picture',
+      onclick: "settingsNav('changephoto')"
+    }] : []),
+    ...(!isVerif && !isClient ? [{
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="15" r="5"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/><path d="M12 3l2.5 5H20l-4 3.5 1.5 5.5L12 14l-5.5 3 1.5-5.5L4 8h5.5z"/></svg>', iconBg: 'rgba(232,197,71,.08)', label: 'Get Skill Verified',
+      sub: 'Submit your portfolio for SkillID verification',
+      onclick: "settingsNav('getverified')"
+    }] : []),
+    ...proItem,
+    ...businessItem,
+  ]);
+
+  // ── Preferences section ───────────────────────────────────
+  html += '<div style="margin:12px 16px 8px;">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.08em;padding:0 4px;margin-bottom:6px;">Preferences</div>';
+  html += '<div style="background:var(--s);border:1px solid var(--br);border-radius:14px;overflow:hidden;">';
+
+  // Theme toggle (interactive)
+  html += '<div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--br);">';
+  html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(96,165,250,.1);display:flex;align-items:center;justify-content:center;font-size:17px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>';
+  html += '<div style="flex:1;">';
+  html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:var(--tx);">Dark Mode</div>';
+  html += '<div style="font-size:10px;color:var(--td);">Toggle light / dark theme</div>';
+  html += '</div>';
+  html += '<button onclick="toggleTheme()" style="background:var(--gld);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:11px;cursor:pointer;" id="theme-toggle-btn">Switch</button>';
+  html += '</div>';
+
+  // Availability toggle (freelancers only)
+  if (!isClient && ME) {
+    var avail = ME.available !== false;
+    html += '<div style="display:flex;align-items:center;gap:13px;padding:14px 16px;">';
+    html += '<div style="width:34px;height:34px;border-radius:10px;background:'+(avail?'rgba(74,222,128,.1)':'rgba(239,68,68,.08)')+';display:flex;align-items:center;justify-content:center;font-size:17px;">'+(avail?'<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="#4ade80"/></svg>':'<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="#ef4444"/></svg>')+'</div>';
+    html += '<div style="flex:1;">';
+    html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:var(--tx);">Availability Status</div>';
+    html += '<div style="font-size:10px;color:'+(avail?'#4ade80':'#ef4444')+';">'+(avail?'Currently available for work':'Currently busy')+'</div>';
+    html += '</div>';
+    html += '<button onclick="toggleAvailability();document.getElementById(\'settings-panel\').remove();" style="background:'+(avail?'rgba(239,68,68,.1)':'rgba(74,222,128,.1)')+';color:'+(avail?'#ef4444':'#4ade80')+';border:1px solid '+(avail?'rgba(239,68,68,.3)':'rgba(74,222,128,.3)')+';border-radius:20px;padding:6px 14px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:11px;cursor:pointer;">'+(avail?'Set Busy':'Set Available')+'</button>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+
+  // ── Support section ───────────────────────────────────────
+  html += section('Support', [
+    {
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2l1.88 1.88M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>', iconBg: 'rgba(255,107,53,.08)', label: 'Report a Bug',
+      sub: 'Tell us about an issue you found',
+      onclick: "settingsNav('bugreport')"
+    },
+    {
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', iconBg: 'rgba(96,165,250,.1)', label: 'Send Feedback',
+      sub: 'Share ideas or suggestions with us',
+      onclick: "settingsNav('feedback')"
+    },
+    {
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', iconBg: 'rgba(232,197,71,.08)', label: 'Terms of Service',
+      sub: 'Read our Terms of Service',
+      onclick: "settingsNav('tos')"
+    },
+    {
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>', iconBg: 'rgba(74,222,128,.08)', label: 'Privacy Policy',
+      sub: 'NDPA 2023 compliant',
+      onclick: "settingsNav('privacy')"
+    },
+  ]);
+
+  // ── Admin Portal (admin only) ────────────────────────────
+  if (ME && ME.isAdmin) {
+    html += section('Admin', [{
+      icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+      iconBg: 'rgba(239,68,68,.08)',
+      label: 'Admin Control Center',
+      sub: 'Manage users, verifications, gigs and platform settings',
+      onclick: "document.getElementById('settings-panel').remove();showPage('admin');"
+    }]);
+  }
+
+  // ── Danger zone ───────────────────────────────────────────
+  html += '<div style="margin:12px 16px 8px;">';
+  html += '<div style="font-size:10px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.08em;padding:0 4px;margin-bottom:6px;">Danger Zone</div>';
+  html += '<div style="background:var(--s);border:1px solid rgba(239,68,68,.2);border-radius:14px;overflow:hidden;">';
+
+  // Sign out
+  html += '<div onclick="document.getElementById(\'settings-panel\').remove();doLogout();" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--br);cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
+  html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;font-size:17px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>';
+  html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:#ef4444;">Sign Out</div><div style="font-size:10px;color:var(--td);">Log out of your account</div></div>';
+  html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+  html += '</div>';
+
+  // Delete account
+  html += '<div onclick="openDeleteAccount()" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
+  html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;font-size:17px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>';
+  html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:#ef4444;">Delete Account</div><div style="font-size:10px;color:var(--td);">Permanently remove your account and all data</div></div>';
+  html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+  html += '</div>';
+  html += '</div></div>';
+
+  // Footer
+  html += '<div style="padding:20px 16px 40px;text-align:center;">';
+  html += '<div style="font-size:11px;color:var(--td);">SkillStamp · Tega Technologies</div>';
+  html += '<div style="font-size:9px;color:var(--td);margin-top:3px;">NDPA 2023 Compliant · v1.0</div>';
+  html += '</div>';
+
+  html += '</div>'; // close settings-panel
+
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+// ── Bug report modal ──────────────────────────────────────
+window.openBugReport = function() {
+  setModal(
+    '<button class="mclose" onclick="closeModal()">✕</button>'
+    + '<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2l1.88 1.88M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg> Report a Bug</h3>'
+    + '<p>Describe what happened and what you expected. We\'ll investigate and fix it.</p>'
+    + '<div class="fg"><label class="fl">Bug description <span style="color:var(--acc);">*</span></label>'
+    + '<textarea class="fi" id="bug-desc" rows="4" placeholder="e.g. When I tap the Workspace button, nothing happens..." style="resize:vertical;"></textarea></div>'
+    + '<div class="fg"><label class="fl">Steps to reproduce</label>'
+    + '<textarea class="fi" id="bug-steps" rows="3" placeholder="1. Go to Gigs page&#10;2. Tap a gig card&#10;3. Tap Workspace..." style="resize:vertical;"></textarea></div>'
+    + '<button class="btn" id="bug-submit-btn" style="width:100%;">Submit Bug Report →</button>'
+  );
+  document.getElementById('bug-submit-btn').onclick = async function() {
+    var desc = (document.getElementById('bug-desc').value || '').trim();
+    if (!desc || desc.length < 10) { toast('Please describe the bug.', 'bad'); return; }
+    var btn = document.getElementById('bug-submit-btn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    var steps = (document.getElementById('bug-steps').value || '').trim();
+    // Save bug report to Firebase
+    try {
+      await fbSet('bug_reports', 'bug_' + Date.now(), {
+        uid: ME.uid, name: ME.name, email: ME.email || '',
+        desc: desc, steps: steps, ts: Date.now(),
+        platform: navigator.userAgent
+      });
+      closeModal();
+      toast('Bug report submitted. Thank you! <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>');
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Submit Bug Report →';
+      toast('Could not submit. Try again.', 'bad');
+    }
+  };
+};
+
+// ── Feedback modal ────────────────────────────────────────
+window.openFeedbackForm = function() {
+  setModal(
+    '<button class="mclose" onclick="closeModal()">✕</button>'
+    + '<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Send Feedback</h3>'
+    + '<p>We\'d love to hear your ideas, suggestions, or feature requests.</p>'
+    + '<div class="fg"><label class="fl">Type</label>'
+    + '<select class="fi" id="fb-type"><option value="suggestion">Feature Suggestion</option><option value="ux">UX Improvement</option><option value="general">General Feedback</option><option value="compliment">Compliment <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></option></select></div>'
+    + '<div class="fg"><label class="fl">Your feedback <span style="color:var(--acc);">*</span></label>'
+    + '<textarea class="fi" id="fb-text" rows="4" placeholder="Share your thoughts…" style="resize:vertical;"></textarea></div>'
+    + '<button class="btn" id="fb-submit-btn" style="width:100%;">Send Feedback →</button>'
+  );
+  document.getElementById('fb-submit-btn').onclick = async function() {
+    var text = (document.getElementById('fb-text').value || '').trim();
+    if (!text || text.length < 5) { toast('Please write your feedback.', 'bad'); return; }
+    var btn = document.getElementById('fb-submit-btn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    var type = document.getElementById('fb-type').value;
+    try {
+      await fbSet('feedback', 'fb_' + Date.now(), {
+        uid: ME.uid, name: ME.name, type: type, text: text, ts: Date.now()
+      });
+      closeModal();
+      toast('Feedback sent! Thanks for helping us improve. <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>');
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Send Feedback →';
+      toast('Could not send. Try again.', 'bad');
+    }
+  };
+};
+
+// ── Delete account modal ──────────────────────────────────
+window.openDeleteAccount = function() {
+  setModal(
+    '<button class="mclose" onclick="closeModal()">✕</button>'
+    + '<div style="text-align:center;padding:8px 0 16px;">'
+    + '<div style="font-size:44px;margin-bottom:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>'
+    + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:17px;color:#ef4444;margin-bottom:6px;">Delete Account</div>'
+    + '<div style="font-size:12px;color:var(--td);line-height:1.65;margin-bottom:16px;">This will <strong style="color:var(--tx);">permanently delete</strong> your SkillStamp account, profile, gig history, and all data. This action <strong style="color:#ef4444;">cannot be undone</strong>.</div>'
+    + '<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px;margin-bottom:16px;font-size:11px;color:var(--td);text-align:left;">'
+    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Any funds in escrow will be held and reviewed by our team before release.'
+    + '</div>'
+    + '</div>'
+    + '<div class="fg"><label class="fl">Type <strong>DELETE</strong> to confirm</label>'
+    + '<input class="fi" id="del-confirm" placeholder="DELETE" autocomplete="off" style="text-transform:uppercase;"></div>'
+    + '<button class="btn" id="del-btn" style="width:100%;background:#ef4444;color:#fff;">Delete My Account →</button>'
+  );
+  document.getElementById('del-btn').onclick = async function() {
+    var val = (document.getElementById('del-confirm').value || '').trim().toUpperCase();
+    if (val !== 'DELETE') { toast('Type DELETE to confirm.', 'bad'); return; }
+    var btn = document.getElementById('del-btn');
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+      // Mark account as deleted in Firestore (full deletion handled by admin/cloud)
+      await fbSet('users', ME.uid, Object.assign({}, ME, { deleted: true, deletedAt: Date.now() }));
+      await fbSet('deleted_accounts', ME.uid, { uid: ME.uid, name: ME.name, email: ME.email || '', deletedAt: Date.now() });
+      closeModal();
+      await doLogout();
+      toast('Account deletion requested. Our team will process it within 30 days.');
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Delete My Account →';
+      toast('Could not process. Please contact support@skillstamp.africa', 'bad');
+    }
+  };
+};
+
+
+// ── Settings navigation router ────────────────────────────
+// Raises modal overlay above the settings panel so it appears on top.
+// When modal closes, settings panel is still there for the user.
+window.settingsNav = function(action) {
+  var actions = {
+    'editprofile':    function() { openEditProfile(); },
+    'changepassword': function() { openChangePassword(); },
+    'changephoto':    function() { openChangePhoto(); },
+    'getverified':    function() { openSubmitSkill(); },
+    'businessmode':   function() { openBusinessModeSetup(); },
+    'bugreport':      function() { openBugReport(); },
+    'feedback':       function() { openFeedbackForm(); },
+    'tos':            function() { showTos(); },
+    'privacy':        function() { showPrivacy(); },
+  };
+  var fn = actions[action];
+  if (!fn) return;
+
+  // Run the action first so the modal DOM is created
+  fn();
+
+  // Then boost the overlay z-index so it sits above the settings panel (z-index:2000)
+  // We use requestAnimationFrame to wait one paint cycle after the modal opens
+  requestAnimationFrame(function() {
+    var ov = document.getElementById('moverlay');
+    if (ov) {
+      ov.style.zIndex = '3000';
+      // Patch closeModal so it resets the z-index when the modal is dismissed
+      var _origClose = window.closeModal;
+      window.closeModal = function() {
+        if (ov) ov.style.zIndex = '';
+        window.closeModal = _origClose; // restore original for next time
+        if (_origClose) _origClose();
+      };
+    }
+  });
+};
+
+
+// ══════════════════════════════════════════════
+//  BUSINESS MODE SETUP
+// ══════════════════════════════════════════════
+window.openBusinessModeSetup = function() {
+  setModal(
+    '<button class="mclose" onclick="closeModal()">✕</button>'
+    + '<div style="text-align:center;padding:8px 0 16px;">'
+    + '<div style="font-size:44px;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="1"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></div>'
+    + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:18px;margin-bottom:4px;">Activate Business Mode</div>'
+    + '<div style="font-size:12px;color:var(--td);">For companies, startups, and agencies</div>'
+    + '</div>'
+    + '<div style="background:var(--s2);border:1px solid var(--br);border-radius:14px;padding:14px;margin-bottom:16px;">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:10px;">Business Mode unlocks:</div>'
+    + ['<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Vetted Vault — post gigs only verified talent can see','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Company posting dashboard','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Priority matching with Elite & Whale freelancers','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Multi-member team hiring'].map(function(f){
+        return '<div style="font-size:11px;color:var(--td);padding:4px 0;display:flex;align-items:center;gap:6px;"><span style="color:var(--grn);">✓</span>'+f+'</div>';
+      }).join('')
+    + '</div>'
+    + '<div class="fg"><label class="fl">Company / Business Name <span style="color:var(--acc);">*</span></label>'
+    + '<input class="fi" id="biz-name" placeholder="Acme Corp Ltd." autocomplete="off"></div>'
+    + '<div class="fg"><label class="fl">CAC Registration Number / Business ID</label>'
+    + '<input class="fi" id="biz-cac" placeholder="RC-1234567" autocomplete="off"></div>'
+    + '<div class="fg"><label class="fl">Corporate Website</label>'
+    + '<input class="fi" id="biz-website" placeholder="https://yourcompany.com" type="url"></div>'
+    + '<div class="fg"><label class="fl">Corporate Email</label>'
+    + '<input class="fi" id="biz-email" placeholder="hiring@yourcompany.com" type="email"></div>'
+    + '<button class="btn" id="biz-submit-btn" style="width:100%;">Submit for Verification →</button>'
+    + '<div style="font-size:10px;color:var(--td);text-align:center;margin-top:8px;">Our team will verify your details within 24 hours.</div>'
+  );
+  setTimeout(function() {
+    var btn = document.getElementById('biz-submit-btn');
+    if (!btn) return;
+    btn.onclick = async function() {
+      var bizName = (document.getElementById('biz-name').value || '').trim();
+      var cac = (document.getElementById('biz-cac').value || '').trim();
+      var website = (document.getElementById('biz-website').value || '').trim();
+      var email = (document.getElementById('biz-email').value || '').trim();
+      if (!bizName) { toast('Please enter your company name.', 'bad'); return; }
+      btn.disabled = true; btn.textContent = 'Submitting…';
+      try {
+        await fbSet('business_verifications', ME.uid, {
+          uid: ME.uid, name: ME.name, email: ME.email || '',
+          bizName: bizName, cac: cac, website: website, bizEmail: email,
+          status: 'pending', submittedAt: Date.now()
+        });
+        // Provisionally activate business mode (admin can revoke if docs invalid)
+        ME.isBusiness = true;
+        ME.bizName = bizName;
+        await saveUser(ME);
+        closeModal();
+        toast('✓ Business Mode activated! Vault Jobs are now available.');
+      } catch(e) {
+        btn.disabled = false; btn.textContent = 'Submit for Verification →';
+        toast('Could not submit. Try again.', 'bad');
+      }
+    };
+  }, 50);
+};
