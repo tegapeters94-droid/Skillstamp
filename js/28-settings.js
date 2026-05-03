@@ -48,9 +48,7 @@ window.openSettings = function() {
       s += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:'+(item.danger?'#ef4444':'var(--tx)')+';">'+item.label+'</div>';
       if (item.sub) s += '<div style="font-size:10px;color:var(--td);margin-top:1px;">'+item.sub+'</div>';
       s += '</div>';
-      var chevronColor = item.danger ? '#ef4444' : 'var(--td)';
-      s += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+chevronColor+'" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
-      s += '</div>';
+            s += '</div>';
     });
     s += '</div></div>';
     return s;
@@ -172,17 +170,13 @@ window.openSettings = function() {
   html += '<div onclick="document.getElementById(\'settings-panel\').remove();doLogout();" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--br);cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
   html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;font-size:17px;">🚪</div>';
   html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:#ef4444;">Sign Out</div><div style="font-size:10px;color:var(--td);">Log out of your account</div></div>';
-      var chevronColor = item.danger ? '#ef4444' : 'var(--td)';
-      s += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+chevronColor+'" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
-  html += '</div>';
+        html += '</div>';
 
   // Delete account
   html += '<div onclick="openDeleteAccount()" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
   html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;font-size:17px;">🗑️</div>';
   html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:#ef4444;">Delete Account</div><div style="font-size:10px;color:var(--td);">Permanently remove your account and all data</div></div>';
-      var chevronColor = item.danger ? '#ef4444' : 'var(--td)';
-      s += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+chevronColor+'" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
-  html += '</div>';
+        html += '</div>';
   html += '</div></div>';
 
   // Footer
