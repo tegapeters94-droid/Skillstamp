@@ -8,7 +8,7 @@ window.openSettings = function() {
 
   // ── Header ────────────────────────────────────────────────
   html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--br);background:var(--s);position:sticky;top:0;z-index:1;">';
-  html += '<button onclick="document.getElementById(\'settings-panel\').remove()" style="background:none;border:none;color:var(--fg);font-size:22px;cursor:pointer;line-height:1;padding:0 6px 0 0;">←</button>';
+  html += '<button onclick="window._ignorePop=true;document.getElementById(\'settings-panel\').remove();"  style="background:none;border:none;color:var(--fg);font-size:22px;cursor:pointer;line-height:1;padding:0 6px 0 0;">←</button>';
   html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;color:var(--tx);">Settings</div>';
   html += '</div>';
 
@@ -28,7 +28,7 @@ window.openSettings = function() {
       var isPro = userIsPro(ME);
       html += '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;">';
       html += '<div style="display:inline-flex;align-items:center;background:rgba(232,197,71,.08);border:1px solid rgba(232,197,71,.2);color:var(--gld);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">' + tier + '</div>';
-      if (!isPro) html += '<div onclick="document.getElementById(\'settings-panel\').remove();openProSubscribe();" style="display:inline-flex;align-items:center;background:rgba(232,197,71,.15);border:1px solid rgba(232,197,71,.4);color:var(--gld);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;cursor:pointer;">⚡ Go Pro</div>';
+      if (!isPro) html += '<div onclick="window._ignorePop=true;document.getElementById(\'settings-panel\').remove();openProSubscribe();" style="display:inline-flex;align-items:center;background:rgba(232,197,71,.15);border:1px solid rgba(232,197,71,.4);color:var(--gld);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;cursor:pointer;">⚡ Go Pro</div>';
       html += '</div>';
     }
     html += '</div>';
@@ -65,12 +65,12 @@ window.openSettings = function() {
   }] : [{
     icon: '⚡', iconBg: 'rgba(232,197,71,.1)', label: 'Pro Active ✓',
     sub: getTierLabel(ME) + ' tier · Renews monthly',
-    onclick: "document.getElementById('settings-panel').remove();openProStatus();"
+    onclick: "window._ignorePop=true;document.getElementById('settings-panel').remove();openProStatus();"
   }]) : [];
   var businessItem = isClient ? [{
     icon: '🏢', iconBg: 'rgba(96,165,250,.08)', label: isBusiness ? 'Business Mode Active ✓' : 'Activate Business Mode',
     sub: isBusiness ? 'Vault Jobs · Multi-user dashboard' : 'Post Vault Jobs, verify company details',
-    onclick: isBusiness ? "document.getElementById('settings-panel').remove();openBusinessDashboard();" : "settingsNav('businessmode')"
+    onclick: isBusiness ? "window._ignorePop=true;document.getElementById('settings-panel').remove();openBusinessDashboard();" : "settingsNav('businessmode')"
   }] : [];
   html += section('Account', [
     {
@@ -121,7 +121,7 @@ window.openSettings = function() {
     html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:var(--tx);">Availability Status</div>';
     html += '<div style="font-size:10px;color:'+(avail?'#4ade80':'#ef4444')+';">'+(avail?'Currently available for work':'Currently busy')+'</div>';
     html += '</div>';
-    html += '<button onclick="toggleAvailability();document.getElementById(\'settings-panel\').remove();" style="background:'+(avail?'rgba(239,68,68,.1)':'rgba(74,222,128,.1)')+';color:'+(avail?'#ef4444':'#4ade80')+';border:1px solid '+(avail?'rgba(239,68,68,.3)':'rgba(74,222,128,.3)')+';border-radius:20px;padding:6px 14px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:11px;cursor:pointer;">'+(avail?'Set Busy':'Set Available')+'</button>';
+    html += '<button onclick="toggleAvailability();window._ignorePop=true;document.getElementById(\'settings-panel\').remove();" style="background:'+(avail?'rgba(239,68,68,.1)':'rgba(74,222,128,.1)')+';color:'+(avail?'#ef4444':'#4ade80')+';border:1px solid '+(avail?'rgba(239,68,68,.3)':'rgba(74,222,128,.3)')+';border-radius:20px;padding:6px 14px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:11px;cursor:pointer;">'+(avail?'Set Busy':'Set Available')+'</button>';
     html += '</div>';
   }
   html += '</div></div>';
@@ -157,7 +157,7 @@ window.openSettings = function() {
       iconBg: 'rgba(239,68,68,.08)',
       label: 'Admin Control Center',
       sub: 'Manage users, verifications, gigs and platform settings',
-      onclick: "document.getElementById('settings-panel').remove();showPage('admin');"
+      onclick: "window._ignorePop=true;document.getElementById('settings-panel').remove();showPage('admin');"
     }]);
   }
 
@@ -167,7 +167,7 @@ window.openSettings = function() {
   html += '<div style="background:var(--s);border:1px solid rgba(239,68,68,.2);border-radius:14px;overflow:hidden;">';
 
   // Sign out
-  html += '<div onclick="document.getElementById(\'settings-panel\').remove();doLogout();" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--br);cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
+  html += '<div onclick="window._ignorePop=true;document.getElementById(\'settings-panel\').remove();doLogout();" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--br);cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
   html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;font-size:17px;">🚪</div>';
   html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:#ef4444;">Sign Out</div><div style="font-size:10px;color:var(--td);">Log out of your account</div></div>';
         html += '</div>';
@@ -312,6 +312,7 @@ window.settingsNav = function(action) {
   if (!fn) return;
 
   // Remove the settings panel, then open the modal
+  window._ignorePop = true;
   var panel = document.getElementById('settings-panel');
   if (panel) panel.remove();
   fn();

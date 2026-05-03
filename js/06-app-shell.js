@@ -1645,6 +1645,14 @@ window.showPage = function(name, skipHistory) {
 };
 
 window.addEventListener('popstate', function(e) {
+  // Settings panel was just removed intentionally — ignore this pop
+  if (window._ignorePop) {
+    window._ignorePop = false;
+    // Re-push current page so history stays consistent
+    try { history.pushState({ page: window._currentPage }, '', '#' + window._currentPage); } catch(ex) {}
+    return;
+  }
+
   // Chat modal open — close it first
   if (window._chatUnsub) {
     try { window._chatUnsub(); window._chatUnsub = null; } catch(e2) {}
@@ -1662,7 +1670,15 @@ window.addEventListener('popstate', function(e) {
     return;
   }
 
-  // Full-screen overlay panels (proposal-panel etc.)
+  // Full-screen overlay panels (settings-panel, proposal-panel etc.)
+  var settingsPanel = document.getElementById('settings-panel');
+  if (settingsPanel) {
+    window._ignorePop = false; // already handling it
+    settingsPanel.remove();
+    try { history.pushState({ page: window._currentPage }, '', '#' + window._currentPage); } catch(ex) {}
+    return;
+  }
+
   var panel = document.getElementById('proposal-panel');
   if (panel) {
     panel.remove();
