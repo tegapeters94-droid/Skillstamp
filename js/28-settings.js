@@ -23,12 +23,14 @@ window.openSettings = function() {
     html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--tx);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+ME.name+'</div>';
     html += '<div style="font-size:11px;color:var(--td);margin-top:2px;">'+(ME.email||'')+'</div>';
     if (isVerif) html += '<div style="margin-top:5px;display:inline-flex;align-items:center;gap:3px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);color:#4ade80;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">✓ Verified</div>';
-    var tier = getTierLabel(ME);
-    var isPro = userIsPro(ME);
-    html += '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;">';
-    html += '<div style="display:inline-flex;align-items:center;background:rgba(232,197,71,.08);border:1px solid rgba(232,197,71,.2);color:var(--gld);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">' + tier + '</div>';
-    if (!isPro) html += '<div onclick="document.getElementById(\'settings-panel\').remove();openProSubscribe();" style="display:inline-flex;align-items:center;background:rgba(232,197,71,.15);border:1px solid rgba(232,197,71,.4);color:var(--gld);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;cursor:pointer;">⚡ Go Pro</div>';
-    html += '</div>';
+    if (!isClient) {
+      var tier = getTierLabel(ME);
+      var isPro = userIsPro(ME);
+      html += '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;">';
+      html += '<div style="display:inline-flex;align-items:center;background:rgba(232,197,71,.08);border:1px solid rgba(232,197,71,.2);color:var(--gld);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">' + tier + '</div>';
+      if (!isPro) html += '<div onclick="document.getElementById(\'settings-panel\').remove();openProSubscribe();" style="display:inline-flex;align-items:center;background:rgba(232,197,71,.15);border:1px solid rgba(232,197,71,.4);color:var(--gld);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;cursor:pointer;">⚡ Go Pro</div>';
+      html += '</div>';
+    }
     html += '</div>';
     html += '</div>';
   }
@@ -56,7 +58,8 @@ window.openSettings = function() {
   // ── Account section ───────────────────────────────────────
   var isPro = userIsPro(ME);
   var isBusiness = userIsBusiness(ME);
-  var proItem = !isPro ? [{
+  // Pro subscription is freelancers-only — clients don't bid or pay commission
+  var proItem = !isClient ? (!isPro ? [{
     icon: '⚡', iconBg: 'rgba(232,197,71,.1)', label: 'Upgrade to Pro — $15/mo',
     sub: '0% commission · More bids · Priority ranking',
     onclick: "document.getElementById('settings-panel').remove();openProSubscribe();"
@@ -64,7 +67,7 @@ window.openSettings = function() {
     icon: '⚡', iconBg: 'rgba(232,197,71,.1)', label: 'Pro Active ✓',
     sub: getTierLabel(ME) + ' tier · Renews monthly',
     onclick: ''
-  }];
+  }]) : [];
   var businessItem = isClient ? [{
     icon: '🏢', iconBg: 'rgba(96,165,250,.08)', label: isBusiness ? 'Business Mode Active ✓' : 'Activate Business Mode',
     sub: isBusiness ? 'Vault Jobs · Multi-user dashboard' : 'Post Vault Jobs, verify company details',
@@ -147,6 +150,17 @@ window.openSettings = function() {
       onclick: "settingsNav('privacy')"
     },
   ]);
+
+  // ── Admin Portal (admin only) ─────────────────────────────
+  if (ME && ME.isAdmin) {
+    html += section('Admin', [{
+      icon: '⚙️',
+      iconBg: 'rgba(239,68,68,.08)',
+      label: 'Admin Control Center',
+      sub: 'Manage users, verifications, gigs and platform settings',
+      onclick: "document.getElementById('settings-panel').remove();showPage('admin');"
+    }]);
+  }
 
   // ── Danger zone ───────────────────────────────────────────
   html += '<div style="margin:12px 16px 8px;">';
