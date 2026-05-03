@@ -66,12 +66,12 @@ window.openSettings = function() {
   }] : [{
     icon: '⚡', iconBg: 'rgba(232,197,71,.1)', label: 'Pro Active ✓',
     sub: getTierLabel(ME) + ' tier · Renews monthly',
-    onclick: ''
+    onclick: "openProStatus();"
   }]) : [];
   var businessItem = isClient ? [{
     icon: '🏢', iconBg: 'rgba(96,165,250,.08)', label: isBusiness ? 'Business Mode Active ✓' : 'Activate Business Mode',
     sub: isBusiness ? 'Vault Jobs · Multi-user dashboard' : 'Post Vault Jobs, verify company details',
-    onclick: isBusiness ? '' : "settingsNav('businessmode')"
+    onclick: isBusiness ? "openBusinessDashboard();" : "settingsNav('businessmode')"
   }] : [];
   html += section('Account', [
     {
@@ -299,15 +299,17 @@ window.openDeleteAccount = function() {
 // When modal closes, settings panel is still there for the user.
 window.settingsNav = function(action) {
   var actions = {
-    'editprofile':    function() { openEditProfile(); },
-    'changepassword': function() { openChangePassword(); },
-    'changephoto':    function() { openChangePhoto(); },
-    'getverified':    function() { openSubmitSkill(); },
-    'businessmode':   function() { openBusinessModeSetup(); },
-    'bugreport':      function() { openBugReport(); },
-    'feedback':       function() { openFeedbackForm(); },
-    'tos':            function() { showTos(); },
-    'privacy':        function() { showPrivacy(); },
+    'editprofile':       function() { openEditProfile(); },
+    'changepassword':    function() { openChangePassword(); },
+    'changephoto':       function() { openChangePhoto(); },
+    'getverified':       function() { openSubmitSkill(); },
+    'businessmode':      function() { openBusinessModeSetup(); },
+    'businessdashboard': function() { openBusinessDashboard(); },
+    'prodetails':        function() { openProDetails(); },
+    'bugreport':         function() { openBugReport(); },
+    'feedback':          function() { openFeedbackForm(); },
+    'tos':               function() { showTos(); },
+    'privacy':           function() { showPrivacy(); },
   };
   var fn = actions[action];
   if (!fn) return;
@@ -389,4 +391,74 @@ window.openBusinessModeSetup = function() {
       }
     };
   }, 50);
+};
+
+
+// ── Pro Status modal ──────────────────────────────────────
+window.openProStatus = function() {
+  var tier = getTierLabel(ME);
+  var since = ME.proSince ? new Date(ME.proSince).toLocaleDateString() : 'N/A';
+  var expires = ME.proExpiresAt ? new Date(ME.proExpiresAt).toLocaleDateString() : 'N/A';
+  var holdDays = getPayoutHoldDays(ME);
+  var bidLimit = getBidLimit(ME);
+  setModal(
+    '<button class="mclose" onclick="closeModal()">✕</button>'
+    + '<div style="text-align:center;padding:8px 0 16px;">'
+    + '<div style="font-size:44px;margin-bottom:8px;">⚡</div>'
+    + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:18px;color:var(--gld);margin-bottom:4px;">Pro Active</div>'
+    + '<div style="font-size:12px;color:var(--td);">' + tier + ' tier</div>'
+    + '</div>'
+    + '<div style="background:var(--s2);border:1px solid var(--br);border-radius:14px;padding:14px;margin-bottom:16px;">'
+    + '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--br);"><span style="color:var(--td);">Status</span><span style="color:#4ade80;font-weight:700;">Active</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--br);"><span style="color:var(--td);">Subscribed</span><span>' + since + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--br);"><span style="color:var(--td);">Renews</span><span>' + expires + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--br);"><span style="color:var(--td);">Commission</span><span style="color:#4ade80;font-weight:700;">0%</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--br);"><span style="color:var(--td);">Monthly Bids</span><span style="font-weight:700;">' + bidLimit + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;"><span style="color:var(--td);">Payout Hold</span><span style="font-weight:700;">' + (holdDays === 0 ? 'Instant' : holdDays + ' days') + '</span></div>'
+    + '</div>'
+    + '<button class="btn2" style="width:100%;background:rgba(239,68,68,.08);color:#ef4444;border-color:rgba(239,68,68,.2);" onclick="cancelProSubscription()">Cancel Subscription</button>'
+    + '<div style="font-size:10px;color:var(--td);text-align:center;margin-top:8px;">Cancelling stops auto-renewal. You keep Pro until expiry.</div>'
+  );
+};
+
+window.cancelProSubscription = async function() {
+  if (!confirm('Cancel Pro subscription? You keep Pro benefits until your current period ends.')) return;
+  ME.isPro = false;
+  ME.proSince = null;
+  ME.proExpiresAt = null;
+  await saveUser(ME);
+  closeModal();
+  toast('Pro subscription cancelled. Benefits end at period close.');
+};
+
+// ── Business Dashboard modal ──────────────────────────────
+window.openBusinessDashboard = function() {
+  var bizName = ME.bizName || 'Your Business';
+  var allGigs = getGigs ? getGigs() : [];
+  var myVaultGigs = allGigs.filter(function(g) { return g.posterUid === ME.uid && g.isVaultGig; });
+  var myRegGigs = allGigs.filter(function(g) { return g.posterUid === ME.uid && !g.isVaultGig; });
+
+  setModal(
+    '<button class="mclose" onclick="closeModal()">✕</button>'
+    + '<div style="padding:8px 0 14px;">'
+    + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:17px;margin-bottom:2px;">🏢 ' + bizName + '</div>'
+    + '<div style="font-size:11px;color:#4ade80;">Business Mode Active ✓</div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">'
+    + '<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:12px;text-align:center;">'
+    + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:20px;color:var(--gld);">' + myVaultGigs.length + '</div>'
+    + '<div style="font-size:10px;color:var(--td);">Vault Gigs</div></div>'
+    + '<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:12px;text-align:center;">'
+    + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:20px;">' + myRegGigs.length + '</div>'
+    + '<div style="font-size:10px;color:var(--td);">Regular Gigs</div></div>'
+    + '</div>'
+    + '<div style="background:rgba(232,197,71,.05);border:1px solid rgba(232,197,71,.2);border-radius:12px;padding:14px;margin-bottom:14px;">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px;">Business Features</div>'
+    + '<div style="font-size:11px;color:var(--td);display:flex;align-items:center;gap:6px;padding:3px 0;"><span style="color:var(--grn);">✓</span> Post Vault Gigs (verified talent only)</div>'
+    + '<div style="font-size:11px;color:var(--td);display:flex;align-items:center;gap:6px;padding:3px 0;"><span style="color:var(--grn);">✓</span> Priority matching with Elite & Whale freelancers</div>'
+    + '<div style="font-size:11px;color:var(--td);display:flex;align-items:center;gap:6px;padding:3px 0;"><span style="color:var(--grn);">✓</span> Business profile badge</div>'
+    + '</div>'
+    + '<button class="btn" onclick="closeModal();showPage('gigs');" style="width:100%;margin-bottom:8px;">Post a Vault Gig →</button>'
+    + '<button class="btn2" onclick="closeModal();" style="width:100%;">Close</button>'
+  );
 };

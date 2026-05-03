@@ -182,6 +182,30 @@ window.adminToggleBanInline=function(uid,ban){
   renderAdminV6(); adminTab('users');
 };
 
+// Permanently delete a user from Firestore
+window.adminDeleteUser=async function(uid){
+  var u=(window._adminAllUsers||[]).find(function(x){return x.uid===uid;});
+  if(!u) return;
+  if(!confirm('PERMANENTLY DELETE '+u.name+'? This cannot be undone. Their account, gigs, and data will be removed from Firestore.')) return;
+  if(!confirm('Last chance — delete '+u.name+' forever?')) return;
+  try {
+    // Remove from Firestore collections
+    await fbDelete('users', uid);
+    // Log to deleted_accounts
+    await fbSet('deleted_accounts', uid, {
+      uid: uid, name: u.name, email: u.email||'',
+      deletedAt: Date.now(), deletedBy: ME.uid, reason: 'Admin deletion'
+    });
+    // Remove from local cache
+    CACHE.users = CACHE.users.filter(function(x){return x.uid!==uid;});
+    if(window._adminAllUsers) window._adminAllUsers = window._adminAllUsers.filter(function(x){return x.uid!==uid;});
+    toast('🗑 '+u.name+' permanently deleted from database.');
+    renderAdminV6(); adminTab('users');
+  } catch(e) {
+    toast('Delete failed: '+e.message, 'bad');
+  }
+};
+
 // Set badge inline
 window.adminSetBadgeInline=function(uid,badge){
   if(!badge)return;
@@ -308,6 +332,18 @@ window.adminDeleteGig=function(gid){
   var el=document.getElementById('gigcrd-'+gid);
   if(el) el.remove();
   toast('Gig deleted.');
+};
+
+// Gig mod search filter
+window.adminFilterGigs = function() {
+  var search = (document.getElementById('gig-mod-search')||{}).value || '';
+  var status = (document.getElementById('gig-mod-status')||{}).value || '';
+  search = search.toLowerCase();
+  document.querySelectorAll('.gig-mod-card').forEach(function(card) {
+    var titleMatch = !search || (card.dataset.title||'').includes(search);
+    var statusMatch = !status || card.dataset.status === status;
+    card.style.display = (titleMatch && statusMatch) ? 'block' : 'none';
+  });
 };
 
 // Admin DM
@@ -709,6 +745,7 @@ function buildAdminHTML(){
           ?'<button onclick="adminToggleBanInline(\''+u.uid+'\',false)" style="font-size:10px;padding:5px 10px;border:1px solid var(--grn);border-radius:5px;background:rgba(39,174,96,.1);color:var(--grn);cursor:pointer;">✓ Unban</button>'
           :u.uid===ME.uid?''
           :'<button onclick="adminToggleBanInline(\''+u.uid+'\',true)" style="font-size:10px;padding:5px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🚫 Ban</button>')
+        +(u.uid!==ME.uid?'<button onclick="adminDeleteUser(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid rgba(239,68,68,.5);border-radius:5px;background:rgba(239,68,68,.08);color:#ef4444;cursor:pointer;">🗑 Delete</button>':'')
         +(u.uid!==ME.uid&&!u.isAdmin?'<button onclick="adminPromoteInline(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--pur);border-radius:5px;background:rgba(155,89,182,.08);color:var(--pur);cursor:pointer;">🛡 Admin</button>':'')
         +(u.isAdmin&&u.uid!==ME.uid?'<button onclick="adminDemoteInline(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--td);border-radius:5px;background:var(--s);color:var(--td);cursor:pointer;">Remove Admin</button>':'')
         +'</div>'
@@ -724,44 +761,35 @@ function buildAdminHTML(){
   // ════════════════════════════════════════════════════════════════
   //  TAB 3 — CONTENT MODERATION
   // ════════════════════════════════════════════════════════════════
-  h+='<div id="admtab-content" style="display:none;">';
-  h+=sHead('📝','Posts ('+posts.length+')');
-  h+='<div style="margin-bottom:14px;">';
-  if(!posts.length){
-    h+='<div style="text-align:center;padding:20px;font-size:12px;color:var(--td);">No posts yet</div>';
-  }
-  var sortedPosts=[...posts].sort(function(a,b){return (b.ts||0)-(a.ts||0);});
-  sortedPosts.slice(0,30).forEach(function(p){
-    var flagged=(p.flags||[]).length>0;
-    h+='<div id="postcrd-'+p.id+'" style="background:var(--s);border:1px solid '+(flagged?'var(--acc)':'var(--br)')+';border-radius:var(--r);padding:11px;margin-bottom:7px;">'
-      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
-      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;">'+p.userName+'</div>'
-      +(flagged?'<span style="font-size:9px;background:rgba(255,107,53,.15);color:var(--acc);border-radius:3px;padding:1px 5px;">⚠ Flagged</span>':'')
-      +'<div style="margin-left:auto;font-size:9px;color:var(--td);">'+timeAgo(p.ts||Date.now())+'</div>'
-      +'</div>'
-      +'<div style="font-size:12px;color:var(--fg);margin-bottom:8px;line-height:1.5;">'+p.content.slice(0,200)+(p.content.length>200?'…':'')+'</div>'
-      +'<div style="display:flex;gap:6px;align-items:center;">'
-      +'<span style="font-size:10px;color:var(--td);">❤ '+( p.likes||0)+' · 💬 '+(p.comments||[]).length+'</span>'
-      +'<button onclick="adminDeletePost(\''+p.id+'\')" style="margin-left:auto;font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🗑 Delete</button>'
-      +'<button onclick="adminFlagPost(\''+p.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--br);border-radius:5px;background:var(--s);color:var(--td);cursor:pointer;">'+(flagged?'✓ Unflag':'⚠ Flag')+'</button>'
-      +'</div>'
-      +'</div>';
-  });
-  h+='</div>';
-
-  h+=sHead('💼','Gigs ('+gigs.length+')');
-  h+='<div style="margin-bottom:14px;">';
+    h+='<div id="admtab-content" style="display:none;">';
+  h+=sHead('💼','Gig Moderation ('+gigs.length+' total)');
+  // Filter controls
+  h+='<div style="display:flex;gap:8px;margin-bottom:12px;">'
+    +'<input id="gig-mod-search" oninput="adminFilterGigs()" placeholder="Search gigs…" style="flex:1;padding:8px 12px;border:1px solid var(--br);border-radius:8px;background:var(--s);color:var(--tx);font-size:12px;">'
+    +'<select id="gig-mod-status" onchange="adminFilterGigs()" style="padding:8px 10px;border:1px solid var(--br);border-radius:8px;background:var(--s);color:var(--tx);font-size:12px;">'
+    +'<option value="">All</option><option value="open">Open</option><option value="hired">Hired</option><option value="completed">Completed</option>'
+    +'</select></div>';
+  h+='<div id="gig-mod-list">';
   if(!gigs.length){
     h+='<div style="text-align:center;padding:20px;font-size:12px;color:var(--td);">No gigs yet</div>';
   }
-  [...gigs].sort(function(a,b){return (b.created||0)-(a.created||0);}).slice(0,20).forEach(function(g){
-    h+='<div id="gigcrd-'+g.id+'" style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:11px;margin-bottom:7px;">'
-      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
-      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;flex:1;">'+g.title+'</div>'
-      +'<span style="font-size:10px;color:var(--grn);font-weight:700;">'+g.pay+'</span>'
+  [...gigs].sort(function(a,b){return (b.created||0)-(a.created||0);}).forEach(function(g){
+    var statusCol=g.status==='open'?'var(--grn)':g.status==='hired'?'var(--gld)':'var(--td)';
+    h+='<div id="gigcrd-'+g.id+'" class="gig-mod-card" data-title="'+(g.title||'').toLowerCase()+'" data-status="'+(g.status||'open')+'" style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:12px;margin-bottom:8px;">'
+      +'<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">'
+      +'<div style="flex:1;">'
+      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;margin-bottom:2px;">'+g.title+'</div>'
+      +'<div style="font-size:10px;color:var(--td);">By: '+g.posterName+' · '+(g.category||'General')+'</div>'
       +'</div>'
-      +'<div style="font-size:10px;color:var(--td);margin-bottom:8px;">By: '+g.posterName+' · '+(g.category||'General')+' · '+g.type+'</div>'
-      +'<button onclick="adminDeleteGig(\''+g.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🗑 Delete Gig</button>'
+      +'<div style="text-align:right;">'
+      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;color:var(--gld);">'+g.pay+'</div>'
+      +'<div style="font-size:9px;font-weight:700;color:'+statusCol+';text-transform:uppercase;">'+(g.status||'open')+'</div>'
+      +'</div></div>'
+      +(g.description?'<div style="font-size:11px;color:var(--td);margin-bottom:8px;line-height:1.5;">'+g.description.slice(0,150)+(g.description.length>150?'…':'')+'</div>':'')
+      +'<div style="display:flex;gap:6px;align-items:center;">'
+      +'<span style="font-size:10px;color:var(--td);">'+(g.applicants||[]).length+' applicants · '+timeAgo(g.created||Date.now())+(g.isVaultGig?'<span style="margin-left:5px;background:rgba(232,197,71,.15);color:var(--gld);font-size:8px;padding:1px 5px;border-radius:4px;">🔒 Vault</span>':'')+'</span>'
+      +'<button onclick="adminDeleteGig(''+g.id+'')" style="margin-left:auto;font-size:10px;padding:5px 12px;border:1px solid rgba(239,68,68,.3);border-radius:6px;background:rgba(239,68,68,.06);color:#ef4444;cursor:pointer;font-weight:700;">Remove Gig</button>'
+      +'</div>'
       +'</div>';
   });
   h+='</div>';
@@ -903,6 +931,7 @@ function buildUsersList(users){
       // Actions row
       +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'
       +'<button onclick="adminToggleBanV6(\''+u.uid+'\')" style="flex:1;padding:6px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid '+(isBanned?'rgba(46,213,115,.35)':'rgba(255,107,53,.35)')+';background:'+(isBanned?'rgba(46,213,115,.08)':'rgba(255,107,53,.08)')+';color:'+(isBanned?'var(--grn)':'var(--acc)') +';font-family:Plus Jakarta Sans,sans-serif;font-weight:700;">'+(isBanned?'✅ Unban':'🚫 Ban')+'</button>'
+      +'<button onclick="adminDeleteUser(\''+u.uid+'\',\''+u.name+'\')" style="padding:6px 10px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.08);color:#ef4444;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;">🗑 Delete</button>'
       +'<select onchange="adminSetBadge(\''+u.uid+'\',this.value)" style="flex:1;padding:6px;font-size:10px;border-radius:4px;border:1px solid var(--br);background:var(--s2);color:var(--t);cursor:pointer;">'
       +['beginner','review','verified','expert','suspended'].map(function(b){return '<option value="'+b+'"'+(u.badgeStatus===b?' selected':'')+'>'+b+'</option>';}).join('')
       +'</select>'

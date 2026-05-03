@@ -51,7 +51,10 @@ function _doRenderWallet(){
 function _renderProUpgradeCard(){
   var existing=document.getElementById('pro-upgrade-card');
   if(existing) existing.remove();
-  if(!ME||userIsPro(ME)) return; // already Pro — don't show
+  if(!ME||userIsPro(ME)) return;
+  // Pro subscription is for freelancers only
+  if(ME.role==='employer'||ME.role==='client') return;
+  if(ME.role==='employer'||ME.role==='client') return; // clients don't need Pro
   var walletSection=document.querySelector('#page-wallet .section');
   if(!walletSection) return;
   var tier=getTierLabel(ME);

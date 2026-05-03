@@ -777,7 +777,7 @@ window.showQR=function(){
 //  PROFILE SMART BOOST — $1 for 24h visibility
 // ══════════════════════════════════════════════
 window.openProfileBoost = function() {
-  var BOOST_COST = 1;
+  var BOOST_COST = 3;
   var isBoosted = ME.profileBoostedUntil && ME.profileBoostedUntil > Date.now();
   if (isBoosted) {
     var hoursLeft = Math.ceil((ME.profileBoostedUntil - Date.now()) / (1000 * 60 * 60));
@@ -793,10 +793,10 @@ window.openProfileBoost = function() {
     + '<div style="background:var(--s2);border:1px solid var(--br);border-radius:12px;padding:14px;margin-bottom:16px;">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;">'
     + '<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;">24-Hour Profile Boost</div>'
-    + '<div style="font-size:10px;color:var(--td);">Priority ranking in talent search</div></div>'
-    + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:20px;color:var(--gld);">$1</div>'
+    + '<div style="font-size:10px;color:var(--td);">Priority ranking in talent search for 24 hours</div></div>'
+    + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:20px;color:var(--gld);">$3</div>'
     + '</div></div>'
-    + '<button id="boost-profile-btn" style="width:100%;padding:13px;background:var(--gld);color:#fff;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;border:none;border-radius:12px;cursor:pointer;">Boost for $1 →</button>'
+    + '<button id="boost-profile-btn" style="width:100%;padding:13px;background:var(--gld);color:#fff;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;border:none;border-radius:12px;cursor:pointer;">Boost for $3 →</button>'
     + '<div style="font-size:10px;color:var(--td);text-align:center;margin-top:8px;">Deducted from wallet. Pro users get 3 free boosts/month.</div>'
   );
   setTimeout(function() {
@@ -826,10 +826,12 @@ window.openProfileBoost = function() {
         }
         ME.profileBoostedUntil = Date.now() + (24 * 60 * 60 * 1000);
         await saveUser(ME);
+        // Also write directly to Firestore so talent sort sees the boost immediately
+        await fbSet('users', ME.uid, ME);
         closeModal();
         toast('⚡ Profile boosted for 24 hours!' + (isFree ? ' (Free Pro boost)' : ''));
       } catch(e) {
-        btn.disabled = false; btn.textContent = 'Boost for $1 →';
+        btn.disabled = false; btn.textContent = 'Boost for $3 →';
         toast('Boost failed. Try again.', 'bad');
       }
     };

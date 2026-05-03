@@ -9,7 +9,7 @@ window.filterCat = function(cat, el) {
 
 window.renderTalent = function() {
   const search = document.getElementById('talent-search')?.value?.toLowerCase() || '';
-  let users = getAllUsers().filter(u => u.role === 'freelancer');
+  let users = getAllUsers().filter(u => u.role === 'freelancer' && u.badgeStatus !== 'suspended');
   if (activeCat !== 'All') users = users.filter(u => u.category === activeCat);
   if (search) users = users.filter(u =>
     u.name.toLowerCase().includes(search) ||
