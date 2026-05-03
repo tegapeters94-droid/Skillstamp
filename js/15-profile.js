@@ -5,34 +5,34 @@
 // ══════════════════════════════════════════════
 window.viewProfile=function(uid){
   if(uid===ME.uid){showPage('myprofile');return;}
-  const u=getUser(uid);if(!u)return;
-  document.getElementById('viewprofile-content').innerHTML=buildProfile(u,false);
-  var vp=document.getElementById('viewprofile-content');
+  const u=getUser(uid);if(!u)return; }
+  document.getElementById('viewprofile-content').innerHTML=buildProfile(u,false); }
+  var vp=document.getElementById('viewprofile-content'); }
   if(vp) vp.addEventListener('click',function(e){
-    var card=e.target.closest('[data-pfid]');
-    if(card) openPortfolioItem(card.dataset.pfuid,card.dataset.pfid);
-  });
-  showPage('viewprofile');
+    var card=e.target.closest('[data-pfid]'); }
+    if(card) openPortfolioItem(card.dataset.pfuid,card.dataset.pfid); }
+  }); }
+  showPage('viewprofile'); }
   // Notify profile owner (throttled — only once per 10 min per viewer)
   try {
-    var throttleKey = 'pv_' + ME.uid + '_' + uid;
-    var lastView = parseInt(localStorage.getItem(throttleKey) || '0');
+    var throttleKey = 'pv_' + ME.uid + '_' + uid; }
+    var lastView = parseInt(localStorage.getItem(throttleKey) || '0'); }
     if (Date.now() - lastView > 600000) {
-      localStorage.setItem(throttleKey, Date.now());
-      pushNotif(uid, 'profile_view', '👁️ Profile View', ME.name + ' viewed your profile', {type:'profile_view', viewerUid: ME.uid});
+      localStorage.setItem(throttleKey, Date.now()); }
+      pushNotif(uid, 'profile_view', '👁️ Profile View', ME.name + ' viewed your profile', {type:'profile_view', viewerUid: ME.uid}); }
     }
   } catch(e) {}
-};
+}; }
 
 function renderMyProfile(){
-  ME=getUser(ME.uid)||ME;
-  document.getElementById('myprofile-content').innerHTML=buildProfile(ME,true);
+  ME=getUser(ME.uid)||ME; }
+  document.getElementById('myprofile-content').innerHTML=buildProfile(ME,true); }
   // Portfolio click delegation
-  var el=document.getElementById('myprofile-content');
+  var el=document.getElementById('myprofile-content'); }
   if(el) el.addEventListener('click',function(e){
-    var card=e.target.closest('[data-pfid]');
-    if(card) openPortfolioItem(card.dataset.pfuid,card.dataset.pfid);
-  });
+    var card=e.target.closest('[data-pfid]'); }
+    if(card) openPortfolioItem(card.dataset.pfuid,card.dataset.pfid); }
+  }); }
 }
 
 
@@ -40,11 +40,11 @@ function renderMyProfile(){
 // buildProfile — redesigned to match professional mockup
 // ═══════════════════════════════════════════
 function buildProfile(u,isOwn){
-  var isClient=u.role==='employer';
-  var endorsements=getEndorsements().filter(function(e){return e.toUid===u.uid;});
-  var grad=u.gradient||'#1a6b3c';
-  var avImg=u.avatar?'<img src="'+u.avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':initials(u.name);
-  var isVerifiedBadge=u.badgeStatus==='verified'||u.badgeStatus==='expert'||u.badgeStatus==='elite';
+  var isClient=u.role==='employer'; }
+  var endorsements=getEndorsements().filter(function(e){return e.toUid===u.uid;}); }
+  var grad=u.gradient||'#1a6b3c'; }
+  var avImg=u.avatar?'<img src="'+u.avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':initials(u.name); }
+  var isVerifiedBadge=u.badgeStatus==='verified'||u.badgeStatus==='expert'||u.badgeStatus==='elite'; }
 
   // ── SVG ICON SYSTEM ───────────────────────────────────────
   // Raw paths only — no wrapping here
@@ -70,82 +70,82 @@ function buildProfile(u,isOwn){
     map:       '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     key:       '<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>',
     verified:  '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
-  };
+  }; }
   // Wrap a raw path in an SVG tag
   function icon(pathKey, size, color){
-    size = size||16; color = color||'currentColor';
-    return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;flex-shrink:0;">'+P[pathKey]+'</svg>';
+    size = size||16; color = color||'currentColor'; }
+    return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;flex-shrink:0;">'+P[pathKey]+'</svg>'; }
   }
 
   // ── BANNER ────────────────────────────────────────────────
-  var bannerCSS=getBannerCSS(u);
+  var bannerCSS=getBannerCSS(u); }
   var changeBannerBtn=isOwn
     ?'<button onclick="openBannerPicker()" class="prf-change-banner">'+icon('landscape',13,'#fff')+' Edit Banner</button>'
-    :'';
+    :''; }
   var changePhotoBtn=isOwn
     ?'<div class="prf-av-edit" onclick="openChangePhoto()">'+icon('photo',18,'#fff')+'</div>'
-    :'';
+    :''; }
 
   // ── ROLE PILL ─────────────────────────────────────────────
-  var rolePill='';
+  var rolePill=''; }
   if(isClient){
-    rolePill='<span class="prf-role-pill client">'+icon('briefcase',11,'#4d9fff')+' Client</span>';
+    rolePill='<span class="prf-role-pill client">'+icon('briefcase',11,'#4d9fff')+' Client</span>'; }
   } else if(!isVerifiedBadge){
-    rolePill='<span class="prf-role-pill freelancer">'+icon('person',11,'var(--grn)')+' Freelancer</span>';
+    rolePill='<span class="prf-role-pill freelancer">'+icon('person',11,'var(--grn)')+' Freelancer</span>'; }
   }
 
   // ── SKILLID CHIP ──────────────────────────────────────────
-  var skillIdChip='';
+  var skillIdChip=''; }
   if(!isClient&&isVerifiedBadge&&u.skillId){
-    skillIdChip='<div class="prf-skillid-chip">'+icon('verified',11,'var(--gld)')+' Skill ID: '+u.skillId+'</div>';
+    skillIdChip='<div class="prf-skillid-chip">'+icon('verified',11,'var(--gld)')+' Skill ID: '+u.skillId+'</div>'; }
   } else if(!isClient&&isOwn&&!isVerifiedBadge){
-    skillIdChip='<div class="prf-skillid-chip unverified" onclick="openSubmitSkill()">'+icon('bolt',11,'var(--acc)')+' Get Verified &rarr; unlock SkillID</div>';
+    skillIdChip='<div class="prf-skillid-chip unverified" onclick="openSubmitSkill()">'+icon('bolt',11,'var(--acc)')+' Get Verified &rarr; unlock SkillID</div>'; }
   }
 
   // ── AVAILABILITY ──────────────────────────────────────────
-  var availBadge='';
+  var availBadge=''; }
   if(!isClient){
-    var avail=u.available!==false;
+    var avail=u.available!==false; }
     availBadge='<div class="prf-avail '+(avail?'open':'busy')+'"'+(isOwn?' onclick="toggleAvailability()"':'')+' style="cursor:'+(isOwn?'pointer':'default')+';">'
-      +'<span class="prf-avail-dot"></span>'+(avail?'Available for work':'Currently busy')+'</div>';
+      +'<span class="prf-avail-dot"></span>'+(avail?'Available for work':'Currently busy')+'</div>'; }
   }
 
   // ── RESPONSE TIME (freelancers) ───────────────────────────
-  var avgResponseMs=u.avgResponseMs||0;
+  var avgResponseMs=u.avgResponseMs||0; }
   function formatResponseTime(ms){
-    if(!ms||ms<=0) return null;
-    var mins=Math.round(ms/60000);
-    if(mins<60) return mins+'m';
-    var hrs=Math.round(ms/3600000);
-    if(hrs<24) return hrs+'h';
-    return Math.round(ms/86400000)+'d';
+    if(!ms||ms<=0) return null; }
+    var mins=Math.round(ms/60000); }
+    if(mins<60) return mins+'m'; }
+    var hrs=Math.round(ms/3600000); }
+    if(hrs<24) return hrs+'h'; }
+    return Math.round(ms/86400000)+'d'; }
   }
-  var respStr=formatResponseTime(avgResponseMs);
+  var respStr=formatResponseTime(avgResponseMs); }
 
   // ── STATS ROW ─────────────────────────────────────────────
-  var statsHtml='';
+  var statsHtml=''; }
   if(isClient){
-    var myGigs=getGigs().filter(function(g){return g.posterUid===u.uid;});
-    var totalHires=myGigs.filter(function(g){return g.status==='hired'||g.status==='completed';}).length;
-    var activeGigsC=myGigs.filter(function(g){return g.status==='hired';}).length;
-    var gigsPosted=myGigs.length;
-    var clientRating=u.clientRating||u.score||0;
-    var reviewCount=u.reviewCount||0;
+    var myGigs=getGigs().filter(function(g){return g.posterUid===u.uid;}); }
+    var totalHires=myGigs.filter(function(g){return g.status==='hired'||g.status==='completed';}).length; }
+    var activeGigsC=myGigs.filter(function(g){return g.status==='hired';}).length; }
+    var gigsPosted=myGigs.length; }
+    var clientRating=u.clientRating||u.score||0; }
+    var reviewCount=u.reviewCount||0; }
     statsHtml='<div class="prf-stats-grid">'
       +'<div class="prf-stat-box"><div class="prf-stat-icon" style="background:rgba(77,159,255,.1);">'+icon('clipboard',22,'#4d9fff')+'</div><div class="prf-stat-num">'+gigsPosted+'</div><div class="prf-stat-lbl">Gigs Posted</div></div>'
       +'<div class="prf-stat-box"><div class="prf-stat-icon" style="background:rgba(74,222,128,.1);">'+icon('users',22,'#059669')+'</div><div class="prf-stat-num">'+totalHires+'</div><div class="prf-stat-lbl">Total Hires</div></div>'
       +'<div class="prf-stat-box"><div class="prf-stat-icon" style="background:rgba(255,165,0,.1);">'+icon('briefcase',22,'#f59e0b')+'</div><div class="prf-stat-num">'+activeGigsC+'</div><div class="prf-stat-lbl">Active Gigs</div></div>'
       +'<div class="prf-stat-box"><div class="prf-stat-icon" style="background:rgba(239,68,68,.08);">'+icon('star',22,'#ef4444')+'</div><div class="prf-stat-num">'+(clientRating>0?clientRating.toFixed(1):'—')+'</div><div class="prf-stat-lbl">Client Rating'+(reviewCount?'<br><span style="font-size:9px;color:var(--td);">('+reviewCount+' reviews)</span>':'')+'</div></div>'
-      +'</div>';
+      +'</div>'; }
   } else {
-    var _rt=u.score>0?u.score.toFixed(1):'—';
-    var _gc=u.gigsCount||0;
-    var _rawEarned=(u.wallet&&u.wallet.earned)||u.earned||0;
-    var _earnedStr=_rawEarned>=1000?('$'+(_rawEarned/1000).toFixed(1)+'k'):('$'+_rawEarned.toLocaleString());
-    var _reviews=u.reviewCount||0;
+    var _rt=u.score>0?u.score.toFixed(1):'—'; }
+    var _gc=u.gigsCount||0; }
+    var _rawEarned=(u.wallet&&u.wallet.earned)||u.earned||0; }
+    var _earnedStr=_rawEarned>=1000?('$'+(_rawEarned/1000).toFixed(1)+'k'):('$'+_rawEarned.toLocaleString()); }
+    var _reviews=u.reviewCount||0; }
     var respItem=respStr
       ?'<div class="prf-stat-div"></div><div class="prf-stat-item"><div class="prf-stat-icon-svg">'+icon('clock',16,'var(--td)')+'</div><div class="prf-stat-val">'+respStr+'</div><div class="prf-stat-sub">Avg. Response</div></div>'
-      :'';
+      :''; }
     statsHtml='<div class="prf-stats-row">'
       +'<div class="prf-stat-item"><div class="prf-stat-icon-svg">'+icon('star',16,'#f59e0b')+'</div><div class="prf-stat-val">'+_rt+'</div><div class="prf-stat-sub">Rating'+(_reviews?' ('+_reviews+')':'')+'</div></div>'
       +'<div class="prf-stat-div"></div>'
@@ -153,31 +153,31 @@ function buildProfile(u,isOwn){
       +'<div class="prf-stat-div"></div>'
       +'<div class="prf-stat-item"><div class="prf-stat-icon-svg">'+icon('dollar',16,'#059669')+'</div><div class="prf-stat-val">'+_earnedStr+'</div><div class="prf-stat-sub">Total Earned</div></div>'
       +respItem
-      +'</div>';
+      +'</div>'; }
   }
 
   // ── CTA BUTTON ────────────────────────────────────────────
-  var ctaBtn='';
+  var ctaBtn=''; }
   if(isOwn){
     if(isClient){
-      ctaBtn='<button class="prf-cta-btn" onclick="openPostGig()" style="background:var(--grn);color:#000;">'+icon('plus',15,'#000')+' Post a Gig</button>';
+      ctaBtn='<button class="prf-cta-btn" onclick="openPostGig()" style="background:var(--grn);color:#000;">'+icon('plus',15,'#000')+' Post a Gig</button>'; }
     }
   } else {
     if(!isClient&&u.available!==false&&ME&&ME.role==='employer'){
-      ctaBtn='<button class="prf-cta-btn" onclick="openHireMe(\''+u.uid+'\')">'+icon('send',15,'#fff')+' Hire Me</button>';
+      ctaBtn='<button class="prf-cta-btn" onclick="openHireMe(\''+u.uid+'\')">'+icon('send',15,'#fff')+' Hire Me</button>'; }
     }
     if(!isClient){
-      ctaBtn+='<button class="prf-endorse-btn" onclick="endorseUser(this)" data-uid="'+u.uid+'">'+icon('heart',14,'var(--grn)')+' Endorse '+u.name.split(' ')[0]+'</button>';
+      ctaBtn+='<button class="prf-endorse-btn" onclick="endorseUser(this)" data-uid="'+u.uid+'">'+icon('heart',14,'var(--grn)')+' Endorse '+u.name.split(' ')[0]+'</button>'; }
     }
   }
 
-  var editProfileBtn=isOwn?'<button class="prf-edit-btn" onclick="openEditProfile()">'+icon('edit',14,'currentColor')+' Edit Profile</button>':'';
-  var boostProfileBtn=isOwn&&!isClient?'<button class="prf-edit-btn" onclick="openProfileBoost()" style="background:rgba(232,197,71,.1);border-color:rgba(232,197,71,.3);color:var(--gld);">⚡ Boost Profile</button>':'';
+  var editProfileBtn=isOwn?'<button class="prf-edit-btn" onclick="openEditProfile()">'+icon('edit',14,'currentColor')+' Edit Profile</button>':''; }
+  var boostProfileBtn=isOwn&&!isClient?'<button class="prf-edit-btn" onclick="openProfileBoost()" style="background:rgba(232,197,71,.1);border-color:rgba(232,197,71,.3);color:var(--gld);">⚡ Boost Profile</button>':''; }
 
   // ── ABOUT section ─────────────────────────────────────────
-  var bioText=u.bio||('No bio yet.'+(isOwn?' <a onclick="openEditProfile()" style="color:var(--gld);cursor:pointer;">Add one →</a>':''));
-  var bioFull=bioText;
-  var bioPreview=bioText.length>160?bioText.substring(0,160)+'…':bioText;
+  var bioText=u.bio||('No bio yet.'+(isOwn?' <a onclick="openEditProfile()" style="color:var(--gld);cursor:pointer;">Add one →</a>':'')); }
+  var bioFull=bioText; }
+  var bioPreview=bioText.length>160?bioText.substring(0,160)+'…':bioText; }
   var bioSection='<div class="prf-card">'
     +'<div class="prf-card-title">About</div>'
     +'<div class="prf-bio-text" id="prf-bio-short">'+bioPreview+'</div>'
@@ -185,62 +185,62 @@ function buildProfile(u,isOwn){
       ?'<div class="prf-bio-text" id="prf-bio-full" style="display:none;">'+bioFull+'</div>'
        +'<button class="prf-view-more" onclick="var s=document.getElementById(\'prf-bio-short\');var f=document.getElementById(\'prf-bio-full\');var b=this;if(f.style.display===\'none\'){f.style.display=\'\';s.style.display=\'none\';b.textContent=\'View less ↑\';}else{f.style.display=\'none\';s.style.display=\'\';b.textContent=\'View more ↓\';}">View more ↓</button>'
       :'')
-    +'</div>';
+    +'</div>'; }
 
   // ── VERIFICATION BANNER ────────────────────────────────────
-  var verifCta='';
+  var verifCta=''; }
   if(isOwn&&!isClient){
-    var alreadyVerified=isVerifiedBadge;
-    var pendingVerif=(u.verificationStatus==='pending');
+    var alreadyVerified=isVerifiedBadge; }
+    var pendingVerif=(u.verificationStatus==='pending'); }
     if(!alreadyVerified&&!pendingVerif){
       verifCta='<div class="prf-verif-banner" onclick="openSubmitSkill()">'
         +'<div class="prf-verif-icon">'+icon('bolt',18,'var(--acc)')+'</div>'
         +'<div><div style="font-weight:700;font-size:12px;margin-bottom:2px;">Get Verified on SkillStamp</div>'
         +'<div style="font-size:10px;color:var(--td);">Stand out to clients · Unlock SkillID · Earn more</div></div>'
         +'<span style="color:var(--gld);font-size:14px;margin-left:auto;">›</span>'
-        +'</div>';
+        +'</div>'; }
     } else if(pendingVerif&&!alreadyVerified){
       verifCta='<div class="prf-verif-banner" style="background:rgba(232,197,71,.06);border-color:rgba(232,197,71,.25);">'
         +'<div class="prf-verif-icon">'+icon('clock',18,'var(--gld)')+'</div>'
         +'<div><div style="font-weight:700;font-size:12px;margin-bottom:2px;">Verification Under Review</div>'
         +'<div style="font-size:10px;color:var(--td);">Admin will review within 48 hours</div></div>'
-        +'</div>';
+        +'</div>'; }
     }
   }
 
   // ── SKILLS section ────────────────────────────────────────
-  var skillsSection='';
+  var skillsSection=''; }
   if(!isClient&&(u.skills||[]).length){
-    var sc={};
-    getEndorsements().filter(function(e){return e.toUid===u.uid;}).forEach(function(e){sc[e.skill]=(sc[e.skill]||0)+1;});
-    var sortedSkills=(u.skills||[]).slice().sort(function(a,b){return (sc[b]||0)-(sc[a]||0);});
+    var sc={}; }
+    getEndorsements().filter(function(e){return e.toUid===u.uid;}).forEach(function(e){sc[e.skill]=(sc[e.skill]||0)+1;}); }
+    var sortedSkills=(u.skills||[]).slice().sort(function(a,b){return (sc[b]||0)-(sc[a]||0);}); }
     var chipsHtml=sortedSkills.map(function(s){
-      var isVer=u.verifiedSkills&&u.verifiedSkills.indexOf(s)>=0;
-      var cnt=sc[s]||0;
+      var isVer=u.verifiedSkills&&u.verifiedSkills.indexOf(s)>=0; }
+      var cnt=sc[s]||0; }
       return '<span class="prf-skill-chip'+(isVer?' verified':'')+'">'
         +(isVer?icon('check',10,'var(--gld)')+' ':'')+s
         +(cnt?'<span class="prf-skill-cnt">'+cnt+'</span>':'')
-        +'</span>';
-    }).join('');
+        +'</span>'; }
+    }).join(''); }
     var verNote=u.verifiedSkills&&u.verifiedSkills.length
       ?'<div class="prf-skill-note">'+icon('check',10,'var(--gld)')+' = Verified by SkillStamp admin</div>'
-      :'';
+      :''; }
     skillsSection='<div class="prf-card">'
       +'<div class="prf-card-title">'+icon('bolt',14,'currentColor')+' Skills</div>'
       +'<div class="prf-skills-wrap">'+chipsHtml+'</div>'
       +verNote
-      +'</div>';
+      +'</div>'; }
   }
 
   // ── ENDORSEMENTS section ──────────────────────────────────
   var endorseBtn=!isOwn&&!isClient
     ?'<button class="prf-endorse-chip" data-uid="'+u.uid+'" onclick="endorseUser(this)">'+icon('heart',12,'var(--grn)')+' Endorse '+u.name.split(' ')[0]+'</button>'
-    :'';
-  var endorseItems='';
+    :''; }
+  var endorseItems=''; }
   if(endorsements.length){
     endorsements.slice(0,5).forEach(function(en){
-      var enImg=en.fromAvatar?'<img src="'+en.fromAvatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':initials(en.fromName);
-      var enGrad=en.fromGrad||'#888';
+      var enImg=en.fromAvatar?'<img src="'+en.fromAvatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':initials(en.fromName); }
+      var enGrad=en.fromGrad||'#888'; }
       endorseItems+='<div class="prf-endorse-item">'
         +'<div class="prf-endorse-av" style="background:linear-gradient(135deg,'+enGrad+','+enGrad+'88);">'+enImg+'</div>'
         +'<div style="flex:1;min-width:0;">'
@@ -251,15 +251,15 @@ function buildProfile(u,isOwn){
           +'<div style="font-size:10px;color:var(--gld);margin-bottom:5px;">'+en.skill+'</div>'
           +'<div style="font-size:11px;color:var(--td);font-style:italic;line-height:1.6;">"'+en.comment+'"</div>'
         +'</div>'
-      +'</div>';
-    });
+      +'</div>'; }
+    }); }
   } else {
     endorseItems='<div style="padding:16px 0;text-align:center;">'
       +'<div style="margin-bottom:8px;opacity:.25;">'+icon('heart',28,'var(--td)')+'</div>'
       +'<div style="font-size:12px;color:var(--td);">No endorsements yet.</div>'
       +(isOwn?'':(endorseBtn?'<div style="margin-top:12px;">'+endorseBtn+'</div>':''))
-      +'</div>';
-    endorseBtn='';
+      +'</div>'; }
+    endorseBtn=''; }
   }
   var endorseSection='<div class="prf-card">'
     +'<div class="prf-card-title" style="display:flex;align-items:center;justify-content:space-between;">'
@@ -267,7 +267,7 @@ function buildProfile(u,isOwn){
       +endorseBtn
     +'</div>'
     +endorseItems
-    +'</div>';
+    +'</div>'; }
 
   // ── IDENTITY sidebar card ─────────────────────────────────
   var identityCard='<div class="prf-side-card">'
@@ -284,27 +284,27 @@ function buildProfile(u,isOwn){
     +'<div class="prf-side-row"><span class="prf-side-lbl">Country</span><span class="prf-side-val">'+flag(u.country)+' '+u.country+'</span></div>'
     +'<div class="prf-side-row"><span class="prf-side-lbl">Category</span><span class="prf-side-val">'+(CAT_ICONS[u.category]||'')+' '+u.category+'</span></div>'
     +'<div class="prf-side-row"><span class="prf-side-lbl">Member since</span><span class="prf-side-val">'+timeAgo(u.created||Date.now())+'</span></div>'
-    +'</div>';
+    +'</div>'; }
 
-  var walletCard='';
+  var walletCard=''; }
   if(isOwn){
     if(isClient){
-      var myGigsW=getGigs().filter(function(g){return g.posterUid===u.uid;});
-      var totalPaidW=myGigsW.filter(function(g){return g.status==='completed';}).reduce(function(s,g){return s+(g.escrowAmount||0);},0);
+      var myGigsW=getGigs().filter(function(g){return g.posterUid===u.uid;}); }
+      var totalPaidW=myGigsW.filter(function(g){return g.status==='completed';}).reduce(function(s,g){return s+(g.escrowAmount||0);},0); }
       walletCard='<div class="prf-side-card">'
         +'<div class="prf-side-title">'+icon('activity',13,'currentColor')+' Activity</div>'
         +'<div class="prf-side-row"><span class="prf-side-lbl">Gigs Posted</span><span class="prf-side-val" style="color:#4d9fff;">'+(myGigsW.length)+'</span></div>'
         +'<div class="prf-side-row"><span class="prf-side-lbl">Total Paid</span><span class="prf-side-val" style="color:var(--grn);">$'+totalPaidW.toLocaleString()+'</span></div>'
         +'<div class="prf-side-row"><span class="prf-side-lbl">Balance</span><span class="prf-side-val" style="color:var(--gld);">$'+((u.wallet&&u.wallet.balance)||0).toLocaleString()+'</span></div>'
         +'<button class="prf-side-btn" onclick="goWallet()">View Wallet →</button>'
-        +'</div>';
+        +'</div>'; }
     } else {
       walletCard='<div class="prf-side-card">'
         +'<div class="prf-side-title">'+icon('wallet',13,'currentColor')+' Wallet</div>'
         +'<div class="prf-side-row"><span class="prf-side-lbl">Balance</span><span class="prf-side-val" style="color:var(--grn);">$'+((u.wallet&&u.wallet.balance)||0).toLocaleString()+'</span></div>'
         +'<div class="prf-side-row"><span class="prf-side-lbl">Total Earned</span><span class="prf-side-val">$'+((u.wallet&&u.wallet.earned)||u.earned||0).toLocaleString()+'</span></div>'
         +'<button class="prf-side-btn" onclick="goWallet()">View Full Wallet →</button>'
-        +'</div>';
+        +'</div>'; }
     }
   }
 
@@ -315,7 +315,7 @@ function buildProfile(u,isOwn){
       +' · <span onclick="openChangePassword()" style="cursor:pointer;color:var(--td);">'+icon('key',11,'currentColor')+' Change Password</span>'
       +'<div style="font-size:9px;margin-top:6px;color:var(--td);">© 2025 SkillStamp · Tega Technologies · NDPA 2023</div>'
       +'</div>'
-    :'';
+    :''; }
 
   return ''
     +'<div class="prf-banner" style="background:'+bannerCSS+';">'+changeBannerBtn+'</div>'
@@ -350,147 +350,147 @@ function buildProfile(u,isOwn){
         +identityCard
         +walletCard
       +'</div>'
-    +'</div>';
+    +'</div>'; }
 }
 
 window.openChangePhoto=function(){
-  var photoSection='';
+  var photoSection=''; }
   if(ME.avatar){
     photoSection='<div style="text-align:center;margin-bottom:12px;">'
       +'<img src="'+ME.avatar+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--gld);">'
       +'<div style="font-size:10px;color:var(--td);margin-top:6px;">Current photo</div></div>'
-      +'<button class="bacc" style="width:100%;" id="remove-photo-btn">Remove Photo</button>';
+      +'<button class="bacc" style="width:100%;" id="remove-photo-btn">Remove Photo</button>'; }
   }
-  var mh='<button class="mclose" id="cp-close">✕</button>';
-  mh+='<h3>📸 Profile Photo</h3>';
-  mh+='<p>Upload a photo to personalise your profile.</p>';
-  mh+='<label for="photo-input" style="border:2px dashed var(--br);border-radius:var(--r);padding:24px;text-align:center;margin-bottom:14px;cursor:pointer;display:block;">';
-  mh+='<div style="font-size:28px;margin-bottom:8px;">📷</div>';
-  mh+='<div style="font-size:12px;color:var(--td);font-weight:600;">Tap to choose from gallery</div>';
-  mh+='<div style="font-size:10px;color:var(--td);margin-top:4px;">Or take a new photo · JPG, PNG — max 5MB</div>';
-  mh+='</label>';
-  mh+='<input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">';
-  mh+=photoSection;
-  setModal(mh);
-  document.getElementById('cp-close').onclick=closeModal;
-  var remBtn=document.getElementById('remove-photo-btn');
-  if(remBtn) remBtn.onclick=removePhoto;
-};
+  var mh='<button class="mclose" id="cp-close">✕</button>'; }
+  mh+='<h3>📸 Profile Photo</h3>'; }
+  mh+='<p>Upload a photo to personalise your profile.</p>'; }
+  mh+='<label for="photo-input" style="border:2px dashed var(--br);border-radius:var(--r);padding:24px;text-align:center;margin-bottom:14px;cursor:pointer;display:block;">'; }
+  mh+='<div style="font-size:28px;margin-bottom:8px;">📷</div>'; }
+  mh+='<div style="font-size:12px;color:var(--td);font-weight:600;">Tap to choose from gallery</div>'; }
+  mh+='<div style="font-size:10px;color:var(--td);margin-top:4px;">Or take a new photo · JPG, PNG — max 5MB</div>'; }
+  mh+='</label>'; }
+  mh+='<input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">'; }
+  mh+=photoSection; }
+  setModal(mh); }
+  document.getElementById('cp-close').onclick=closeModal; }
+  var remBtn=document.getElementById('remove-photo-btn'); }
+  if(remBtn) remBtn.onclick=removePhoto; }
+}; }
 
 window.handlePhotoUpload=function(input){
-  var file=input.files[0];if(!file)return;
+  var file=input.files[0];if(!file)return; }
   if(file.size>10*1024*1024){toast('Photo must be under 10MB.','bad');return;}
-  var reader=new FileReader();
+  var reader=new FileReader(); }
   reader.onload=function(e){
-    var img=new Image();
+    var img=new Image(); }
     img.onload=function(){
       // Compress aggressively — keep avatar small enough for Firestore
-      var canvas=document.createElement('canvas');
-      var MAX=200;
-      var w=img.width,h=img.height;
+      var canvas=document.createElement('canvas'); }
+      var MAX=200; }
+      var w=img.width,h=img.height; }
       if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
       else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
-      canvas.width=w;canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      var compressed=canvas.toDataURL('image/jpeg',0.6);
-      toast('Saving photo...','ok');
+      canvas.width=w;canvas.height=h; }
+      canvas.getContext('2d').drawImage(img,0,0,w,h); }
+      var compressed=canvas.toDataURL('image/jpeg',0.6); }
+      toast('Saving photo...','ok'); }
       // Save avatar to dedicated collection (avoids Firestore 1MB doc limit)
       fbSet('avatars',ME.uid,{uid:ME.uid,data:compressed,ts:Date.now()}).then(function(){
         // Only after avatar saved, update user profile with avatar ref
-        ME.avatar=compressed;
-        return saveUser(ME);
+        ME.avatar=compressed; }
+        return saveUser(ME); }
       }).then(function(){
-        var navAv=document.getElementById('nav-av');
+        var navAv=document.getElementById('nav-av'); }
         if(navAv){
-          navAv.innerHTML='<img src="'+compressed+'" style="width:100%;height:100%;object-fit:cover;">';
-          navAv.style.background='';
+          navAv.innerHTML='<img src="'+compressed+'" style="width:100%;height:100%;object-fit:cover;">'; }
+          navAv.style.background=''; }
         }
-        closeModal();
-        toast('Profile photo saved! 📸');
-        if(document.getElementById('page-myprofile').classList.contains('active')) renderMyProfile();
+        closeModal(); }
+        toast('Profile photo saved! 📸'); }
+        if(document.getElementById('page-myprofile').classList.contains('active')) renderMyProfile(); }
       }).catch(function(err){
-        console.error('Photo save failed:',err);
-        toast('Photo save failed. Try a smaller image.','bad');
-      });
-    };
-    img.src=e.target.result;
-  };
-  reader.readAsDataURL(file);
-};
+        console.error('Photo save failed:',err); }
+        toast('Photo save failed. Try a smaller image.','bad'); }
+      }); }
+    }; }
+    img.src=e.target.result; }
+  }; }
+  reader.readAsDataURL(file); }
+}; }
 window.removePhoto=function(){
-  ME.avatar=null;saveUser(ME);
-  var navAv=document.getElementById('nav-av');
+  ME.avatar=null;saveUser(ME); }
+  var navAv=document.getElementById('nav-av'); }
   if(navAv){navAv.innerHTML=initials(ME.name);navAv.style.background='linear-gradient(135deg,'+ME.gradient+','+ME.gradient+'88)';}
-  closeModal();toast('Photo removed.');
-  if(document.getElementById('page-myprofile').classList.contains('active'))renderMyProfile();
-};
+  closeModal();toast('Photo removed.'); }
+  if(document.getElementById('page-myprofile').classList.contains('active'))renderMyProfile(); }
+}; }
 
 window.openEditProfile=function(){
-  var catOpts='';
+  var catOpts=''; }
   CATEGORIES.forEach(function(c){
-    catOpts+='<option'+(ME.category===c?' selected':'')+'>'+c+'</option>';
-  });
-  var skillOpts='';
+    catOpts+='<option'+(ME.category===c?' selected':'')+'>'+c+'</option>'; }
+  }); }
+  var skillOpts=''; }
   ALL_SKILLS.forEach(function(s){
-    var isOn=(ME.skills||[]).indexOf(s)>=0;
-    skillOpts+='<span style="padding:3px 9px;background:var(--s2);border:1px solid '+(isOn?'rgba(232,197,71,.5)':'var(--br)')+';border-radius:4px;font-size:10px;color:'+(isOn?'var(--gld)':'var(--td)')+';cursor:pointer;" data-s="'+s+'" class="'+(isOn?'on':'')+'">'+s+'</span>';
-  });
-  var mh='<button class="mclose" id="ep-close">X</button>';
-  mh+='<h3>Edit Profile</h3><p>Update your public SkillID profile</p>';
-  mh+='<div class="fg"><label class="fl">Professional Title</label><input class="fi" id="ep-t" value="'+(ME.title||'')+'" placeholder="e.g. Senior Full-Stack Engineer"></div>';
-  mh+='<div class="fg"><label class="fl">Bio</label><textarea class="fi" id="ep-b" rows="4" style="resize:vertical;">'+(ME.bio||'')+'</textarea></div>';
-  mh+='<div class="fg"><label class="fl">Category</label><select class="fi" id="ep-cat">'+catOpts+'</select></div>';
-  mh+='<div class="fg"><label class="fl">Skills (tap to toggle)</label>';
-  mh+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;max-height:160px;overflow-y:auto;" id="ep-skills">'+skillOpts+'</div></div>';
-  mh+='<button class="btn" id="ep-save-btn">Save Profile</button>';
-  setModal(mh);
-  document.getElementById('ep-close').onclick=closeModal;
-  document.getElementById('ep-save-btn').onclick=saveProfile;
+    var isOn=(ME.skills||[]).indexOf(s)>=0; }
+    skillOpts+='<span style="padding:3px 9px;background:var(--s2);border:1px solid '+(isOn?'rgba(232,197,71,.5)':'var(--br)')+';border-radius:4px;font-size:10px;color:'+(isOn?'var(--gld)':'var(--td)')+';cursor:pointer;" data-s="'+s+'" class="'+(isOn?'on':'')+'">'+s+'</span>'; }
+  }); }
+  var mh='<button class="mclose" id="ep-close">X</button>'; }
+  mh+='<h3>Edit Profile</h3><p>Update your public SkillID profile</p>'; }
+  mh+='<div class="fg"><label class="fl">Professional Title</label><input class="fi" id="ep-t" value="'+(ME.title||'')+'" placeholder="e.g. Senior Full-Stack Engineer"></div>'; }
+  mh+='<div class="fg"><label class="fl">Bio</label><textarea class="fi" id="ep-b" rows="4" style="resize:vertical;">'+(ME.bio||'')+'</textarea></div>'; }
+  mh+='<div class="fg"><label class="fl">Category</label><select class="fi" id="ep-cat">'+catOpts+'</select></div>'; }
+  mh+='<div class="fg"><label class="fl">Skills (tap to toggle)</label>'; }
+  mh+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;max-height:160px;overflow-y:auto;" id="ep-skills">'+skillOpts+'</div></div>'; }
+  mh+='<button class="btn" id="ep-save-btn">Save Profile</button>'; }
+  setModal(mh); }
+  document.getElementById('ep-close').onclick=closeModal; }
+  document.getElementById('ep-save-btn').onclick=saveProfile; }
   document.querySelectorAll('#ep-skills span').forEach(function(el){
     el.onclick=function(){
-      this.classList.toggle('on');
-      this.style.borderColor=this.classList.contains('on')?'rgba(232,197,71,.5)':'var(--br)';
-      this.style.color=this.classList.contains('on')?'var(--gld)':'var(--td)';
-    };
-  });
-};
+      this.classList.toggle('on'); }
+      this.style.borderColor=this.classList.contains('on')?'rgba(232,197,71,.5)':'var(--br)'; }
+      this.style.color=this.classList.contains('on')?'var(--gld)':'var(--td)'; }
+    }; }
+  }); }
+}; }
 
 window.saveProfile=function(){
-  var title=document.getElementById('ep-t').value.trim();
-  var bio=document.getElementById('ep-b').value.trim();
-  var category=document.getElementById('ep-cat').value;
-  var skills=[].slice.call(document.querySelectorAll('#ep-skills [data-s].on')).map(function(el){return el.dataset.s;});
-  ME.title=title||ME.title;
-  ME.bio=bio;
-  ME.tagline=tagline;
-  ME.offers=offers;
-  ME.tagline=tagline;
-  ME.offers=offers;
-  ME.category=category;
-  ME.skills=skills;
-  saveUser(ME);
-  closeModal();
-  toast('Profile updated!');
-  renderMyProfile();
-};
+  var title=document.getElementById('ep-t').value.trim(); }
+  var bio=document.getElementById('ep-b').value.trim(); }
+  var category=document.getElementById('ep-cat').value; }
+  var skills=[].slice.call(document.querySelectorAll('#ep-skills [data-s].on')).map(function(el){return el.dataset.s;}); }
+  ME.title=title||ME.title; }
+  ME.bio=bio; }
+  ME.tagline=tagline; }
+  ME.offers=offers; }
+  ME.tagline=tagline; }
+  ME.offers=offers; }
+  ME.category=category; }
+  ME.skills=skills; }
+  saveUser(ME); }
+  closeModal(); }
+  toast('Profile updated!'); }
+  renderMyProfile(); }
+}; }
 
 
 // ── VERIFICATION SYSTEM V2 ────────────────────────────────────
 // State for the multi-work submission
 var _vwWorks = []; // array of {export: base64, proofType: 'screenshot'|'video', proof: base64, description: ''}
-var _vwEditingIdx = null;
+var _vwEditingIdx = null; }
 
 window.openSubmitSkill = function() {
   // Check if already pending or banned from reapplying
   if (ME.verifBannedUntil && Date.now() < ME.verifBannedUntil) {
-    var days = Math.ceil((ME.verifBannedUntil - Date.now()) / 86400000);
+    var days = Math.ceil((ME.verifBannedUntil - Date.now()) / 86400000); }
     setModal('<button class="mclose" onclick="closeModal()">&#x2715;</button>'
       + '<div style="text-align:center;padding:20px 0;">'
       + '<div style="font-size:40px;margin-bottom:12px;">&#x23F3;</div>'
       + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;margin-bottom:8px;">Come Back Later</div>'
       + '<p style="font-size:12px;color:var(--td);line-height:1.7;">Your previous submission was not approved. You can reapply in <strong>' + days + ' day' + (days===1?'':'s') + '</strong>.</p>'
-      + '</div>');
-    return;
+      + '</div>'); }
+    return; }
   }
   if (ME.verifPermanentBan) {
     setModal('<button class="mclose" onclick="closeModal()">&#x2715;</button>'
@@ -498,216 +498,216 @@ window.openSubmitSkill = function() {
       + '<div style="font-size:40px;margin-bottom:12px;">&#x1F6AB;</div>'
       + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;margin-bottom:8px;">Verification Unavailable</div>'
       + '<p style="font-size:12px;color:var(--td);">Your verification status was permanently removed due to a policy violation.</p>'
-      + '</div>');
-    return;
+      + '</div>'); }
+    return; }
   }
-  _vwWorks = ME.verifDraft || [];
-  renderVerifModal();
-};
+  _vwWorks = ME.verifDraft || []; }
+  renderVerifModal(); }
+}; }
 
 function renderVerifModal() {
-  var count = _vwWorks.length;
-  var maxWorks = 5;
-  var minWorks = 2;
-  var canSubmit = count >= minWorks;
+  var count = _vwWorks.length; }
+  var maxWorks = 5; }
+  var minWorks = 2; }
+  var canSubmit = count >= minWorks; }
 
   // Progress dots
-  var dots = '';
+  var dots = ''; }
   for (var i = 0; i < maxWorks; i++) {
-    var cls = i < count ? 'done' : (i === count ? 'active' : '');
-    dots += '<div class="vw-prog-dot ' + cls + '"></div>';
-    if (i < maxWorks - 1) dots += '<div style="flex:1;height:2px;background:' + (i < count ? 'var(--grn)' : 'var(--br)') + ';border-radius:2px;"></div>';
+    var cls = i < count ? 'done' : (i === count ? 'active' : ''); }
+    dots += '<div class="vw-prog-dot ' + cls + '"></div>'; }
+    if (i < maxWorks - 1) dots += '<div style="flex:1;height:2px;background:' + (i < count ? 'var(--grn)' : 'var(--br)') + ';border-radius:2px;"></div>'; }
   }
 
-  var mh = '<button class="mclose" onclick="closeModal()">&#x2715;</button>';
-  mh += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;margin-bottom:4px;">&#x2B50; Apply for Verification</div>';
-  mh += '<div style="font-size:11px;color:var(--td);margin-bottom:14px;">Submit 2-5 works with proof of ownership. Admin will review within 48 hours.</div>';
+  var mh = '<button class="mclose" onclick="closeModal()">&#x2715;</button>'; }
+  mh += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;margin-bottom:4px;">&#x2B50; Apply for Verification</div>'; }
+  mh += '<div style="font-size:11px;color:var(--td);margin-bottom:14px;">Submit 2-5 works with proof of ownership. Admin will review within 48 hours.</div>'; }
 
   // Progress
-  mh += '<div class="vw-progress">' + dots + '<span style="font-size:10px;color:var(--td);margin-left:4px;white-space:nowrap;">' + count + '/' + maxWorks + '</span></div>';
+  mh += '<div class="vw-progress">' + dots + '<span style="font-size:10px;color:var(--td);margin-left:4px;white-space:nowrap;">' + count + '/' + maxWorks + '</span></div>'; }
 
   // Existing works
   for (var wi = 0; wi < _vwWorks.length; wi++) {
-    var w = _vwWorks[wi];
-    mh += '<div class="vw-item">';
-    mh += '<div class="vw-item-header">';
-    mh += '<div style="display:flex;align-items:center;gap:8px;"><div class="vw-num done">' + (wi+1) + '</div>';
-    mh += '<div style="font-size:11px;font-weight:600;">' + (w.description || 'Work ' + (wi+1)) + '</div></div>';
-    mh += '<button onclick="removeVerifWork(' + wi + ')" style="background:none;border:none;color:var(--td);cursor:pointer;font-size:16px;">&#x1F5D1;</button>';
-    mh += '</div>';
-    mh += '<div style="display:flex;gap:8px;">';
-    if (w.export) mh += '<img src="' + w.export + '" style="width:80px;height:60px;object-fit:cover;border-radius:6px;" alt="Work">';
-    if (w.proof) mh += '<div style="position:relative;"><img src="' + w.proof + '" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:2px solid var(--gld);" alt="Proof"><div style="position:absolute;bottom:2px;left:2px;background:var(--gld);color:#000;font-size:7px;font-weight:700;padding:1px 4px;border-radius:3px;">PROOF</div></div>';
-    mh += '</div></div>';
+    var w = _vwWorks[wi]; }
+    mh += '<div class="vw-item">'; }
+    mh += '<div class="vw-item-header">'; }
+    mh += '<div style="display:flex;align-items:center;gap:8px;"><div class="vw-num done">' + (wi+1) + '</div>'; }
+    mh += '<div style="font-size:11px;font-weight:600;">' + (w.description || 'Work ' + (wi+1)) + '</div></div>'; }
+    mh += '<button onclick="removeVerifWork(' + wi + ')" style="background:none;border:none;color:var(--td);cursor:pointer;font-size:16px;">&#x1F5D1;</button>'; }
+    mh += '</div>'; }
+    mh += '<div style="display:flex;gap:8px;">'; }
+    if (w.export) mh += '<img src="' + w.export + '" style="width:80px;height:60px;object-fit:cover;border-radius:6px;" alt="Work">'; }
+    if (w.proof) mh += '<div style="position:relative;"><img src="' + w.proof + '" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:2px solid var(--gld);" alt="Proof"><div style="position:absolute;bottom:2px;left:2px;background:var(--gld);color:#000;font-size:7px;font-weight:700;padding:1px 4px;border-radius:3px;">PROOF</div></div>'; }
+    mh += '</div></div>'; }
   }
 
   // Add work button
   if (count < maxWorks) {
-    mh += '<button class="btn2" id="vw-add-btn" style="width:100%;margin-bottom:12px;border-style:dashed;">+ Add Work (' + (count+1) + ' of ' + maxWorks + ')</button>';
+    mh += '<button class="btn2" id="vw-add-btn" style="width:100%;margin-bottom:12px;border-style:dashed;">+ Add Work (' + (count+1) + ' of ' + maxWorks + ')</button>'; }
   }
 
   // Submit button
-  mh += '<button class="btn" id="vw-final-submit" style="width:100%;' + (!canSubmit ? 'opacity:.45;' : '') + '">';
-  mh += canSubmit ? 'Submit for Review &#x2192;' : 'Add ' + (minWorks - count) + ' more work' + (minWorks-count===1?'':'s') + ' to submit';
-  mh += '</button>';
-  if (!canSubmit) mh += '<div style="font-size:10px;color:var(--td);text-align:center;margin-top:6px;">Minimum 2 works required</div>';
+  mh += '<button class="btn" id="vw-final-submit" style="width:100%;' + (!canSubmit ? 'opacity:.45;' : '') + '">'; }
+  mh += canSubmit ? 'Submit for Review &#x2192;' : 'Add ' + (minWorks - count) + ' more work' + (minWorks-count===1?'':'s') + ' to submit'; }
+  mh += '</button>'; }
+  if (!canSubmit) mh += '<div style="font-size:10px;color:var(--td);text-align:center;margin-top:6px;">Minimum 2 works required</div>'; }
 
-  setModal(mh);
+  setModal(mh); }
 
   setTimeout(function() {
-    var addBtn = document.getElementById('vw-add-btn');
-    if (addBtn) addBtn.onclick = function() { openAddVerifWork(); };
-    var submitBtn = document.getElementById('vw-final-submit');
-    if (submitBtn) submitBtn.onclick = function(){ if(_vwWorks.length >= minWorks) submitVerifFinal(); else toast('Add at least '+minWorks+' works first.','bad'); };
-  }, 50);
+    var addBtn = document.getElementById('vw-add-btn'); }
+    if (addBtn) addBtn.onclick = function() { openAddVerifWork(); }; }
+    var submitBtn = document.getElementById('vw-final-submit'); }
+    if (submitBtn) submitBtn.onclick = function(){ if(_vwWorks.length >= minWorks) submitVerifFinal(); else toast('Add at least '+minWorks+' works first.','bad'); }; }
+  }, 50); }
 }
 
 window.removeVerifWork = function(idx) {
-  _vwWorks.splice(idx, 1);
-  ME.verifDraft = _vwWorks;
-  saveUser(ME);
-  renderVerifModal();
-};
+  _vwWorks.splice(idx, 1); }
+  ME.verifDraft = _vwWorks; }
+  saveUser(ME); }
+  renderVerifModal(); }
+}; }
 
 window.openAddVerifWork = function() {
-  var workData = { export: null, proof: null, proofType: 'screenshot', description: '' };
+  var workData = { export: null, proof: null, proofType: 'screenshot', description: '' }; }
 
-  var mh = '<button class="mclose" id="vaw-back">&#x2190; Back</button>';
-  mh += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;margin-bottom:4px;">Add Work #' + (_vwWorks.length + 1) + '</div>';
-  mh += '<div style="font-size:11px;color:var(--td);margin-bottom:14px;">Upload the finished work + proof you created it.</div>';
+  var mh = '<button class="mclose" id="vaw-back">&#x2190; Back</button>'; }
+  mh += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;margin-bottom:4px;">Add Work #' + (_vwWorks.length + 1) + '</div>'; }
+  mh += '<div style="font-size:11px;color:var(--td);margin-bottom:14px;">Upload the finished work + proof you created it.</div>'; }
 
   // Description
-  mh += '<div class="fg"><label class="fl">Work Title / Description</label>';
-  mh += '<input class="fi" id="vaw-desc" placeholder="e.g. Brand identity for a Lagos startup"></div>';
+  mh += '<div class="fg"><label class="fl">Work Title / Description</label>'; }
+  mh += '<input class="fi" id="vaw-desc" placeholder="e.g. Brand identity for a Lagos startup"></div>'; }
 
   // Export upload
-  mh += '<div class="fg"><label class="fl">&#x1F5BC; Finished Work <span style="font-size:9px;color:var(--td);">(JPG, PNG, MP4 screenshot, code screenshot)</span></label>';
-  mh += '<label for="vaw-export-input" id="vaw-export-label" style="border:2px dashed var(--br);border-radius:8px;padding:16px;text-align:center;cursor:pointer;display:block;transition:border-color .2s;">';
-  mh += '<div style="font-size:22px;margin-bottom:4px;">&#x1F4E4;</div>';
-  mh += '<div style="font-size:11px;color:var(--td);" id="vaw-export-txt">Tap to upload finished work</div>';
-  mh += '</label><input type="file" id="vaw-export-input" accept="image/*" style="display:none;" onchange="handleVawExport(this)"></div>';
-  mh += '<div id="vaw-export-preview" style="display:none;margin-bottom:12px;"></div>';
+  mh += '<div class="fg"><label class="fl">&#x1F5BC; Finished Work <span style="font-size:9px;color:var(--td);">(JPG, PNG, MP4 screenshot, code screenshot)</span></label>'; }
+  mh += '<label for="vaw-export-input" id="vaw-export-label" style="border:2px dashed var(--br);border-radius:8px;padding:16px;text-align:center;cursor:pointer;display:block;transition:border-color .2s;">'; }
+  mh += '<div style="font-size:22px;margin-bottom:4px;">&#x1F4E4;</div>'; }
+  mh += '<div style="font-size:11px;color:var(--td);" id="vaw-export-txt">Tap to upload finished work</div>'; }
+  mh += '</label><input type="file" id="vaw-export-input" accept="image/*" style="display:none;" onchange="handleVawExport(this)"></div>'; }
+  mh += '<div id="vaw-export-preview" style="display:none;margin-bottom:12px;"></div>'; }
 
   // Proof type selector
-  mh += '<div class="fg"><label class="fl">&#x1F512; Proof of Ownership</label>';
-  mh += '<div class="vw-proof-type">';
-  mh += '<button class="vw-proof-btn active" id="vaw-pt-screenshot">&#x1F4F8; Screenshot<br><span style="font-size:9px;font-weight:400;">of raw/source file</span></button>';
-  mh += '<button class="vw-proof-btn" id="vaw-pt-video">&#x1F3AC; Video Proof<br><span style="font-size:9px;font-weight:400;">30 sec max, screen recording</span></button>';
-  mh += '</div>';
+  mh += '<div class="fg"><label class="fl">&#x1F512; Proof of Ownership</label>'; }
+  mh += '<div class="vw-proof-type">'; }
+  mh += '<button class="vw-proof-btn active" id="vaw-pt-screenshot">&#x1F4F8; Screenshot<br><span style="font-size:9px;font-weight:400;">of raw/source file</span></button>'; }
+  mh += '<button class="vw-proof-btn" id="vaw-pt-video">&#x1F3AC; Video Proof<br><span style="font-size:9px;font-weight:400;">30 sec max, screen recording</span></button>'; }
+  mh += '</div>'; }
 
   // Proof instructions
-  mh += '<div id="vaw-proof-hint" style="background:rgba(232,197,71,.06);border:1px solid rgba(232,197,71,.15);border-radius:8px;padding:10px;font-size:10px;color:var(--td);line-height:1.6;margin-bottom:10px;">';
-  mh += '&#x1F4A1; <strong>Screenshot:</strong> Take a screenshot showing the work open in your design tool (Figma, Photoshop, VS Code, etc). The file name and your work should both be visible.</div>';
+  mh += '<div id="vaw-proof-hint" style="background:rgba(232,197,71,.06);border:1px solid rgba(232,197,71,.15);border-radius:8px;padding:10px;font-size:10px;color:var(--td);line-height:1.6;margin-bottom:10px;">'; }
+  mh += '&#x1F4A1; <strong>Screenshot:</strong> Take a screenshot showing the work open in your design tool (Figma, Photoshop, VS Code, etc). The file name and your work should both be visible.</div>'; }
 
   // Proof upload
-  mh += '<label for="vaw-proof-input" id="vaw-proof-label" style="border:2px dashed var(--br);border-radius:8px;padding:16px;text-align:center;cursor:pointer;display:block;border-color:rgba(232,197,71,.3);">';
-  mh += '<div style="font-size:22px;margin-bottom:4px;">&#x1F512;</div>';
-  mh += '<div style="font-size:11px;color:var(--gld);" id="vaw-proof-txt">Tap to upload proof</div>';
-  mh += '</label><input type="file" id="vaw-proof-input" accept="image/*,video/*" style="display:none;" onchange="handleVawProof(this)"></div>';
-  mh += '<div id="vaw-proof-preview" style="display:none;margin-bottom:12px;"></div>';
+  mh += '<label for="vaw-proof-input" id="vaw-proof-label" style="border:2px dashed var(--br);border-radius:8px;padding:16px;text-align:center;cursor:pointer;display:block;border-color:rgba(232,197,71,.3);">'; }
+  mh += '<div style="font-size:22px;margin-bottom:4px;">&#x1F512;</div>'; }
+  mh += '<div style="font-size:11px;color:var(--gld);" id="vaw-proof-txt">Tap to upload proof</div>'; }
+  mh += '</label><input type="file" id="vaw-proof-input" accept="image/*,video/*" style="display:none;" onchange="handleVawProof(this)"></div>'; }
+  mh += '<div id="vaw-proof-preview" style="display:none;margin-bottom:12px;"></div>'; }
 
-  mh += '<button class="btn" id="vaw-save-btn" style="width:100%;margin-top:6px;">Save Work &#x2192;</button>';
+  mh += '<button class="btn" id="vaw-save-btn" style="width:100%;margin-top:6px;">Save Work &#x2192;</button>'; }
 
-  setModal(mh);
+  setModal(mh); }
 
   setTimeout(function() {
-    document.getElementById('vaw-back').onclick = function() { renderVerifModal(); };
-    document.getElementById('vaw-save-btn').onclick = function() { saveVerifWork(workData); };
-    var ss=document.getElementById('vaw-pt-screenshot');if(ss)ss.onclick=function(){selectVawProofType('screenshot');};
-    var sv=document.getElementById('vaw-pt-video');if(sv)sv.onclick=function(){selectVawProofType('video');};
-  }, 50);
+    document.getElementById('vaw-back').onclick = function() { renderVerifModal(); }; }
+    document.getElementById('vaw-save-btn').onclick = function() { saveVerifWork(workData); }; }
+    var ss=document.getElementById('vaw-pt-screenshot');if(ss)ss.onclick=function(){selectVawProofType('screenshot');}; }
+    var sv=document.getElementById('vaw-pt-video');if(sv)sv.onclick=function(){selectVawProofType('video');}; }
+  }, 50); }
 
-  window._vawData = workData;
-};
+  window._vawData = workData; }
+}; }
 
 window.selectVawProofType = function(type) {
-  type = (type==='scr')?'screenshot':(type==='vid')?'video':type;
-  window._vawData.proofType = type;
-  document.getElementById('vaw-pt-screenshot').classList.toggle('active', type === 'screenshot');
-  document.getElementById('vaw-pt-video').classList.toggle('active', type === 'video');
-  var hint = document.getElementById('vaw-proof-hint');
-  var inp = document.getElementById('vaw-proof-input');
+  type = (type==='scr')?'screenshot':(type==='vid')?'video':type; }
+  window._vawData.proofType = type; }
+  document.getElementById('vaw-pt-screenshot').classList.toggle('active', type === 'screenshot'); }
+  document.getElementById('vaw-pt-video').classList.toggle('active', type === 'video'); }
+  var hint = document.getElementById('vaw-proof-hint'); }
+  var inp = document.getElementById('vaw-proof-input'); }
   if (type === 'screenshot') {
-    hint.innerHTML = '&#x1F4A1; <strong>Screenshot:</strong> Show the work open in your editor (Figma, Photoshop, VS Code, Excel etc). The file name and your work should both be visible.';
-    inp.accept = 'image/*';
+    hint.innerHTML = '&#x1F4A1; <strong>Screenshot:</strong> Show the work open in your editor (Figma, Photoshop, VS Code, Excel etc). The file name and your work should both be visible.'; }
+    inp.accept = 'image/*'; }
   } else {
-    hint.innerHTML = "&#x1F4A1; <strong>Video (30 sec max):</strong> Record your screen showing you opening and navigating the source file. Speak your name and the date at the start.";
-    inp.accept = 'image/*,video/*';
+    hint.innerHTML = "&#x1F4A1; <strong>Video (30 sec max):</strong> Record your screen showing you opening and navigating the source file. Speak your name and the date at the start."; }
+    inp.accept = 'image/*,video/*'; }
   }
-};
+}; }
 
 window.handleVawExport = function(input) {
-  var file = input.files[0]; if (!file) return;
-  var reader = new FileReader();
+  var file = input.files[0]; if (!file) return; }
+  var reader = new FileReader(); }
   reader.onload = function(e) {
-    var img = new Image();
+    var img = new Image(); }
     img.onload = function() {
-      var canvas = document.createElement('canvas');
-      var max = 1200; var w = img.width, h = img.height;
+      var canvas = document.createElement('canvas'); }
+      var max = 1200; var w = img.width, h = img.height; }
       if (w > max) { h = h*max/w; w = max; }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      var data = canvas.toDataURL('image/jpeg', 0.8);
-      window._vawData.export = data;
-      var prev = document.getElementById('vaw-export-preview');
-      var txt = document.getElementById('vaw-export-txt');
+      canvas.width = w; canvas.height = h; }
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h); }
+      var data = canvas.toDataURL('image/jpeg', 0.8); }
+      window._vawData.export = data; }
+      var prev = document.getElementById('vaw-export-preview'); }
+      var txt = document.getElementById('vaw-export-txt'); }
       if (prev) { prev.style.display='block'; prev.innerHTML='<img src="'+data+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;">'; }
-      if (txt) txt.textContent = '✓ ' + file.name;
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-};
+      if (txt) txt.textContent = '✓ ' + file.name; }
+    }; }
+    img.src = e.target.result; }
+  }; }
+  reader.readAsDataURL(file); }
+}; }
 
 window.handleVawProof = function(input) {
-  var file = input.files[0]; if (!file) return;
-  var isVideo = file.type.startsWith('video/');
+  var file = input.files[0]; if (!file) return; }
+  var isVideo = file.type.startsWith('video/'); }
   if (isVideo && file.size > 50*1024*1024) { toast('Video must be under 50MB', 'bad'); return; }
-  var reader = new FileReader();
+  var reader = new FileReader(); }
   reader.onload = function(e) {
     if (isVideo) {
-      window._vawData.proof = e.target.result;
-      window._vawData.proofIsVideo = true;
-      var prev = document.getElementById('vaw-proof-preview');
-      var txt = document.getElementById('vaw-proof-txt');
+      window._vawData.proof = e.target.result; }
+      window._vawData.proofIsVideo = true; }
+      var prev = document.getElementById('vaw-proof-preview'); }
+      var txt = document.getElementById('vaw-proof-txt'); }
       if (prev) { prev.style.display='block'; prev.innerHTML='<div style="background:var(--s2);border:1px solid rgba(232,197,71,.3);border-radius:8px;padding:12px;font-size:11px;color:var(--gld);">&#x1F3AC; Video uploaded: '+file.name+'</div>'; }
-      if (txt) txt.textContent = '✓ ' + file.name;
+      if (txt) txt.textContent = '✓ ' + file.name; }
     } else {
-      var img = new Image();
+      var img = new Image(); }
       img.onload = function() {
-        var canvas = document.createElement('canvas');
-        var max = 1200; var w = img.width, h = img.height;
+        var canvas = document.createElement('canvas'); }
+        var max = 1200; var w = img.width, h = img.height; }
         if (w > max) { h = h*max/w; w = max; }
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        var data = canvas.toDataURL('image/jpeg', 0.8);
-        window._vawData.proof = data;
-        window._vawData.proofIsVideo = false;
-        var prev = document.getElementById('vaw-proof-preview');
-        var txt = document.getElementById('vaw-proof-txt');
+        canvas.width = w; canvas.height = h; }
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h); }
+        var data = canvas.toDataURL('image/jpeg', 0.8); }
+        window._vawData.proof = data; }
+        window._vawData.proofIsVideo = false; }
+        var prev = document.getElementById('vaw-proof-preview'); }
+        var txt = document.getElementById('vaw-proof-txt'); }
         if (prev) { prev.style.display='block'; prev.innerHTML='<img src="'+data+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;border:2px solid var(--gld);">'; }
-        if (txt) txt.textContent = '✓ ' + file.name;
-      };
-      img.src = e.target.result;
+        if (txt) txt.textContent = '✓ ' + file.name; }
+      }; }
+      img.src = e.target.result; }
     }
-  };
-  reader.readAsDataURL(file);
-};
+  }; }
+  reader.readAsDataURL(file); }
+}; }
 
 window.saveVerifWork = function(workData) {
-  var desc = (document.getElementById('vaw-desc').value||'').trim();
+  var desc = (document.getElementById('vaw-desc').value||'').trim(); }
   if (!workData.export) { toast('Please upload your finished work.', 'bad'); return; }
   if (!workData.proof) { toast('Please upload proof of ownership.', 'bad'); return; }
-  workData.description = desc || ('Work ' + (_vwWorks.length + 1));
-  _vwWorks.push(JSON.parse(JSON.stringify(workData)));
-  ME.verifDraft = _vwWorks;
-  saveUser(ME);
-  renderVerifModal();
-};
+  workData.description = desc || ('Work ' + (_vwWorks.length + 1)); }
+  _vwWorks.push(JSON.parse(JSON.stringify(workData))); }
+  ME.verifDraft = _vwWorks; }
+  saveUser(ME); }
+  renderVerifModal(); }
+}; }
 
 window.submitVerifFinal = async function() {
   if (_vwWorks.length < 2) { toast('Add at least 2 works.', 'bad'); return; }
-  var svId = 'sv_' + Date.now();
+  var svId = 'sv_' + Date.now(); }
   // Store works separately to avoid huge user doc
   await fbSet('skillVerifications', svId, {
     id: svId,
@@ -725,51 +725,51 @@ window.submitVerifFinal = async function() {
         proof: w.proof,
         proofType: w.proofType,
         proofIsVideo: w.proofIsVideo || false
-      };
+      }; }
     }),
     status: 'pending',
     ts: Date.now()
-  });
-  ME.verificationStatus = 'pending';
-  ME.verifDraft = [];
-  _vwWorks = [];
-  saveUser(ME);
-  closeModal();
-  toast('Submitted! Admin will review within 48 hours. +10 rep &#x1F31F;');
-  renderMyProfile();
-};
+  }); }
+  ME.verificationStatus = 'pending'; }
+  ME.verifDraft = []; }
+  _vwWorks = []; }
+  saveUser(ME); }
+  closeModal(); }
+  toast('Submitted! Admin will review within 48 hours. +10 rep &#x1F31F;'); }
+  renderMyProfile(); }
+}; }
 
-window.submitSkillReview = window.submitVerifFinal;
+window.submitSkillReview = window.submitVerifFinal; }
 
 
 window.showQR=function(){
-  var mh='<button class="mclose" id="qr-close">X</button>';
-  mh+='<div style="text-align:center;">';
-  mh+='<h3>My SkillID QR Code</h3>';
-  mh+='<p>Share on CV or LinkedIn for instant verification</p>';
-  mh+='<div style="display:flex;justify-content:center;margin:18px 0;"><div style="background:white;padding:14px;border-radius:10px;" id="qr-box"></div></div>';
-  mh+='<div class="chain" style="justify-content:center;margin-bottom:14px;"><div class="cdot"></div><div class="chash">'+ME.skillId+'</div></div>';
-  mh+='<button class="btn" id="qr-copy-btn">Copy SkillID</button>';
-  mh+='</div>';
-  setModal(mh);
-  document.getElementById('qr-close').onclick=closeModal;
+  var mh='<button class="mclose" id="qr-close">X</button>'; }
+  mh+='<div style="text-align:center;">'; }
+  mh+='<h3>My SkillID QR Code</h3>'; }
+  mh+='<p>Share on CV or LinkedIn for instant verification</p>'; }
+  mh+='<div style="display:flex;justify-content:center;margin:18px 0;"><div style="background:white;padding:14px;border-radius:10px;" id="qr-box"></div></div>'; }
+  mh+='<div class="chain" style="justify-content:center;margin-bottom:14px;"><div class="cdot"></div><div class="chash">'+ME.skillId+'</div></div>'; }
+  mh+='<button class="btn" id="qr-copy-btn">Copy SkillID</button>'; }
+  mh+='</div>'; }
+  setModal(mh); }
+  document.getElementById('qr-close').onclick=closeModal; }
   document.getElementById('qr-copy-btn').onclick=function(){
     if(navigator.clipboard){
-      navigator.clipboard.writeText(ME.skillId).then(function(){toast('SkillID copied!');});
+      navigator.clipboard.writeText(ME.skillId).then(function(){toast('SkillID copied!');}); }
     }else{toast(ME.skillId);}
-  };
+  }; }
   setTimeout(function(){
     try{
       new QRCode(document.getElementById('qr-box'),{
         text:'SkillStamp|ID:'+ME.skillId+'|Name:'+ME.name+'|Cat:'+ME.category,
         width:170,height:170,colorDark:'#000',colorLight:'#fff'
-      });
+      }); }
     }catch(e){
-      var el=document.getElementById('qr-box');
-      if(el) el.innerHTML='<div style="width:170px;height:170px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;text-align:center;padding:10px;">'+ME.skillId+'</div>';
+      var el=document.getElementById('qr-box'); }
+      if(el) el.innerHTML='<div style="width:170px;height:170px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;text-align:center;padding:10px;">'+ME.skillId+'</div>'; }
     }
-  },200);
-};
+  },200); }
+}; }
 
 
 
@@ -777,12 +777,12 @@ window.showQR=function(){
 //  PROFILE SMART BOOST — $1 for 24h visibility
 // ══════════════════════════════════════════════
 window.openProfileBoost = function() {
-  var BOOST_COST = 3;
-  var isBoosted = ME.profileBoostedUntil && ME.profileBoostedUntil > Date.now();
+  var BOOST_COST = 3; }
+  var isBoosted = ME.profileBoostedUntil && ME.profileBoostedUntil > Date.now(); }
   if (isBoosted) {
-    var hoursLeft = Math.ceil((ME.profileBoostedUntil - Date.now()) / (1000 * 60 * 60));
-    toast('⚡ Profile boost is already active for ~' + hoursLeft + 'h more.', 'bad');
-    return;
+    var hoursLeft = Math.ceil((ME.profileBoostedUntil - Date.now()) / (1000 * 60 * 60)); }
+    toast('⚡ Profile boost is already active for ~' + hoursLeft + 'h more.', 'bad'); }
+    return; }
   }
   setModal(
     '<button class="mclose" onclick="closeModal()">✕</button>'
@@ -798,42 +798,42 @@ window.openProfileBoost = function() {
     + '</div></div>'
     + '<button id="boost-profile-btn" style="width:100%;padding:13px;background:var(--gld);color:#fff;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;border:none;border-radius:12px;cursor:pointer;">Boost for $3 →</button>'
     + '<div style="font-size:10px;color:var(--td);text-align:center;margin-top:8px;">Deducted from wallet. Pro users get 3 free boosts/month.</div>'
-  );
+  ); }
   setTimeout(function() {
-    var btn = document.getElementById('boost-profile-btn');
-    if (!btn) return;
+    var btn = document.getElementById('boost-profile-btn'); }
+    if (!btn) return; }
     btn.onclick = async function() {
       // Pro users get free monthly boosts
-      var freeBoostsUsed = ME.freeBoostsUsed || { count: 0, month: '' };
-      var currentMonth = new Date().toISOString().slice(0, 7);
-      if (freeBoostsUsed.month !== currentMonth) freeBoostsUsed = { count: 0, month: currentMonth };
-      var isPro = userIsPro(ME);
-      var FREE_BOOSTS_PER_MONTH = 3;
-      var isFree = isPro && freeBoostsUsed.count < FREE_BOOSTS_PER_MONTH;
+      var freeBoostsUsed = ME.freeBoostsUsed || { count: 0, month: '' }; }
+      var currentMonth = new Date().toISOString().slice(0, 7); }
+      if (freeBoostsUsed.month !== currentMonth) freeBoostsUsed = { count: 0, month: currentMonth }; }
+      var isPro = userIsPro(ME); }
+      var FREE_BOOSTS_PER_MONTH = 3; }
+      var isFree = isPro && freeBoostsUsed.count < FREE_BOOSTS_PER_MONTH; }
 
       if (!isFree && (!ME.wallet || (ME.wallet.balance || 0) < BOOST_COST)) {
-        toast('Insufficient balance. Top up $1 to boost your profile.', 'bad');
-        closeModal(); openTopUp(); return;
+        toast('Insufficient balance. Top up $1 to boost your profile.', 'bad'); }
+        closeModal(); openTopUp(); return; }
       }
-      btn.disabled = true; btn.textContent = 'Activating…';
+      btn.disabled = true; btn.textContent = 'Activating…'; }
       try {
         if (isFree) {
-          freeBoostsUsed.count++;
-          ME.freeBoostsUsed = freeBoostsUsed;
+          freeBoostsUsed.count++; }
+          ME.freeBoostsUsed = freeBoostsUsed; }
         } else {
-          ME.wallet.balance = Math.max(0, (ME.wallet.balance || 0) - BOOST_COST);
-          ME.wallet.transactions.unshift({ id: 'boost_' + Date.now(), type: 'out', amount: BOOST_COST, from: 'SkillStamp', desc: 'Profile Smart Boost — 24h', ts: Date.now() });
+          ME.wallet.balance = Math.max(0, (ME.wallet.balance || 0) - BOOST_COST); }
+          ME.wallet.transactions.unshift({ id: 'boost_' + Date.now(), type: 'out', amount: BOOST_COST, from: 'SkillStamp', desc: 'Profile Smart Boost — 24h', ts: Date.now() }); }
         }
-        ME.profileBoostedUntil = Date.now() + (24 * 60 * 60 * 1000);
-        await saveUser(ME);
+        ME.profileBoostedUntil = Date.now() + (24 * 60 * 60 * 1000); }
+        await saveUser(ME); }
         // Also write directly to Firestore so talent sort sees the boost immediately
-        await fbSet('users', ME.uid, ME);
-        closeModal();
-        toast('⚡ Profile boosted for 24 hours!' + (isFree ? ' (Free Pro boost)' : ''));
+        await fbSet('users', ME.uid, ME); }
+        closeModal(); }
+        toast('⚡ Profile boosted for 24 hours!' + (isFree ? ' (Free Pro boost)' : '')); }
       } catch(e) {
-        btn.disabled = false; btn.textContent = 'Boost for $3 →';
-        toast('Boost failed. Try again.', 'bad');
+        btn.disabled = false; btn.textContent = 'Boost for $3 →'; }
+        toast('Boost failed. Try again.', 'bad'); }
       }
-    };
-  }, 50);
-};
+    }; }
+  }, 50); }
+}; }
