@@ -93,7 +93,7 @@ function fHero() {
   var wallet = ME.wallet || {};
   var earned = Math.round(wallet.earned || ME.earned || 0);
   var balance = Math.round(wallet.balance || 0);
-  var isVerif = userIsVerified(ME);
+  var isVerif = isVerified();
 
   // Circular progress SVG (SVG-based donut)
   var steps = [!!ME.avatar, !!(ME.title && ME.title !== 'Digital Professional'), !!(ME.bio && ME.bio.length >= 50), !!(ME.skills && ME.skills.length > 0), !!(ME.portfolio && ME.portfolio.length > 0), isVerif];
@@ -138,19 +138,6 @@ function fHero() {
   html += '<div style="font-size:9px;color:rgba(255,255,255,.45);margin-bottom:3px;">Total Earned</div>';
   html += '<div style="'+D.font+';font-weight:800;font-size:18px;color:#e8c547;">$'+earned.toLocaleString()+'</div>';
   html += '</div>';
-  html += '</div>';
-
-  // Tier + bid status strip
-  var tier = getTierLabel(ME);
-  var bidLimit = getBidLimit(ME);
-  var tracker = ME.proposalTracker || {count:0,month:''};
-  var currentMonth = new Date().toISOString().slice(0,7);
-  var bidsUsed = tracker.month === currentMonth ? (tracker.count||0) : 0;
-  var bidsLeft = Math.max(0, bidLimit - bidsUsed + (ME.proposalCredits||0));
-  var isPro = userIsPro(ME);
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;margin-top:8px;">';
-  html += '<div style="font-size:10px;color:rgba(255,255,255,.5);">' + tier + (isPro ? ' · <span style="color:#e8c547;">Pro</span>' : '') + '</div>';
-  html += '<div style="font-size:10px;color:rgba(255,255,255,.5);"><span style="color:#4ade80;font-weight:700;">' + bidsLeft + '</span> bids left</div>';
   html += '</div>';
 
   // CTA buttons

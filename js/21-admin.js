@@ -109,7 +109,7 @@ window.adminSearchV6=function(q){
 
 // Tab switcher
 window.adminTab=function(name){
-  ['overview','users','content','skills','business','announce'].forEach(function(t){
+  ['overview','users','content','skills','announce'].forEach(function(t){
     var panel=document.getElementById('admtab-'+t);
     var btn=document.getElementById('admt-'+t);
     if(panel) panel.style.display=(t===name)?'block':'none';
@@ -120,40 +120,6 @@ window.adminTab=function(name){
     }
   });
   if(name==='users') adminFilterUsers();
-  if(name==='business'){
-    setTimeout(async function(){
-      var panel=document.getElementById('biz-verif-panel');
-      if(!panel) return;
-      try {
-        var bizSnap=await fbGetAll('business_verifications');
-        if(!bizSnap||!bizSnap.length){
-          panel.innerHTML='<div style="font-size:12px;color:var(--td);text-align:center;padding:20px;">No business verification requests yet.</div>';
-          return;
-        }
-        var rows=bizSnap.map(function(b){
-          var statusColor=b.status==='approved'?'#4ade80':b.status==='rejected'?'#ef4444':'#e8c547';
-          return '<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:10px;">'
-            +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
-            +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;">'+(b.bizName||'Unknown')+'</div>'
-            +'<div style="font-size:10px;color:var(--td);">'+(b.name||'')+' · '+(b.email||'')+'</div></div>'
-            +'<div style="font-size:10px;font-weight:700;color:'+statusColor+';">'+b.status.toUpperCase()+'</div>'
-            +'</div>'
-            +(b.cac?'<div style="font-size:10px;color:var(--td);">CAC: '+b.cac+'</div>':'')
-            +(b.website?'<div style="font-size:10px;color:var(--td);">Web: '+b.website+'</div>':'')
-            +(b.bizEmail?'<div style="font-size:10px;color:var(--td);">Corp Email: '+b.bizEmail+'</div>':'')
-            +(b.status==='pending'
-              ?'<div style="display:flex;gap:8px;margin-top:10px;">'
-                +'<button onclick="adminApproveBiz(\''+b.uid+'\')" style="flex:1;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:#4ade80;border-radius:7px;padding:7px;font-size:11px;font-weight:700;cursor:pointer;">✓ Approve</button>'
-                +'<button onclick="adminRejectBiz(\''+b.uid+'\')" style="flex:1;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#ef4444;border-radius:7px;padding:7px;font-size:11px;font-weight:700;cursor:pointer;">✕ Reject</button>'
-              +'</div>':''
-            )+'</div>';
-        }).join('');
-        panel.innerHTML=rows||'<div style="font-size:12px;color:var(--td);text-align:center;padding:20px;">No requests found.</div>';
-      } catch(e){
-        panel.innerHTML='<div style="font-size:12px;color:#ef4444;text-align:center;padding:20px;">Error loading verifications.</div>';
-      }
-    },100);
-  }
 };
 
 // User filtering
@@ -180,30 +146,6 @@ window.adminToggleBanInline=function(uid,ban){
   saveUser(u);
   toast((ban?'🚫 Banned: ':'✓ Unbanned: ')+u.name);
   renderAdminV6(); adminTab('users');
-};
-
-// Permanently delete a user from Firestore
-window.adminDeleteUser=async function(uid){
-  var u=(window._adminAllUsers||[]).find(function(x){return x.uid===uid;});
-  if(!u) return;
-  if(!confirm('PERMANENTLY DELETE '+u.name+'? This cannot be undone. Their account, gigs, and data will be removed from Firestore.')) return;
-  if(!confirm('Last chance — delete '+u.name+' forever?')) return;
-  try {
-    // Remove from Firestore collections
-    await fbDelete('users', uid);
-    // Log to deleted_accounts
-    await fbSet('deleted_accounts', uid, {
-      uid: uid, name: u.name, email: u.email||'',
-      deletedAt: Date.now(), deletedBy: ME.uid, reason: 'Admin deletion'
-    });
-    // Remove from local cache
-    CACHE.users = CACHE.users.filter(function(x){return x.uid!==uid;});
-    if(window._adminAllUsers) window._adminAllUsers = window._adminAllUsers.filter(function(x){return x.uid!==uid;});
-    toast('🗑 '+u.name+' permanently deleted from database.');
-    renderAdminV6(); adminTab('users');
-  } catch(e) {
-    toast('Delete failed: '+e.message, 'bad');
-  }
 };
 
 // Set badge inline
@@ -332,18 +274,6 @@ window.adminDeleteGig=function(gid){
   var el=document.getElementById('gigcrd-'+gid);
   if(el) el.remove();
   toast('Gig deleted.');
-};
-
-// Gig mod search filter
-window.adminFilterGigs = function() {
-  var search = (document.getElementById('gig-mod-search')||{}).value || '';
-  var status = (document.getElementById('gig-mod-status')||{}).value || '';
-  search = search.toLowerCase();
-  document.querySelectorAll('.gig-mod-card').forEach(function(card) {
-    var titleMatch = !search || (card.dataset.title||'').includes(search);
-    var statusMatch = !status || card.dataset.status === status;
-    card.style.display = (titleMatch && statusMatch) ? 'block' : 'none';
-  });
 };
 
 // Admin DM
@@ -571,9 +501,9 @@ function buildAdminHTML(){
   }
 
   // ── Tab nav ──────────────────────────────────────────────────────────────
-  var tabs=['overview','users','content','skills','business','announce'];
-  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',business:'🏢',announce:'📢'};
-  var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',business:'Business',announce:'Broadcast'};
+  var tabs=['overview','users','content','skills','announce'];
+  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',announce:'📢'};
+  var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',announce:'Broadcast'};
 
   var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">'
     +'<span style="font-size:24px;">⚙️</span>'
@@ -596,8 +526,6 @@ function buildAdminHTML(){
   h+='<div id="admtab-overview" style="display:none;">';
 
   // Stat grid
-  var proUsers=users.filter(function(u){return u.isPro;}).length;
-  var bizUsers=users.filter(function(u){return u.isBusiness;}).length;
   h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:16px;">'
     +statCard('Total Users',users.length,'var(--gld)')
     +statCard('New Today',newToday,'var(--grn)')
@@ -611,8 +539,6 @@ function buildAdminHTML(){
     +statCard('Verified Users',verified,'var(--grn)')
     +statCard('Experts',experts,'var(--gld)')
     +statCard('Suspended',banned,banned?'var(--acc)':'var(--td)')
-    +statCard('Pro Subscribers',proUsers,'var(--gld)')
-    +statCard('Business Clients',bizUsers,'#60a5fa')
     +'</div>';
 
   // Growth bar chart (posts by day for past 7 days)
@@ -745,7 +671,6 @@ function buildAdminHTML(){
           ?'<button onclick="adminToggleBanInline(\''+u.uid+'\',false)" style="font-size:10px;padding:5px 10px;border:1px solid var(--grn);border-radius:5px;background:rgba(39,174,96,.1);color:var(--grn);cursor:pointer;">✓ Unban</button>'
           :u.uid===ME.uid?''
           :'<button onclick="adminToggleBanInline(\''+u.uid+'\',true)" style="font-size:10px;padding:5px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🚫 Ban</button>')
-        +(u.uid!==ME.uid?'<button onclick="adminDeleteUser(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid rgba(239,68,68,.5);border-radius:5px;background:rgba(239,68,68,.08);color:#ef4444;cursor:pointer;">🗑 Delete</button>':'')
         +(u.uid!==ME.uid&&!u.isAdmin?'<button onclick="adminPromoteInline(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--pur);border-radius:5px;background:rgba(155,89,182,.08);color:var(--pur);cursor:pointer;">🛡 Admin</button>':'')
         +(u.isAdmin&&u.uid!==ME.uid?'<button onclick="adminDemoteInline(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--td);border-radius:5px;background:var(--s);color:var(--td);cursor:pointer;">Remove Admin</button>':'')
         +'</div>'
@@ -761,35 +686,44 @@ function buildAdminHTML(){
   // ════════════════════════════════════════════════════════════════
   //  TAB 3 — CONTENT MODERATION
   // ════════════════════════════════════════════════════════════════
-    h+='<div id="admtab-content" style="display:none;">';
-  h+=sHead('💼','Gig Moderation ('+gigs.length+' total)');
-  // Filter controls
-  h+='<div style="display:flex;gap:8px;margin-bottom:12px;">'
-    +'<input id="gig-mod-search" oninput="adminFilterGigs()" placeholder="Search gigs…" style="flex:1;padding:8px 12px;border:1px solid var(--br);border-radius:8px;background:var(--s);color:var(--tx);font-size:12px;">'
-    +'<select id="gig-mod-status" onchange="adminFilterGigs()" style="padding:8px 10px;border:1px solid var(--br);border-radius:8px;background:var(--s);color:var(--tx);font-size:12px;">'
-    +'<option value="">All</option><option value="open">Open</option><option value="hired">Hired</option><option value="completed">Completed</option>'
-    +'</select></div>';
-  h+='<div id="gig-mod-list">';
+  h+='<div id="admtab-content" style="display:none;">';
+  h+=sHead('📝','Posts ('+posts.length+')');
+  h+='<div style="margin-bottom:14px;">';
+  if(!posts.length){
+    h+='<div style="text-align:center;padding:20px;font-size:12px;color:var(--td);">No posts yet</div>';
+  }
+  var sortedPosts=[...posts].sort(function(a,b){return (b.ts||0)-(a.ts||0);});
+  sortedPosts.slice(0,30).forEach(function(p){
+    var flagged=(p.flags||[]).length>0;
+    h+='<div id="postcrd-'+p.id+'" style="background:var(--s);border:1px solid '+(flagged?'var(--acc)':'var(--br)')+';border-radius:var(--r);padding:11px;margin-bottom:7px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;">'+p.userName+'</div>'
+      +(flagged?'<span style="font-size:9px;background:rgba(255,107,53,.15);color:var(--acc);border-radius:3px;padding:1px 5px;">⚠ Flagged</span>':'')
+      +'<div style="margin-left:auto;font-size:9px;color:var(--td);">'+timeAgo(p.ts||Date.now())+'</div>'
+      +'</div>'
+      +'<div style="font-size:12px;color:var(--fg);margin-bottom:8px;line-height:1.5;">'+p.content.slice(0,200)+(p.content.length>200?'…':'')+'</div>'
+      +'<div style="display:flex;gap:6px;align-items:center;">'
+      +'<span style="font-size:10px;color:var(--td);">❤ '+( p.likes||0)+' · 💬 '+(p.comments||[]).length+'</span>'
+      +'<button onclick="adminDeletePost(\''+p.id+'\')" style="margin-left:auto;font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🗑 Delete</button>'
+      +'<button onclick="adminFlagPost(\''+p.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--br);border-radius:5px;background:var(--s);color:var(--td);cursor:pointer;">'+(flagged?'✓ Unflag':'⚠ Flag')+'</button>'
+      +'</div>'
+      +'</div>';
+  });
+  h+='</div>';
+
+  h+=sHead('💼','Gigs ('+gigs.length+')');
+  h+='<div style="margin-bottom:14px;">';
   if(!gigs.length){
     h+='<div style="text-align:center;padding:20px;font-size:12px;color:var(--td);">No gigs yet</div>';
   }
-  [...gigs].sort(function(a,b){return (b.created||0)-(a.created||0);}).forEach(function(g){
-    var statusCol=g.status==='open'?'var(--grn)':g.status==='hired'?'var(--gld)':'var(--td)';
-    h+='<div id="gigcrd-'+g.id+'" class="gig-mod-card" data-title="'+(g.title||'').toLowerCase()+'" data-status="'+(g.status||'open')+'" style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:12px;margin-bottom:8px;">'
-      +'<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">'
-      +'<div style="flex:1;">'
-      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;margin-bottom:2px;">'+g.title+'</div>'
-      +'<div style="font-size:10px;color:var(--td);">By: '+g.posterName+' · '+(g.category||'General')+'</div>'
+  [...gigs].sort(function(a,b){return (b.created||0)-(a.created||0);}).slice(0,20).forEach(function(g){
+    h+='<div id="gigcrd-'+g.id+'" style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:11px;margin-bottom:7px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
+      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;flex:1;">'+g.title+'</div>'
+      +'<span style="font-size:10px;color:var(--grn);font-weight:700;">'+g.pay+'</span>'
       +'</div>'
-      +'<div style="text-align:right;">'
-      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;color:var(--gld);">'+g.pay+'</div>'
-      +'<div style="font-size:9px;font-weight:700;color:'+statusCol+';text-transform:uppercase;">'+(g.status||'open')+'</div>'
-      +'</div></div>'
-      +(g.description?'<div style="font-size:11px;color:var(--td);margin-bottom:8px;line-height:1.5;">'+g.description.slice(0,150)+(g.description.length>150?'…':'')+'</div>':'')
-      +'<div style="display:flex;gap:6px;align-items:center;">'
-      +'<span style="font-size:10px;color:var(--td);">'+(g.applicants||[]).length+' applicants · '+timeAgo(g.created||Date.now())+(g.isVaultGig?'<span style="margin-left:5px;background:rgba(232,197,71,.15);color:var(--gld);font-size:8px;padding:1px 5px;border-radius:4px;">🔒 Vault</span>':'')+'</span>'
-      +'<button onclick="adminDeleteGig(this.dataset.id)" data-id="'+g.id+'" style="margin-left:auto;font-size:10px;padding:5px 12px;border:1px solid rgba(239,68,68,.3);border-radius:6px;background:rgba(239,68,68,.06);color:#ef4444;cursor:pointer;font-weight:700;">Remove Gig</button>'
-      +'</div>'
+      +'<div style="font-size:10px;color:var(--td);margin-bottom:8px;">By: '+g.posterName+' · '+(g.category||'General')+' · '+g.type+'</div>'
+      +'<button onclick="adminDeleteGig(\''+g.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🗑 Delete Gig</button>'
       +'</div>';
   });
   h+='</div>';
@@ -845,15 +779,7 @@ function buildAdminHTML(){
   h+='</div>'; // end skills tab
 
   // ════════════════════════════════════════════════════════════════
-  //  TAB 5 — BUSINESS VERIFICATION
-  // ════════════════════════════════════════════════════════════════
-  h+='<div id="admtab-business" style="display:none;">';
-  h+=sHead('🏢','Business Client Verifications');
-  h+='<div id="biz-verif-panel"><div style="font-size:12px;color:var(--td);text-align:center;padding:20px;">Loading business applications…</div></div>';
-  h+='</div>';
-
-  // ════════════════════════════════════════════════════════════════
-  //  TAB 6 — BROADCAST / ANNOUNCE
+  //  TAB 5 — BROADCAST / ANNOUNCE
   // ════════════════════════════════════════════════════════════════
   h+='<div id="admtab-announce" style="display:none;">';
 
@@ -931,7 +857,6 @@ function buildUsersList(users){
       // Actions row
       +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'
       +'<button onclick="adminToggleBanV6(\''+u.uid+'\')" style="flex:1;padding:6px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid '+(isBanned?'rgba(46,213,115,.35)':'rgba(255,107,53,.35)')+';background:'+(isBanned?'rgba(46,213,115,.08)':'rgba(255,107,53,.08)')+';color:'+(isBanned?'var(--grn)':'var(--acc)') +';font-family:Plus Jakarta Sans,sans-serif;font-weight:700;">'+(isBanned?'✅ Unban':'🚫 Ban')+'</button>'
-      +'<button onclick="adminDeleteUser(\''+u.uid+'\',\''+u.name+'\')" style="padding:6px 10px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.08);color:#ef4444;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;">🗑 Delete</button>'
       +'<select onchange="adminSetBadge(\''+u.uid+'\',this.value)" style="flex:1;padding:6px;font-size:10px;border-radius:4px;border:1px solid var(--br);background:var(--s2);color:var(--t);cursor:pointer;">'
       +['beginner','review','verified','expert','suspended'].map(function(b){return '<option value="'+b+'"'+(u.badgeStatus===b?' selected':'')+'>'+b+'</option>';}).join('')
       +'</select>'
@@ -941,35 +866,6 @@ function buildUsersList(users){
   }
   return h;
 }
-window.adminApproveBiz=async function(uid){
-  try {
-    var biz=await fbGet('business_verifications',uid);
-    if(!biz){toast('Not found.','bad');return;}
-    biz.status='approved';biz.approvedAt=Date.now();
-    await fbSet('business_verifications',uid,biz);
-    // Also update user record
-    var u=getUser(uid);
-    if(u){u.isBusiness=true;u.bizVerified=true;await fbSet('users',uid,u);}
-    pushNotif(uid,'system','🏢 Business Mode Approved','Your business verification was approved! You now have access to Vault Jobs.',{type:'system'});
-    toast('✓ Business mode approved for '+uid);
-    adminTab('business');
-  } catch(e){toast('Error: '+e.message,'bad');}
-};
-
-window.adminRejectBiz=async function(uid){
-  try {
-    var biz=await fbGet('business_verifications',uid);
-    if(!biz){toast('Not found.','bad');return;}
-    biz.status='rejected';biz.rejectedAt=Date.now();
-    await fbSet('business_verifications',uid,biz);
-    var u=getUser(uid);
-    if(u){u.isBusiness=false;await fbSet('users',uid,u);}
-    pushNotif(uid,'system','🏢 Business Verification Update','Your business verification could not be confirmed. Please resubmit with valid documents.',{type:'system'});
-    toast('Business mode rejected for '+uid);
-    adminTab('business');
-  } catch(e){toast('Error: '+e.message,'bad');}
-};
-
 window.renderAdminV6=renderAdminV6;
 
 function adminToggleBanV6(uid){

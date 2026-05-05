@@ -21,18 +21,7 @@ window.openHireModal=async function(gid){
   document.getElementById('hire-close').onclick=closeModal;
   var hList=document.getElementById('hire-list');
   var rows='';
-  // ── Smart-Sort: Verified+Boosted > Verified > Unverified+Boosted > Standard ──
-  var sortedApplicants = applicants.slice().sort(function(a, b) {
-    var ua = getUser(a) || {};
-    var ub = getUser(b) || {};
-    var isVerifA = userIsVerified(ua);
-    var isVerifB = userIsVerified(ub);
-    var isBoostedA = !!(ua.proposalBoosts && ua.proposalBoosts[gid]);
-    var isBoostedB = !!(ub.proposalBoosts && ub.proposalBoosts[gid]);
-    function tierScore(v, b) { if(v && b) return 4; if(v) return 3; if(b) return 2; return 1; }
-    return tierScore(isVerifB, isBoostedB) - tierScore(isVerifA, isBoostedA);
-  });
-  sortedApplicants.forEach(function(uid){
+  applicants.forEach(function(uid){
     var u=getUser(uid)||{name:'User',skillId:uid,gradient:'#888'};
     var proposal=gig.proposals&&gig.proposals[uid];
     var cover=proposal&&proposal.cover?proposal.cover:'';
@@ -43,11 +32,7 @@ window.openHireModal=async function(gid){
     // Applicant header row
     rows+='<div style="display:flex;align-items:center;gap:10px;padding:11px 12px;">';
     rows+=avHTML(u,36,'50%');
-    var isApplicantVerif=userIsVerified(u);
-    var isApplicantBoosted=!!(u.proposalBoosts&&u.proposalBoosts[gid]);
-    var applicantBadge=isApplicantVerif?'<span style="font-size:8px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.3);padding:1px 5px;border-radius:6px;margin-left:4px;">✓ Verified</span>':'';
-    var boostBadge=isApplicantBoosted?'<span style="font-size:8px;background:rgba(96,165,250,.1);color:#60a5fa;border:1px solid rgba(96,165,250,.3);padding:1px 5px;border-radius:6px;margin-left:3px;">⚡ Boosted</span>':'';
-    rows+='<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;font-family:Plus Jakarta Sans,sans-serif;">'+u.name+applicantBadge+boostBadge+'</div>';
+    rows+='<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;font-family:Plus Jakarta Sans,sans-serif;">'+u.name+'</div>';
     rows+='<div style="font-size:10px;color:var(--td);">'+(u.skillId||'')+(timeline?' · 📅 '+timeline:'')+(rate?' · '+rate:'')+'</div></div>';
     // View Profile button
     rows+='<button onclick="closeModal();viewProfile(\'' + uid + '\')" style="background:none;border:1px solid var(--br);border-radius:6px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--gld);cursor:pointer;flex-shrink:0;">👤 Profile</button>';
@@ -72,7 +57,6 @@ window.openHireModal=async function(gid){
     rows+='</div>';
   });
   hList.innerHTML=rows;
-  if(!rows) hList.innerHTML='<div style="text-align:center;color:var(--td);font-size:12px;padding:20px;">No applicants to show.</div>';
   document.getElementById('hire-confirm-btn').onclick=function(){confirmHire(gid);};
 };
 
@@ -134,18 +118,14 @@ window.openCompleteGig=function(gid){
   if(!gig)return;
   var freelancer=getUser(gig.hiredUid)||{name:'Freelancer'};
   var payNum=gig.escrowAmount||gig.payNum||0;
-  var freelancerForFee=getUser(gig.hiredUid);
-  var commRateDisplay=freelancerForFee?getCommissionRate(freelancerForFee):0.10;
-  var holdDisplay=freelancerForFee?getPayoutHoldDays(freelancerForFee):10;
-  var fee=Math.round(payNum*commRateDisplay);
+  var fee=Math.round(payNum*0.10);
   var payout=payNum-fee;
   var mh='<button class="mclose" id="comp-close">✕</button>';
   mh+='<h3>✅ Release Payment</h3>';
   mh+='<p>Confirm you are satisfied with the work delivered by '+freelancer.name+'.</p>';
   mh+='<div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:14px;margin-bottom:14px;">';
   mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">Escrow Amount</span><span>$'+payNum.toLocaleString()+'</span></div>';
-  mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">SkillStamp Fee ('+Math.round(commRateDisplay*100)+'%)</span><span style="color:var(--acc);">-$'+fee.toLocaleString()+'</span></div>';
-  mh+='<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--td);">Payout Hold</span><span style="color:var(--gld);">'+( holdDisplay===0?'Instant (Whale tier)':holdDisplay+' days')+'</span></div>';
+  mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-$'+fee.toLocaleString()+'</span></div>';
   mh+='<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;border-top:1px solid var(--br);margin-top:6px;padding-top:8px;"><span>'+freelancer.name+' Receives</span><span style="color:var(--grn);">$'+payout.toLocaleString()+'</span></div>';
   mh+='</div>';
   mh+='<button class="btn" id="comp-confirm-btn" style="width:100%;">Release Payment →</button>';
@@ -160,13 +140,8 @@ window.confirmComplete=async function(gid){
   var freelancer=getUser(gig.hiredUid);
   if(!freelancer){toast('Freelancer not found.','bad');return;}
   var payNum=gig.escrowAmount||0;
-  // Commission: 0% for Pro users, 10% for free users
-  var freelancer_=getUser(gig.hiredUid);
-  var commRate=freelancer_?getCommissionRate(freelancer_):0.10;
-  var fee=Math.round(payNum*commRate);
+  var fee=Math.round(payNum*0.10);
   var payout=payNum-fee;
-  // Payout hold days: Whale=0 (instant), Elite=5 days, Discoverer/Hustler=10 days
-  var holdDays=freelancer_?getPayoutHoldDays(freelancer_):10;
   // Disable button and show loading state immediately
   var btn=document.getElementById('comp-confirm-btn');
   if(btn){btn.disabled=true;btn.textContent='Processing…';}
@@ -176,17 +151,9 @@ window.confirmComplete=async function(gid){
     var cidx=CACHE.gigs.findIndex(function(g){return g.id===gig.id;});
     if(cidx>=0) CACHE.gigs[cidx]=gig;
     if(!freelancer.wallet) freelancer.wallet={balance:0,pending:0,earned:0,transactions:[]};
-    var holdLabel=holdDays===0?'(Instant)':'(Available in '+holdDays+'d)';
-    if(holdDays>0){
-      // Schedule release: store holdUntil — admin/cloud function releases after hold
-      freelancer.wallet.pending=(freelancer.wallet.pending||0)+payout;
-      freelancer.wallet.transactions.unshift({id:'pay_'+Date.now(),type:'pending',amount:payout,from:ME.name,desc:'Payment pending '+holdDays+'d hold: '+gig.title,holdUntil:Date.now()+(holdDays*86400000),ts:Date.now()});
-    } else {
-      // Instant payout (Whale tier)
-      freelancer.wallet.balance+=payout;
-      freelancer.wallet.earned=(freelancer.wallet.earned||0)+payout;
-      freelancer.wallet.transactions.unshift({id:'pay_'+Date.now(),type:'in',amount:payout,from:ME.name,desc:'Payment (Instant): '+gig.title,ts:Date.now()});
-    }
+    freelancer.wallet.balance+=payout;
+    freelancer.wallet.earned=(freelancer.wallet.earned||0)+payout;
+    freelancer.wallet.transactions.unshift({id:'pay_'+Date.now(),type:'in',amount:payout,from:ME.name,desc:'Payment: '+gig.title,ts:Date.now()});
     freelancer.repPoints=(freelancer.repPoints||0)+20;
     freelancer.gigsCount=(freelancer.gigsCount||0)+1;
     await fbSet('users',freelancer.uid,freelancer);
@@ -194,14 +161,8 @@ window.confirmComplete=async function(gid){
     ME.wallet.transactions.unshift({id:'rel_'+Date.now(),type:'out',amount:payout,from:freelancer.name,desc:'Released: '+gig.title,ts:Date.now()});
     ME.repPoints=(ME.repPoints||0)+10;
     saveUser(ME);
-    var payMsg=holdDays===0
-      ?'Payment of $'+payout.toLocaleString()+' added to your wallet instantly (Whale tier)! Great work!'
-      :'Payment of $'+payout.toLocaleString()+' is pending a '+holdDays+'-day hold and will be released automatically. Great work!';
-    sendAutoMsg(gig.hiredUid,payMsg);
-    var payNotifBody=holdDays===0
-      ?'$'+payout.toLocaleString()+' has been sent to your wallet for: '+gig.title
-      :'$'+payout.toLocaleString()+' will be released in '+holdDays+' days for: '+gig.title;
-    pushNotif(gig.hiredUid,'payment','💰 Payment '+( holdDays===0?'Received':'Pending'),payNotifBody,{type:'payment',gigId:gig.id});
+    sendAutoMsg(gig.hiredUid,'Payment of $'+payout.toLocaleString()+' added to your wallet for: '+gig.title+'. Great work!');
+    pushNotif(gig.hiredUid,'payment','💰 Payment Received','$'+payout.toLocaleString()+' has been added to your wallet for: '+gig.title,{type:'payment',gigId:gig.id});
     pushNotif(ME.uid,'payment','✅ Payment Released','You released $'+payout.toLocaleString()+' to '+freelancer.name+' for: '+gig.title,{type:'payment',gigId:gig.id});
     renderWallet();
     // Show success confirmation modal immediately

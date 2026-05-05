@@ -27,10 +27,6 @@ function renderGigs(){
   } else {
     // Only show open gigs in browse view
     gigs=gigs.filter(function(g){return !g.status||g.status==='open';});
-    // Vetted Vault: hide vault-only gigs from unverified freelancers
-    if(!userIsVerified(ME)){
-      gigs=gigs.filter(function(g){return !g.isVaultGig;});
-    }
     if(activeGigCat!=='All') gigs=gigs.filter(function(g){return g.category===activeGigCat;});
     document.getElementById('gigs-count').textContent=gigs.length+' open';
   }
@@ -50,7 +46,7 @@ function renderGigs(){
     rows+='<div class="gig-item" data-gid="'+g.id+'">';
     rows+='<div class="gig-icon" style="background:'+GIG_COLS[i%GIG_COLS.length]+'">'+GIG_ICONS[i%GIG_ICONS.length]+'</div>';
     rows+='<div style="flex:1;min-width:0;">';
-    var vaultTag=g.isVaultGig?'<span style="font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(232,197,71,.15);color:var(--gld);border:1px solid rgba(232,197,71,.3);margin-left:5px;">🔒 Vault</span>':'';    var boostedTag=g.boostedUntil&&g.boostedUntil>Date.now()?'<span style="font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.3);margin-left:5px;">⚡ Boosted</span>':'';    rows+='<div class="gig-title">'+g.title+statusTag+vaultTag+boostedTag+'</div>';
+    rows+='<div class="gig-title">'+g.title+statusTag+'</div>';
     rows+='<div style="font-size:10px;color:var(--td);">'+g.posterName+' · '+g.category+' · '+timeAgo(g.created)+'</div>';
     rows+='<div style="margin-top:4px;">'+skills+'</div>';
     if(escrowTag) rows+='<div style="margin-top:2px;">'+escrowTag+'</div>';
@@ -247,10 +243,7 @@ function _gwSave() {
   }
   if (s === 3) { var du = document.getElementById('gw-duration'); if (du) d.duration = du.value; }
   if (s === 4) { var b = document.getElementById('gw-budget'); if (b) d.budget = b.value.trim(); }
-  if (s === 5) {
-    var cb = document.getElementById('gw-escrow-cb'); if (cb) d.escrowAgreed = cb.checked;
-    var vcb = document.getElementById('gw-vault-cb'); if (vcb) d.isVaultGig = vcb.checked;
-  }
+  if (s === 5) { var cb = document.getElementById('gw-escrow-cb'); if (cb) d.escrowAgreed = cb.checked; }
 }
 
 function _gwValidate() {
@@ -421,7 +414,6 @@ function _gwStep4(d) {
 // ─ Step 5: Review ────────────────────────────────────────────
 function _gwStep5(d) {
   var num = parseFloat((d.budget || '').replace(/[^0-9.]/g, '')) || 0;
-  var isBusiness=userIsBusiness(ME);
   var rows = [
     {label:'Title',       val:d.title,                                          step:1},
     {label:'Category',    val:d.category,                                       step:1},
@@ -444,10 +436,6 @@ function _gwStep5(d) {
     + '<input type="checkbox" id="gw-escrow-cb"' + (d.escrowAgreed ? ' checked' : '') + '>'
     + '<label for="gw-escrow-cb">I agree to lock <strong>$' + num.toLocaleString() + '</strong> in escrow. Funds release only after I confirm delivery.</label>'
     + '</div>'
-    + (isBusiness ? '<div id="gw-vault-row" style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:rgba(232,197,71,.05);border:1px solid rgba(232,197,71,.2);border-radius:12px;margin-top:8px;cursor:pointer;">'
-      + '<input type="checkbox" id="gw-vault-cb"' + (d.isVaultGig ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:#e8c547;flex-shrink:0;margin-top:1px;cursor:pointer;">'
-      + '<label for="gw-vault-cb" style="font-size:12px;color:var(--tx);line-height:1.5;cursor:pointer;"><strong style="color:var(--gld);">🔒 Post to Vetted Vault</strong> — Only Verified freelancers (Elite & Whale tier) can see and apply to this gig. Ensures premium quality applicants.</label>'
-      + '</div>' : '')
     + '<div class="gw-tip" style="margin-top:12px;">🛡️ <div>Your money is <strong>protected</strong>. SkillStamp holds funds securely until you are satisfied.</div></div>';
 }
 
@@ -538,8 +526,7 @@ async function _gwSubmit() {
       pay:'$'+num.toLocaleString(), payNum:num, category:d.category, type:'Project',
       scope:d.scope, duration:d.duration, skills:d.skills, screeningQ:d.screeningQ||null,
       posterUid:ME.uid, posterName:ME.name, created:Date.now(), applicants:[],
-      status:'open', escrowAmount:num, deadline:null, hiredUid:null,
-      isVaultGig:!!(d.isVaultGig&&userIsBusiness(ME))
+      status:'open', escrowAmount:num, deadline:null, hiredUid:null
     };
     await fbSet('gigs', gig.id, gig);
     CACHE.gigs.unshift(gig);
@@ -635,16 +622,6 @@ window.showGigDetail=function(gid){
       dBtn.onclick=function(){openDispute(gid);};
       acts.appendChild(dBtn);
     }
-    // Smart Boost — $1 to push gig to top for 24h
-    if(g.status==='open'){
-      var boostBtn=document.createElement('button');
-      boostBtn.className='btn2';boostBtn.style.cssText='width:100%;margin-bottom:8px;font-size:11px;';
-      var isBoosted=g.boostedUntil&&g.boostedUntil>Date.now();
-      boostBtn.textContent=isBoosted?'⚡ Boosted (active until '+new Date(g.boostedUntil).toLocaleTimeString()+')':'⚡ Boost Gig for $1 (24h)';
-      boostBtn.disabled=!!isBoosted;
-      if(!isBoosted) boostBtn.onclick=function(){boostGig(gid);};
-      acts.appendChild(boostBtn);
-    }
     var delBtn=document.createElement('button');
     delBtn.className='btn2';delBtn.style.cssText='width:100%;font-size:11px;';
     delBtn.textContent='Delete Gig';
@@ -687,83 +664,47 @@ function getProposalTracker(){
 function saveProposalTracker(tracker){ME.proposalTracker=tracker;saveUser(ME);}
 function getProposalCredits(){return ME.proposalCredits||0;}
 
-// ── Shadow Guard — 48hr cooldown for low-effort bids ─────
-function isOnShadowGuard(){
-  if(!ME||!ME.shadowGuardUntil) return false;
-  return Date.now()<ME.shadowGuardUntil;
-}
-async function triggerShadowGuard(){
-  ME.shadowGuardUntil=Date.now()+(48*60*60*1000);
-  await saveUser(ME);
-}
-// Simple copy-paste detection: checks if cover is near-identical to a recent bid
-function detectLowEffortBid(cover){
-  if(!cover||cover.trim().length<50) return true;
-  var apps=ME.applications||[];
-  var recent=apps.slice(-3).map(function(a){return (a.cover||'').trim().toLowerCase();});
-  var thisCover=cover.trim().toLowerCase();
-  for(var i=0;i<recent.length;i++){
-    if(!recent[i]||recent[i].length<20) continue;
-    var w1=thisCover.split(/\s+/);
-    var w2=recent[i].split(/\s+/);
-    var shared=w1.filter(function(w){return w.length>4&&w2.indexOf(w)>=0;}).length;
-    if(shared/Math.max(w1.length,w2.length)>0.70) return true;
-  }
-  return false;
-}
-
 window.purchaseProposalPack=async function(count,price){
   if(!ME.wallet||(ME.wallet.balance||0)<price){toast('Insufficient wallet balance. Top up first.','bad');closeModal();showPage('wallet');return;}
   ME.wallet.balance=(ME.wallet.balance||0)-price;
-  ME.wallet.transactions.unshift({id:'pp_'+Date.now(),type:'out',amount:price,from:'SkillStamp',desc:count+' Extra Bid Credits ($0.50 each)',ts:Date.now()});
+  ME.wallet.transactions.unshift({id:'pp_'+Date.now(),type:'out',amount:price,from:'SkillStamp',desc:count+' Proposal Credits',ts:Date.now()});
   ME.proposalCredits=(ME.proposalCredits||0)+count;
   await saveUser(ME);
-  closeModal();toast('\u2713 '+count+' extra bid credits added!');
+  closeModal();toast('✓ '+count+' proposal credits added!');
 };
 function openProposalCredits(){
-  var limit=getBidLimit(ME);
-  var tier=getTierLabel(ME);
   setModal('<button class="mclose" onclick="closeModal()">✕</button>'
     +'<div style="text-align:center;padding:8px 0 14px;">'
     +'<div style="font-size:40px;margin-bottom:12px;">📦</div>'
-    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;margin-bottom:6px;">Bid Limit Reached</div>'
-    +'<div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:10px;margin-bottom:12px;font-size:11px;color:var(--td);"><strong>Your tier:</strong> '+tier+' · <strong>'+limit+' bids/month</strong></div>'
-    +'<p style="font-size:12px;color:var(--td);line-height:1.7;margin-bottom:18px;">You\'ve used all your monthly bids. Buy extra at <strong style="color:var(--gld);">$0.50 each</strong>, upgrade to Pro for more bids, or get Verified to level up your tier.</p>'
+    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;margin-bottom:6px;">Proposal Credits</div>'
+    +'<p style="font-size:12px;color:var(--td);line-height:1.7;margin-bottom:18px;">You\'ve used all your free proposals this month. Buy a credit pack to keep applying, or get verified for unlimited proposals.</p>'
     +'</div>'
     +'<div style="display:grid;gap:10px;margin-bottom:14px;">'
-    +'<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:14px;cursor:pointer;" onclick="purchaseProposalPack(5,2.50)">'
+    +'<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:14px;cursor:pointer;" onclick="purchaseProposalPack(5,3)">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;">'
-    +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;">Starter Pack</div><div style="font-size:11px;color:var(--td);">5 extra bids</div></div>'
-    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--gld);">$2.50</div>'
+    +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;">Starter Pack</div><div style="font-size:11px;color:var(--td);">5 extra proposals</div></div>'
+    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--gld);">$3</div>'
     +'</div></div>'
-    +'<div style="background:var(--s2);border:2px solid var(--gld);border-radius:10px;padding:14px;cursor:pointer;position:relative;" onclick="purchaseProposalPack(20,10)">'
+    +'<div style="background:var(--s2);border:2px solid var(--gld);border-radius:10px;padding:14px;cursor:pointer;position:relative;" onclick="purchaseProposalPack(15,8)">'
     +'<div style="position:absolute;top:-8px;right:12px;background:var(--gld);color:#000;font-size:8px;font-weight:800;padding:2px 8px;border-radius:8px;font-family:Plus Jakarta Sans,sans-serif;">BEST VALUE</div>'
     +'<div style="display:flex;justify-content:space-between;align-items:center;">'
-    +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;">Power Pack</div><div style="font-size:11px;color:var(--td);">20 extra bids ($0.50 each)</div></div>'
-    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--gld);">$10</div>'
+    +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;">Pro Pack</div><div style="font-size:11px;color:var(--td);">15 extra proposals</div></div>'
+    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--gld);">$8</div>'
     +'</div></div>'
     +'</div>'
-    +'<button class="btn2" onclick="closeModal();openProSubscribe();" style="width:100%;margin-bottom:8px;">\u26a1 Upgrade to Pro (More Bids + 0% Commission)</button>'
-    +'<button class="btn2" onclick="closeModal();openSubmitSkill();" style="width:100%;">\ud83c\udfc5 Get Verified (Elite/Whale Tier)</button>'
-    +'<div style="font-size:10px;color:var(--td);text-align:center;margin-top:8px;">Deducted from your wallet balance</div>');
+    +'<button class="btn2" onclick="closeModal();openSubmitSkill();" style="width:100%;margin-bottom:8px;">⚡ Get Verified Instead (Unlimited)</button>'
+    +'<div style="font-size:10px;color:var(--td);text-align:center;">Deducted from your wallet balance</div>');
 }
 
 window.applyGig=async function(gid,title,posterUid){
   if(!checkRateLimit('apply_gig',5,60000)) return;
-  // Shadow Guard check — 48hr cooldown for low-effort bids
-  if(isOnShadowGuard()){
-    var hoursLeft=Math.ceil((ME.shadowGuardUntil-Date.now())/(1000*60*60));
-    toast('⚠️ Shadow Guard active. You can bid again in '+hoursLeft+'h.','bad');
-    return;
-  }
-  var isVerified=userIsVerified(ME);
+  var isVerified=ME.badgeStatus==='verified'||ME.badgeStatus==='expert'||ME.badgeStatus==='elite';
   var tracker=getProposalTracker();
   var credits=getProposalCredits();
-  var BID_LIMIT=getBidLimit(ME);
+  var FREE_LIMIT=3;
   var gig=getGigs().find(function(g){return g.id===gid;});
   if(gig&&(gig.applicants||[]).indexOf(ME.uid)>=0){toast('You have already applied to this gig.','bad');return;}
-  // Check bid limit: all tiers have a monthly limit; extra bids can be purchased
-  if(tracker.count>=BID_LIMIT&&credits<=0){openProposalCredits();return;}
+  if(!isVerified&&tracker.count>=FREE_LIMIT&&credits<=0){openProposalCredits();return;}
 
   var portfolio=ME.portfolio||[];
   var pfOpts=portfolio.map(function(p){return '<option value="'+p.id+'">'+p.title+'</option>';}).join('');
@@ -793,14 +734,13 @@ window.applyGig=async function(gid,title,posterUid){
 
   var isOpenBudget=!gig||!gig.pay||gig.pay==='Open'||gig.pay===0;
   var rateSection=isOpenBudget?'<div class="fg"><label class="fl">Your Proposed Rate ($)</label><input class="fi" id="ap-rate" type="number" placeholder="e.g. 500" min="1"></div>':'';
-  var remaining=BID_LIMIT-tracker.count+credits;
-  var tierLbl=getTierLabel(ME);
-  var proposalNotice='<div style="background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;">'
+  var remaining=isVerified?null:(FREE_LIMIT-tracker.count+credits);
+  var proposalNotice=!isVerified?('<div style="background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;">'
-    +'<span style="color:var(--acc);font-weight:700;">'+tierLbl+' · Bids</span>'
-    +'<span style="color:var(--acc);font-weight:700;">'+tracker.count+'/'+BID_LIMIT+' used'+(credits>0?' · '+credits+' extra':'')+'</span>'
-    +'</div><div style="font-size:10px;color:var(--td);margin-top:3px;">'+( !isVerified?'Get verified for more bids and 0% commission with Pro.':'')
-    +'</div></div>';
+    +'<span style="color:var(--acc);font-weight:700;">📋 Proposals Used</span>'
+    +'<span style="color:var(--acc);font-weight:700;">'+tracker.count+'/'+FREE_LIMIT+' this month'+(credits>0?' · '+credits+' credits':'')+'</span>'
+    +'</div><div style="font-size:10px;color:var(--td);margin-top:3px;">Get verified for unlimited proposals + lower platform fees.</div>'
+    +'</div>'):'';
 
   var mh='<button class="mclose" onclick="closeModal()">✕</button>';
   mh+='<h3>📋 Submit Proposal</h3>';
@@ -840,16 +780,10 @@ window.applyGig=async function(gid,title,posterUid){
       submitBtn.disabled=true;submitBtn.textContent='Submitting...';
 
       try {
-        // Deduct one bid from monthly tracker or from purchased credits
-        if(tracker.count<BID_LIMIT){
-          tracker.count++;saveProposalTracker(tracker);
-        } else if(credits>0){
-          ME.proposalCredits=credits-1;await saveUser(ME);
-        }
-        // Shadow Guard: detect and flag low-effort/copy-paste bids
-        if(detectLowEffortBid(cover)){
-          await triggerShadowGuard();
-          // Still submit the bid — just warn for next time
+        // Deduct proposal for unverified users
+        if(!isVerified){
+          if(tracker.count<FREE_LIMIT){tracker.count++;saveProposalTracker(tracker);}
+          else if(credits>0){ME.proposalCredits=credits-1;await saveUser(ME);}
         }
         // Save to user applications
         if(!ME.applications) ME.applications=[];
@@ -879,11 +813,11 @@ window.applyGig=async function(gid,title,posterUid){
         } catch(msgErr){ console.warn('Messaging failed (non-critical)', msgErr); }
 
         // ── SUCCESS ──────────────────────────────────────────
-        var leftover=BID_LIMIT-tracker.count+(ME.proposalCredits||0);
+        var leftover=isVerified?null:(FREE_LIMIT-tracker.count+(ME.proposalCredits||0));
         var mhtml='<div class="sick">&#10003;</div>';
-        mhtml+='<h3>Bid Submitted!</h3>';
+        mhtml+='<h3>Proposal Submitted!</h3>';
         mhtml+='<p>Your cover note and details have been sent to the client.</p>';
-        mhtml+='<div style="background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px;padding:10px;font-size:11px;color:var(--acc);margin:10px 0;"><strong>'+(leftover>0?leftover:'0')+' bids</strong> remaining this month ('+getTierLabel(ME)+').</div>';
+        if(!isVerified) mhtml+='<div style="background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px;padding:10px;font-size:11px;color:var(--acc);margin:10px 0;"><strong>'+(leftover>0?leftover:'0')+' proposals</strong> left this month. <span onclick="closeModal();openSubmitSkill();" style="color:var(--gld);cursor:pointer;text-decoration:underline;">Get verified</span> for unlimited.</div>';
         mhtml+='<div style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:8px;padding:10px;font-size:11px;color:var(--td);margin:10px 0;">Track this in <strong>Gigs → My Applications</strong></div>';
         mhtml+='<button class="btn" style="margin-top:14px;" onclick="closeModal();showPage(\'gigs\');switchGigTab(\'myapps\');">View My Applications →</button>';
         setModal(mhtml);
@@ -902,30 +836,6 @@ window.msgUser=function(el){openMsg(el.dataset.uid);};
 window.endorseUser=function(el){openEndorse(el.dataset.uid);};
 window.goWallet=function(){showPage('wallet');};
 window.goTimeline=function(){showPage('timeline');};
-
-// ── Smart Boost — $1 moves gig to top for 24 hours ────────
-window.boostGig=async function(gid){
-  var BOOST_COST=1;
-  if(!ME.wallet||(ME.wallet.balance||0)<BOOST_COST){
-    toast('Insufficient balance. Top up $1 to boost this gig.','bad');
-    return;
-  }
-  if(!confirm('Boost this gig for $1? It will appear at the top of search results for 24 hours.')) return;
-  ME.wallet.balance=Math.max(0,(ME.wallet.balance||0)-BOOST_COST);
-  ME.wallet.transactions.unshift({id:'boost_'+Date.now(),type:'out',amount:BOOST_COST,from:'SkillStamp',desc:'Smart Boost: Gig promoted for 24h',ts:Date.now()});
-  await saveUser(ME);
-  var gig=getGigs().find(function(g){return g.id===gid;});
-  if(gig){
-    gig.boostedUntil=Date.now()+(24*60*60*1000);
-    await fbSet('gigs',gid,gig);
-    var ci=CACHE.gigs.findIndex(function(g){return g.id===gid;});
-    if(ci>=0) CACHE.gigs[ci]=gig;
-  }
-  closeModal();
-  toast('⚡ Gig boosted! It will appear at the top for 24 hours.');
-  renderGigs();
-};
-
 window.deleteGig=function(gid){
   if(!confirm('Delete this gig?'))return;
   (async()=>{

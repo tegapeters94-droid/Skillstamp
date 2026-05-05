@@ -310,9 +310,7 @@ window.doSignup=async function(){
       bio:'',skills:[],badgeStatus:'beginner',score:0,repPoints:0,
       gigsCount:0,earned:0,skillId:null,gradient:gradFor(name),
       wallet:{balance:0,pending:0,earned:0,transactions:[]},
-      created:Date.now(),isAdmin:false,avatar:null,
-      isPro:false,isBusiness:false,proSince:null,
-      proposalBoosts:{},shadowGuardUntil:null
+      created:Date.now(),isAdmin:false,avatar:null
     };
     await fbSet('users', uid, user);
     CACHE.users.push(user);

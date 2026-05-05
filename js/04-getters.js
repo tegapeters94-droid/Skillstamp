@@ -5,62 +5,6 @@
 // ══════════════════════════════════════════════
 let ME=null, activeCat='All', activeGigCat='All', activeConv=null, postType='general', notifs=[];
 
-// ══════════════════════════════════════════════
-//  BUSINESS MODEL — TIER HELPERS
-// ══════════════════════════════════════════════
-
-// Returns true if a user holds Pro subscription
-function userIsPro(u){ u=u||ME; return !!(u&&u.isPro); }
-
-// Returns true if a user is verified (any verified tier)
-function userIsVerified(u){ u=u||ME; return u&&(u.badgeStatus==='verified'||u.badgeStatus==='expert'||u.badgeStatus==='elite'); }
-
-// Returns true if user is a Business Client (employer with isBusiness flag)
-function userIsBusiness(u){ u=u||ME; return !!(u&&u.isBusiness); }
-
-// Tier names for display
-// Discoverer = unverified + free
-// Hustler    = unverified + pro
-// Elite      = verified + free
-// Whale      = verified + pro
-function getUserTier(u){
-  u=u||ME;
-  var v=userIsVerified(u), p=userIsPro(u);
-  if(v&&p) return 'whale';
-  if(v&&!p) return 'elite';
-  if(!v&&p) return 'hustler';
-  return 'discoverer';
-}
-
-function getTierLabel(u){
-  var t=getUserTier(u);
-  return {whale:'🐋 Whale',elite:'⚡ Elite',hustler:'🔥 Hustler',discoverer:'🌱 Discoverer'}[t]||'🌱 Discoverer';
-}
-
-// Monthly bid (proposal) limit based on tier
-// Discoverer: 7 | Hustler: 35 | Elite: 7 | Whale: 40
-function getBidLimit(u){
-  u=u||ME;
-  var t=getUserTier(u);
-  return {whale:40,elite:7,hustler:35,discoverer:7}[t]||7;
-}
-
-// Platform commission rate (0 for Pro, 10% for free tiers)
-function getCommissionRate(u){
-  u=u||ME;
-  return userIsPro(u)?0:0.10;
-}
-
-// Payout hold in days: unverified=10, verified=5, whale=0 (instant)
-function getPayoutHoldDays(u){
-  u=u||ME;
-  var t=getUserTier(u);
-  if(t==='whale') return 0;
-  if(t==='elite') return 5;
-  if(t==='hustler') return 10;
-  return 10;
-}
-
 function getAllUsers(){return CACHE.users||[];}
 function getUser(uid){return CACHE.users.find(x=>x.uid===uid);}
 function saveUser(u){

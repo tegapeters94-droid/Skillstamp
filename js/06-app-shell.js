@@ -1553,10 +1553,6 @@ function _initSPAHistory() {
 window.showPage = function(name, skipHistory) {
   if (!window._spaReady) _initSPAHistory();
 
-  // Always dismiss settings panel on any navigation
-  var _sp = document.getElementById('settings-panel');
-  if (_sp) _sp.remove();
-
   // Cache guard: if users cache is empty but we have a session, reload silently
   if (ME && (!CACHE.users || CACHE.users.length === 0)) {
     fbGetAll('users').then(function(users){ if(users&&users.length) CACHE.users=users; }).catch(function(){});
