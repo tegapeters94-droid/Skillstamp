@@ -236,6 +236,7 @@ window.doLogin=async function(){
     if(save) LOCAL.set('saved_creds',{email,pass}); else LOCAL.del('saved_creds');
     LOCAL.set('session', ME.uid);
     startRealtimeListeners();
+    if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
     await loadGigsToCache();
     await loadEndorsementsToCache();
     // Load avatar from dedicated collection (more reliable than user doc)
@@ -318,6 +319,7 @@ window.doSignup=async function(){
     LOCAL.set('session', uid);
     ME = user;
     startRealtimeListeners();
+    if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
     await loadGigsToCache();
     await loadEndorsementsToCache();
     toast('Welcome to SkillStamp, '+fn+'! 🎉');
@@ -345,6 +347,7 @@ window.doLogout=async function(){
   try { await window.FB_FNS.signOut(window.FB_AUTH); } catch(e){}
   if(_unsubPosts){_unsubPosts();_unsubPosts=null;}
   if(_unsubUsers){_unsubUsers();_unsubUsers=null;}
+  if (typeof stopNotifRealtimeListener === 'function') stopNotifRealtimeListener();
   ME=null; LOCAL.del('session'); activeConv=null;
   CACHE.users=[]; CACHE.posts=[]; CACHE.gigs=[]; CACHE.endorsements=[];
   var appEl=document.getElementById('screen-app');

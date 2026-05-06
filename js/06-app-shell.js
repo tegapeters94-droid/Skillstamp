@@ -1640,6 +1640,7 @@ window.showPage = function(name, skipHistory) {
   if (name === 'dashboard')    { if (typeof renderDashboard    === 'function') renderDashboard(); }
   if (name === 'admin')        { if (typeof renderAdminV6      === 'function') renderAdminV6(); return; }
   if (name === 'wallet')       renderWallet();
+  if (name === 'notifications') { if (typeof renderNotificationsPage === 'function') renderNotificationsPage(); }
   if (name === 'learn')        { var lPg = document.getElementById('page-learn');   if (lPg) lPg.innerHTML = renderLearnV6(); }
   if (name === 'centers')      { var cPg = document.getElementById('page-centers'); if (cPg) cPg.innerHTML = renderCentersV6(); }
 };

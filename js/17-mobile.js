@@ -12,7 +12,7 @@ function setBottomNav(name){
     'gigs': 'gigs',
     'myprofile': 'myprofile', 'viewprofile': 'myprofile',
     'learn': null, 'centers': null, 'admin': null,
-    'leaderboard': null, 'dashboard': null, 'search': null
+    'leaderboard': null, 'dashboard': null, 'search': null, 'notifications': null
   };
   var mapped = navMap.hasOwnProperty(name) ? navMap[name] : null;
   document.querySelectorAll('.bn').forEach(b=>b.classList.remove('active'));
