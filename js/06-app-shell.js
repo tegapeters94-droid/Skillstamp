@@ -243,27 +243,7 @@ function maybeShowVerifNudge(){
 
 
 // ── PORTFOLIO ─────────────────────────────────────────────────
-window.openAddPortfolio = function() {
-  var mh = '<button class="mclose" id="pf-close">&#x2715;</button>';
-  mh += '<h3>&#x1F4F8; Add Portfolio Item</h3>';
-  mh += '<p style="font-size:11px;color:var(--td);margin-bottom:14px;">Showcase your work — designs, code, projects, anything you are proud of.</p>';
-  mh += '<div class="fg"><label class="fl">Title</label><input class="fi" id="pf-title" placeholder="e.g. Brand Identity for TechCorp"></div>';
-  mh += '<div class="fg"><label class="fl">Category</label><select class="fi" id="pf-cat"><option>Design</option><option>Development</option><option>Writing</option><option>Marketing</option><option>Video</option><option>Other</option></select></div>';
-  mh += '<div class="fg"><label class="fl">Description <span style="font-size:9px;color:var(--td);">(optional)</span></label><textarea class="fi" id="pf-desc" rows="2" placeholder="Brief description of the work..." style="resize:none;"></textarea></div>';
-  mh += '<div class="fg"><label class="fl">Project Link <span style="font-size:9px;color:var(--td);">(optional)</span></label><input class="fi" id="pf-link" placeholder="https://..."></div>';
-  mh += '<div class="fg"><label class="fl">Cover Image <span style="font-size:9px;color:var(--td);">(optional)</span></label>';
-  mh += '<label for="pf-img-input" style="border:2px dashed var(--br);border-radius:8px;padding:16px;text-align:center;cursor:pointer;display:block;">';
-  mh += '<div style="font-size:22px;margin-bottom:4px;">&#x1F4F7;</div>';
-  mh += '<div style="font-size:11px;color:var(--td);">Tap to add image</div>';
-  mh += '</label><input type="file" id="pf-img-input" accept="image/*" style="display:none;" onchange="handlePFImage(this)"></div>';
-  mh += '<div id="pf-img-preview" style="display:none;margin-bottom:12px;"></div>';
-  mh += '<button class="btn" id="pf-save" style="width:100%;margin-top:4px;">Add to Portfolio &#x2192;</button>';
-  setModal(mh);
-  setTimeout(function() {
-    document.getElementById('pf-close').onclick = closeModal;
-    document.getElementById('pf-save').onclick = savePortfolioItem;
-  }, 50);
-};
+// openAddPortfolio — handled by 30-portfolio-wizard.js (loaded after this file)
 
 var _pfImageData = null;
 window.handlePFImage = function(input) {
@@ -316,25 +296,115 @@ window.openPortfolioItem = function(uid, itemId) {
   var item = (u.portfolio || []).find(function(p) { return p.id === itemId; });
   if (!item) return;
   var isOwn = u.uid === ME.uid;
-  var mh = '<button class="mclose" id="pfv-close">&#x2715;</button>';
-  if (item.image) mh += '<img src="' + item.image + '" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:14px;">';
-  mh += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;margin-bottom:4px;">' + item.title + '</div>';
-  mh += '<div style="font-size:10px;color:var(--td);margin-bottom:12px;">' + item.cat + (item.ts ? ' &middot; ' + timeAgo(item.ts) : '') + '</div>';
-  if (item.desc) mh += '<div style="font-size:12px;color:var(--tx);line-height:1.7;margin-bottom:12px;">' + item.desc + '</div>';
-  if (item.link) mh += '<a href="' + item.link + '" target="_blank" style="display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--gld);text-decoration:none;margin-bottom:10px;">&#x1F517; View Project</a>';
-  if (isOwn) {
-    mh += '<button class="btn2" id="pfv-del" style="width:100%;border-color:rgba(239,68,68,.3);color:#ef4444;font-size:11px;">&#x1F5D1; Remove</button>';
+
+  // Detect case-study items (new format) vs legacy
+  var isCaseStudy = !!(item.overview || item.problem || item.solution || item.results);
+
+  // ── Build fullscreen panel (same pattern as direct proposal) ──
+  var old = document.getElementById('pfv-panel');
+  if (old) old.remove();
+
+  var panel = document.createElement('div');
+  panel.id = 'pfv-panel';
+  panel.style.cssText = 'position:fixed;inset:0;z-index:3000;background:var(--bg);overflow-y:auto;animation:slideInRight .25s ease;font-family:DM Sans,Plus Jakarta Sans,sans-serif;';
+
+  // Gallery
+  var images = item.images && item.images.length ? item.images : (item.image ? [item.image] : []);
+  var galleryHtml = '';
+  if (images.length) {
+    galleryHtml += '<div style="position:relative;background:var(--s2);">';
+    galleryHtml += '<img id="pfv-main-img" src="'+images[0]+'" style="width:100%;max-height:280px;object-fit:cover;display:block;">';
+    if (images.length > 1) {
+      galleryHtml += '<div style="display:flex;gap:6px;padding:8px 14px;overflow-x:auto;background:var(--s);">';
+      images.forEach(function(src, i) {
+        galleryHtml += '<img src="'+src+'" onclick="document.getElementById(\'pfv-main-img\').src=\''+src+'\'" style="width:54px;height:46px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid '+(i===0?'var(--gld)':'var(--br)')+';flex-shrink:0;" >';
+      });
+      galleryHtml += '</div>';
+    }
+    galleryHtml += '</div>';
   }
-  setModal(mh);
+
+  // Meta badges
+  var metaBadges = '';
+  if (item.cat)         metaBadges += '<span style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--td);font-weight:600;">'+item.cat+'</span>';
+  if (item.projectType) metaBadges += '<span style="background:rgba(232,197,71,.1);border:1px solid rgba(232,197,71,.25);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--gld);font-weight:700;">'+item.projectType+'</span>';
+  if (item.duration)    metaBadges += '<span style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--td);font-weight:600;">⏱ '+item.duration+'</span>';
+  if (item.verified)    metaBadges += '<span style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:20px;padding:3px 10px;font-size:11px;color:#4ade80;font-weight:700;">✓ Verified Work</span>';
+
+  // Sections builder
+  function sec(label, text, color) {
+    if (!text) return '';
+    color = color || 'var(--gld)';
+    return '<div style="margin-bottom:18px;">'
+      + '<div style="font-size:10px;font-weight:800;color:'+color+';text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">'+label+'</div>'
+      + '<div style="font-size:14px;color:var(--tx);line-height:1.75;">'+text+'</div>'
+      + '</div>';
+  }
+
+  var bodyHtml = '';
+  if (isCaseStudy) {
+    bodyHtml += sec('Overview',       item.overview);
+    bodyHtml += sec('Problem / Goal', item.problem);
+    bodyHtml += sec('Solution',       item.solution);
+    bodyHtml += sec('📈 Results',     item.results, '#4ade80');
+  } else if (item.desc) {
+    bodyHtml += sec('About this project', item.desc);
+  }
+
+  // Skills & tools
+  var allTags = (item.skills || []).concat(item.tools || []);
+  var tagsHtml = allTags.length
+    ? '<div style="margin-bottom:18px;"><div style="font-size:10px;font-weight:800;color:var(--gld);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Skills & Tools</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;">'
+      + allTags.map(function(t){return '<span style="background:var(--s2);border:1px solid var(--br);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--td);">'+t+'</span>';}).join('')
+      + '</div></div>'
+    : '';
+
+  // Testimonial
+  var testHtml = item.testimonial
+    ? '<div style="background:rgba(232,197,71,.04);border-left:3px solid var(--gld);padding:12px 14px;border-radius:0 8px 8px 0;font-size:13px;color:var(--td);line-height:1.75;font-style:italic;margin-bottom:18px;">"'+item.testimonial+'"</div>'
+    : '';
+
+  // Client name (if not confidential)
+  var clientHtml = (item.clientName && !item.confidential)
+    ? '<div style="font-size:12px;color:var(--td);margin-bottom:14px;">Client: <span style="color:var(--tx);font-weight:600;">'+item.clientName+'</span></div>'
+    : '';
+
+  panel.innerHTML =
+    // sticky header
+    '<div style="position:sticky;top:0;z-index:10;background:var(--s);border-bottom:1px solid var(--br);padding:13px 16px;display:flex;align-items:center;gap:12px;">'
+    + '<button id="pfv-back" style="background:none;border:none;color:var(--tx);cursor:pointer;padding:0 4px;font-size:22px;line-height:1;">←</button>'
+    + '<div style="font-family:Syne,Plus Jakarta Sans,sans-serif;font-weight:800;font-size:17px;flex:1;">Portfolio Item</div>'
+    + (isOwn ? '<button id="pfv-del" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px;border:1px solid rgba(239,68,68,.25);">Remove</button>' : '')
+    + '</div>'
+
+    // gallery
+    + galleryHtml
+
+    // body
+    + '<div style="padding:18px 16px 80px;">'
+    + '<div style="font-family:Syne,Plus Jakarta Sans,sans-serif;font-weight:800;font-size:22px;margin-bottom:8px;line-height:1.2;">'+item.title+'</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;">'+metaBadges+'</div>'
+    + clientHtml
+    + bodyHtml
+    + tagsHtml
+    + testHtml
+    + (item.link ? '<a href="'+item.link+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--gld);text-decoration:none;font-weight:700;margin-bottom:16px;">🔗 View Live Project</a>' : '')
+    + '</div>';
+
+  document.body.appendChild(panel);
+
   setTimeout(function() {
-    document.getElementById('pfv-close').onclick = closeModal;
+    var backBtn = document.getElementById('pfv-back');
+    if (backBtn) backBtn.onclick = function() { panel.remove(); };
     if (isOwn) {
-      document.getElementById('pfv-del').onclick = async function() {
+      var delBtn = document.getElementById('pfv-del');
+      if (delBtn) delBtn.onclick = async function() {
         if (!confirm('Remove this portfolio item?')) return;
         ME.portfolio = ME.portfolio.filter(function(p) { return p.id !== itemId; });
         await saveUser(ME);
         toast('Removed.');
-        closeModal();
+        panel.remove();
         renderMyProfile();
       };
     }
@@ -344,25 +414,58 @@ window.openPortfolioItem = function(uid, itemId) {
 function buildPortfolio(u, isOwn) {
   var items = u.portfolio || [];
   if (!items.length && !isOwn) return '';
-  var h = '<div class="psec"><div class="psec-t" style="display:flex;align-items:center;justify-content:space-between;">&#x1F4F8; Portfolio'
+
+  var h = '<div class="psec"><div class="psec-t" style="display:flex;align-items:center;justify-content:space-between;">📸 Portfolio'
     + '<span style="font-size:9px;font-weight:400;color:var(--td);">(' + items.length + ' items)</span></div>';
   h += '<div class="portfolio-grid">';
+
   items.slice(0, 6).forEach(function(item) {
+    var isCaseStudy = !!(item.overview || item.problem || item.solution || item.results);
+    var hasMultiImg  = item.images && item.images.length > 1;
+    var catIcon = {
+      'Graphics Design':'🎨','UI/UX Design':'🖥','Content Writing':'✍',
+      'Data Analysis':'📊','Digital Marketing':'📣','Web & Mobile Dev':'💻',
+      'Design':'🎨','Development':'💻','Writing':'✍','Marketing':'📣',
+      'Video':'🎬','Other':'✨'
+    }[item.cat] || '✨';
+
     h += '<div class="pf-card" data-pfuid="'+u.uid+'" data-pfid="'+item.id+'">';
-    if (item.image) {
-      h += '<img src="' + item.image + '" class="pf-img" alt="' + item.title + '">';
+
+    // Image or placeholder
+    if (item.image || (item.images && item.images.length)) {
+      var src = (item.images && item.images.length) ? item.images[0] : item.image;
+      h += '<div style="position:relative;">';
+      h += '<img src="'+src+'" class="pf-img" alt="'+item.title+'">';
+      if (hasMultiImg) {
+        h += '<div style="position:absolute;top:5px;right:5px;background:rgba(0,0,0,.65);color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:8px;">+'+item.images.length+'</div>';
+      }
+      h += '</div>';
     } else {
-      var catIcon = {'Design':'&#x1F3A8;','Development':'&#x1F4BB;','Writing':'&#x270D;','Marketing':'&#x1F4E3;','Video':'&#x1F3AC;','Other':'&#x2728;'}[item.cat] || '&#x2728;';
-      h += '<div class="pf-img-placeholder">' + catIcon + '</div>';
+      h += '<div class="pf-img-placeholder">'+catIcon+'</div>';
     }
-    h += '<div class="pf-info"><div class="pf-title">' + item.title + '</div><div style="display:flex;align-items:center;gap:4px;">'+'<div class="pf-tag">' + item.cat + '</div>'+(item.verified?'<span class="verified-work-badge">&#x2713; Verified</span>':'')+'</div></div>';
+
+    // Info row
+    h += '<div class="pf-info">';
+    h += '<div class="pf-title">'+item.title+'</div>';
+    h += '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">';
+    h += '<div class="pf-tag">'+item.cat+'</div>';
+    if (item.verified)    h += '<span class="verified-work-badge">✓ Verified</span>';
+    if (isCaseStudy)      h += '<span style="font-size:8px;background:rgba(232,197,71,.1);border:1px solid rgba(232,197,71,.2);color:var(--gld);padding:1px 5px;border-radius:4px;font-weight:700;">Case Study</span>';
+    if (item.results)     h += '<span style="font-size:8px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80;padding:1px 5px;border-radius:4px;font-weight:700;">📈 Results</span>';
+    h += '</div></div>';
     h += '</div>';
   });
+
   if (isOwn) {
-    h += '<div class="pf-add" onclick="openAddPortfolio()"><div style="font-size:24px;">+</div><div>Add Work</div></div>';
+    h += '<div class="pf-add" onclick="openAddPortfolio()" style="position:relative;overflow:hidden;">'
+      + '<div style="width:36px;height:36px;border-radius:10px;background:rgba(232,197,71,.12);border:1px solid rgba(232,197,71,.2);display:flex;align-items:center;justify-content:center;margin-bottom:7px;">'
+      + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gld)" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+      + '</div>'
+      + '<div style="font-size:12px;font-weight:700;color:var(--gld);">Add Case Study</div>'
+      + '<div style="font-size:9px;color:var(--td);margin-top:2px;font-weight:500;">5-step wizard</div>'
+      + '</div>';
   }
   h += '</div></div>';
-  // Event delegation attached after render via initPortfolioClicks()
   return h;
 }
 
