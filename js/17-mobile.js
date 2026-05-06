@@ -4,9 +4,22 @@
 //  MOBILE / iPHONE FUNCTIONS
 // ══════════════════════════════════════════════
 function setBottomNav(name){
+  // Map page names to bottom nav button IDs
+  var navMap = {
+    'home': 'home', 'timeline': 'home',
+    'wallet': 'wallet',
+    'talent': 'talent',
+    'gigs': 'gigs',
+    'myprofile': 'myprofile', 'viewprofile': 'myprofile',
+    'learn': null, 'centers': null, 'admin': null,
+    'leaderboard': null, 'dashboard': null, 'search': null
+  };
+  var mapped = navMap.hasOwnProperty(name) ? navMap[name] : null;
   document.querySelectorAll('.bn').forEach(b=>b.classList.remove('active'));
-  const bn=document.getElementById('bn-'+name);
-  if(bn) bn.classList.add('active');
+  if(mapped) {
+    var bn=document.getElementById('bn-'+mapped);
+    if(bn) bn.classList.add('active');
+  }
 }
 
 function updateBnBadge(){

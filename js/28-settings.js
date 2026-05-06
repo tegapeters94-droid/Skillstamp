@@ -35,7 +35,7 @@ window.openSettings = function() {
     items.forEach(function(item, i) {
       var border = i < items.length - 1 ? 'border-bottom:1px solid var(--br);' : '';
       s += '<div onclick="'+item.onclick+'" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;'+border+'transition:background .15s;" onmouseover="this.style.background=\'var(--s2)\'" onmouseout="this.style.background=\'\'">';
-      s += '<div style="width:34px;height:34px;border-radius:10px;background:'+item.iconBg+';display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">'+item.icon+'</div>';
+      s += '<div style="width:34px;height:34px;border-radius:10px;background:'+item.iconBg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+item.icon+'</div>';
       s += '<div style="flex:1;min-width:0;">';
       s += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:'+(item.danger?'#ef4444':'var(--tx)')+';">'+item.label+'</div>';
       if (item.sub) s += '<div style="font-size:10px;color:var(--td);margin-top:1px;">'+item.sub+'</div>';
@@ -50,22 +50,22 @@ window.openSettings = function() {
   // ── Account section ───────────────────────────────────────
   html += section('Account', [
     {
-      icon: '✏️', iconBg: 'rgba(232,197,71,.1)', label: 'Edit Profile',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>', iconBg: 'rgba(232,197,71,.1)', label: 'Edit Profile',
       sub: 'Update your name, bio, skills and photo',
       onclick: "settingsNav('editprofile')"
     },
     {
-      icon: '🔑', iconBg: 'rgba(96,165,250,.1)', label: 'Change Password',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>', iconBg: 'rgba(96,165,250,.1)', label: 'Change Password',
       sub: 'Update your account password',
       onclick: "settingsNav('changepassword')"
     },
     ...(ME && ME.avatar ? [{
-      icon: '📸', iconBg: 'rgba(74,222,128,.1)', label: 'Change Profile Photo',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>', iconBg: 'rgba(74,222,128,.1)', label: 'Change Profile Photo',
       sub: 'Update your profile picture',
       onclick: "settingsNav('changephoto')"
     }] : []),
     ...(!isVerif && !isClient ? [{
-      icon: '⚡', iconBg: 'rgba(232,197,71,.08)', label: 'Get Skill Verified',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>', iconBg: 'rgba(232,197,71,.08)', label: 'Get Skill Verified',
       sub: 'Submit your portfolio for SkillID verification',
       onclick: "settingsNav('getverified')"
     }] : []),
@@ -78,7 +78,7 @@ window.openSettings = function() {
 
   // Theme toggle (interactive)
   html += '<div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--br);">';
-  html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(96,165,250,.1);display:flex;align-items:center;justify-content:center;font-size:17px;">🌙</div>';
+  html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(96,165,250,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>';
   html += '<div style="flex:1;">';
   html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:var(--tx);">Dark Mode</div>';
   html += '<div style="font-size:10px;color:var(--td);">Toggle light / dark theme</div>';
@@ -90,7 +90,7 @@ window.openSettings = function() {
   if (!isClient && ME) {
     var avail = ME.available !== false;
     html += '<div style="display:flex;align-items:center;gap:13px;padding:14px 16px;">';
-    html += '<div style="width:34px;height:34px;border-radius:10px;background:'+(avail?'rgba(74,222,128,.1)':'rgba(239,68,68,.08)')+';display:flex;align-items:center;justify-content:center;font-size:17px;">'+(avail?'🟢':'🔴')+'</div>';
+    html += '<div style="width:34px;height:34px;border-radius:10px;background:'+(avail?'rgba(74,222,128,.1)':'rgba(239,68,68,.08)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+(avail?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>':'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>')+'</div>';
     html += '<div style="flex:1;">';
     html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:var(--tx);">Availability Status</div>';
     html += '<div style="font-size:10px;color:'+(avail?'#4ade80':'#ef4444')+';">'+(avail?'Currently available for work':'Currently busy')+'</div>';
@@ -103,22 +103,22 @@ window.openSettings = function() {
   // ── Support section ───────────────────────────────────────
   html += section('Support', [
     {
-      icon: '🐛', iconBg: 'rgba(255,107,53,.08)', label: 'Report a Bug',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', iconBg: 'rgba(255,107,53,.08)', label: 'Report a Bug',
       sub: 'Tell us about an issue you found',
       onclick: "settingsNav('bugreport')"
     },
     {
-      icon: '💬', iconBg: 'rgba(96,165,250,.1)', label: 'Send Feedback',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', iconBg: 'rgba(96,165,250,.1)', label: 'Send Feedback',
       sub: 'Share ideas or suggestions with us',
       onclick: "settingsNav('feedback')"
     },
     {
-      icon: '📄', iconBg: 'rgba(232,197,71,.08)', label: 'Terms of Service',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8c547" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>', iconBg: 'rgba(232,197,71,.08)', label: 'Terms of Service',
       sub: 'Read our Terms of Service',
       onclick: "settingsNav('tos')"
     },
     {
-      icon: '🔐', iconBg: 'rgba(74,222,128,.08)', label: 'Privacy Policy',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>', iconBg: 'rgba(74,222,128,.08)', label: 'Privacy Policy',
       sub: 'NDPA 2023 compliant',
       onclick: "settingsNav('privacy')"
     },
@@ -131,14 +131,14 @@ window.openSettings = function() {
 
   // Sign out
   html += '<div onclick="document.getElementById(\'settings-panel\').remove();doLogout();" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--br);cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
-  html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;font-size:17px;">🚪</div>';
+  html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>';
   html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:#ef4444;">Sign Out</div><div style="font-size:10px;color:var(--td);">Log out of your account</div></div>';
   html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
   html += '</div>';
 
   // Delete account
   html += '<div onclick="openDeleteAccount()" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
-  html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;font-size:17px;">🗑️</div>';
+  html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></div>';
   html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:#ef4444;">Delete Account</div><div style="font-size:10px;color:var(--td);">Permanently remove your account and all data</div></div>';
   html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
   html += '</div>';
