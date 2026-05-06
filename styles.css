@@ -667,6 +667,9 @@ h1 em{font-family:Plus Jakarta Sans,sans-serif;font-style:italic;color:var(--gld
 .notif-item{padding:12px 14px;border-bottom:1px solid var(--br);font-size:11px;display:flex;gap:9px;align-items:flex-start;}
 .notif-item.unread{background:rgba(232,197,71,.03);}
 .notif-dot{width:7px;height:7px;border-radius:50%;background:var(--gld);margin-top:4px;flex-shrink:0;}
+/* ─── NOTIFICATIONS FULL PAGE ─── */
+#page-notifications{background:var(--bg);min-height:100vh;padding-bottom:80px;}
+
 
 @media(max-width:960px){
   /* login panels already mobile-first — nothing to override */

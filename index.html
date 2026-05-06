@@ -253,7 +253,7 @@
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 </button>
 <!-- Notifications -->
-<button class="hdr-icon-btn" onclick="toggleNotifs()" title="Notifications" style="position:relative;">
+<button class="hdr-icon-btn" onclick="showPage('notifications')" title="Notifications" style="position:relative;">
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
   <span id="notif-count" style="position:absolute;top:-2px;right:-2px;background:var(--acc);color:#fff;font-size:7px;width:14px;height:14px;border-radius:50%;display:none;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;"></span>
 </button>
@@ -403,6 +403,10 @@
 <!-- rendered by renderAdminV6() -->
 </div>
 </div>
+</div>
+<!-- NOTIFICATIONS PAGE -->
+<div class="page" id="page-notifications">
+<!-- rendered by renderNotificationsPage() -->
 </div>
 <!-- GLOBAL SEARCH OVERLAY -->
 <div class="search-overlay" id="search-overlay" style="display:none;">
