@@ -333,6 +333,51 @@ function buildProfile(u,isOwn){
       +'</div>'
     :'';
 
+  // ── LINKS SECTION ─────────────────────────────────────────────────
+  var linksSection = '';
+  if (!isClient) {
+    var lnk = u.links || {};
+    var hasLinks = !!(lnk.linkedin || lnk.github || lnk.behance || lnk.dribbble || lnk.website);
+    if (hasLinks || isOwn) {
+      var LINK_META = [
+        { id:'linkedin', ico:'💼', label:'LinkedIn'         },
+        { id:'github',   ico:'🐙', label:'GitHub'           },
+        { id:'behance',  ico:'🎨', label:'Behance'          },
+        { id:'dribbble', ico:'🏀', label:'Dribbble'         },
+        { id:'website',  ico:'🌐', label:'Personal Website' },
+      ];
+      var linkItems = LINK_META.filter(function(lm){ return lnk[lm.id]; }).map(function(lm){
+        var rawUrl = lnk[lm.id] || '';
+        var fullUrl = rawUrl.startsWith('http') ? rawUrl : 'https://' + rawUrl;
+        var domain  = fullUrl.replace(/^https?:\/\//, '').split('/')[0];
+        return '<a href="' + fullUrl + '" target="_blank" rel="noopener" '
+          + 'style="display:flex;align-items:center;gap:10px;padding:11px 14px;'
+          + 'background:var(--s2);border:1px solid var(--br);border-radius:10px;'
+          + 'text-decoration:none;">'
+          + '<span style="font-size:18px;">' + lm.ico + '</span>'
+          + '<div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--tx);">' + lm.label + '</div>'
+          + '<div style="font-size:10px;color:var(--td);">' + domain + '</div></div>'
+          + '<span style="font-size:12px;color:var(--td);">&#8594;</span>'
+          + '</a>';
+      }).join('');
+      var addLinkBtn = (isOwn && !hasLinks)
+        ? '<div onclick="openEditProfile()" style="display:flex;align-items:center;gap:10px;'
+          + 'padding:14px;background:var(--s2);border:2px dashed var(--br);'
+          + 'border-radius:10px;cursor:pointer;color:var(--td);">'
+          + '<span style="font-size:18px;">&#x1F517;</span>'
+          + '<span style="font-size:12px;font-weight:600;">Add professional links &#8594;</span>'
+          + '</div>'
+        : '';
+      if (linkItems || addLinkBtn) {
+        linksSection = '<div class="prf-card">'
+          + '<div class="prf-card-title">' + icon('link', 14, 'currentColor') + ' Links</div>'
+          + '<div style="display:flex;flex-direction:column;gap:8px;">'
+          + (linkItems || addLinkBtn)
+          + '</div></div>';
+      }
+    }
+  }
+
   return ''
     +'<div class="prf-banner" style="background:'+bannerCSS+';">'+changeBannerBtn+'</div>'
     +'<div class="prf-header-card">'
@@ -359,35 +404,7 @@ function buildProfile(u,isOwn){
         +bioSection
         +(!isClient?skillsSection:'')
         +(!isClient?buildPortfolio(u,isOwn):'')
-        +(function(){
-          // ── LINKS SECTION ─────────────────────────────────────────
-          var lnk = u.links || {};
-          var hasLinks = lnk.linkedin || lnk.github || lnk.behance || lnk.dribbble || lnk.website;
-          if (!hasLinks && !isOwn) return '';
-          var LINK_META = [
-            { id:'linkedin', ico:'💼', label:'LinkedIn',        col:'#0a66c2' },
-            { id:'github',   ico:'🐙', label:'GitHub',          col:'#333' },
-            { id:'behance',  ico:'🎨', label:'Behance',         col:'#1769ff' },
-            { id:'dribbble', ico:'🏀', label:'Dribbble',        col:'#ea4c89' },
-            { id:'website',  ico:'🌐', label:'Website',         col:'var(--gld)' },
-          ];
-          var linksHtml = LINK_META.filter(function(l){return lnk[l.id];}).map(function(l){
-            var url = lnk[l.id]; if(!url.startsWith('http')) url='https://'+url;
-            var domain = url.replace(/^https?:\/\//,'').split('/')[0];
-            return '<a href="'+url+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s2);border:1px solid var(--br);border-radius:10px;text-decoration:none;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--gld)'" onmouseout="this.style.borderColor='var(--br)'">'
-              +'<span style="font-size:18px;">'+l.ico+'</span>'
-              +'<div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--tx);">'+l.label+'</div><div style="font-size:10px;color:var(--td);">'+domain+'</div></div>'
-              +'<span style="font-size:12px;color:var(--td);">→</span>'
-              +'</a>';
-          }).join('');
-          var addLinkBtn = isOwn && !hasLinks
-            ? '<div onclick="openEditProfile()" style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--s2);border:2px dashed var(--br);border-radius:10px;cursor:pointer;color:var(--td);" onmouseover="this.style.borderColor='var(--gld)'" onmouseout="this.style.borderColor='var(--br)'">'
-              +'<span style="font-size:18px;">🔗</span><span style="font-size:12px;font-weight:600;">Add professional links →</span></div>'
-            : '';
-          if (!hasLinks && !addLinkBtn) return '';
-          return '<div class="prf-card"><div class="prf-card-title">'+icon('link',14,'currentColor')+' Links</div>'
-            +'<div style="display:flex;flex-direction:column;gap:8px;">'+(linksHtml||addLinkBtn)+'</div></div>';
-        })()
+        +linksSection
         +buildWorkHistory(u)
         +endorseSection
         +footer
