@@ -115,24 +115,28 @@ let _unsubUsers = null;
 
 // Start real-time listeners once app loads
 function startRealtimeListeners() {
-  // Live posts feed
-  if (_unsubPosts) _unsubPosts();
-  _unsubPosts = fbListen('posts', posts => {
+  // Live posts feed — use registry to prevent duplication
+  var postUnsub = fbListen('posts', function(posts) {
     CACHE.posts = posts;
-    updateHomeStats();
+    if(typeof updateHomeStats === 'function') updateHomeStats();
   }, 'ts');
+  if (typeof registerListener === 'function') registerListener('posts', postUnsub);
+  else { if (_unsubPosts) _unsubPosts(); _unsubPosts = postUnsub; }
 
-  // Live users (for talent page, leaderboard)
-  if (_unsubUsers) _unsubUsers();
+  // Live users feed
   try {
-    const uq = window.FB_FNS.query(window.FB_FNS.collection(window.FB_DB, 'users'));
-    _unsubUsers = window.FB_FNS.onSnapshot(uq, snap => {
-      CACHE.users = snap.docs.map(d => d.data());
-      if(document.getElementById('page-talent').classList.contains('active')) renderTalent();
-      if(document.getElementById('page-home').classList.contains('active')) renderRoleHome();
-      updateHomeStats();
-    });
-  } catch(e) { console.warn('user listener error', e); }
+    var uq = window.FB_FNS.query(window.FB_FNS.collection(window.FB_DB, 'users'));
+    var userUnsub = window.FB_FNS.onSnapshot(uq, function(snap) {
+      CACHE.users = snap.docs.map(function(d){ return d.data(); });
+      var talentPage = document.getElementById('page-talent');
+      var homePage   = document.getElementById('page-home');
+      if(talentPage && talentPage.classList.contains('active') && typeof renderTalent === 'function') renderTalent();
+      if(homePage   && homePage.classList.contains('active')   && typeof renderRoleHome === 'function') renderRoleHome();
+      if(typeof updateHomeStats === 'function') updateHomeStats();
+    }, function(e){ console.warn('[SkillStamp] User listener error', e); });
+    if (typeof registerListener === 'function') registerListener('users', userUnsub);
+    else { if (_unsubUsers) _unsubUsers(); _unsubUsers = userUnsub; }
+  } catch(e) { console.warn('[SkillStamp] startRealtimeListeners users failed', e); }
 }
 
 function r(min,max){return Math.floor(Math.random()*(max-min+1))+min;}

@@ -87,6 +87,8 @@ window.addEventListener('load',()=>{
     fbGet('users', sid).then(async function(u){
       if(u){
         ME=u;
+        // Normalize ME to ensure all fields have safe defaults
+        if (typeof normalizeUser === 'function') ME = normalizeUser(ME);
         if(ME.isBanned||ME.badgeStatus==='suspended'){
           LOCAL.del('session');
           // Hide loading screen and show login
@@ -227,6 +229,8 @@ window.doLogin=async function(){
     const snap = await fbGet('users', cred.user.uid);
     if(!snap){showAErr('li-err','Account not found. Please sign up.');return;}
     ME = snap;
+    // Normalize ME to ensure all fields have safe defaults
+    if (typeof normalizeUser === 'function') ME = normalizeUser(ME);
     // Check if banned BEFORE letting them in
     if(ME.isBanned||ME.badgeStatus==='suspended'){
       await window.FB_FNS.signOut(window.FB_AUTH);
@@ -345,8 +349,12 @@ function showAErr(id,msg){const el=document.getElementById(id);if(el){el.textCon
 window.doLogout=async function(){
   var bn=document.getElementById('bottom-nav');if(bn){bn.style.display='none';bn.classList.remove('app-visible');}
   try { await window.FB_FNS.signOut(window.FB_AUTH); } catch(e){}
-  if(_unsubPosts){_unsubPosts();_unsubPosts=null;}
-  if(_unsubUsers){_unsubUsers();_unsubUsers=null;}
+  // Use central listener registry for clean shutdown
+  if (typeof unregisterAllListeners === 'function') unregisterAllListeners();
+  else {
+    if(_unsubPosts){_unsubPosts();_unsubPosts=null;}
+    if(_unsubUsers){_unsubUsers();_unsubUsers=null;}
+  }
   if (typeof stopNotifRealtimeListener === 'function') stopNotifRealtimeListener();
   ME=null; LOCAL.del('session'); activeConv=null;
   CACHE.users=[]; CACHE.posts=[]; CACHE.gigs=[]; CACHE.endorsements=[];

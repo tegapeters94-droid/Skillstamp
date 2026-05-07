@@ -4,6 +4,8 @@
 //  APP SHELL
 // ══════════════════════════════════════════════
 function enterApp(){
+  // Stability: normalize ME + validate cache before any rendering
+  if (typeof onAppReady === 'function') { try { onAppReady(); } catch(e) {} }
   var ls=document.getElementById('screen-loading');if(ls)ls.style.display='none';
   var loginEl=document.getElementById('screen-login');
   loginEl.classList.remove('active');
@@ -1742,8 +1744,13 @@ window.showPage = function(name, skipHistory) {
   if (name === 'leaderboard')  { if (typeof renderLeaderboard  === 'function') renderLeaderboard(); }
   if (name === 'dashboard')    { if (typeof renderDashboard    === 'function') renderDashboard(); }
   if (name === 'admin')        { if (typeof renderAdminV6      === 'function') renderAdminV6(); return; }
-  if (name === 'wallet')       renderWallet();
-  if (name === 'notifications') { if (typeof renderNotificationsPage === 'function') renderNotificationsPage(); }
+  if (name === 'wallet')       { if(typeof safePageRender==='function') safePageRender('wallet', renderWallet); else renderWallet(); }
+  if (name === 'notifications') {
+    if (typeof renderNotificationsPage === 'function') {
+      if(typeof safePageRender==='function') safePageRender('notifications', renderNotificationsPage);
+      else renderNotificationsPage();
+    }
+  }
   if (name === 'learn')        { var lPg = document.getElementById('page-learn');   if (lPg) lPg.innerHTML = renderLearnV6(); }
   if (name === 'centers')      { var cPg = document.getElementById('page-centers'); if (cPg) cPg.innerHTML = renderCentersV6(); }
 };

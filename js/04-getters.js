@@ -13,6 +13,8 @@ function saveUser(u){
   // Sync cache
   var ci=CACHE.users.findIndex(x=>x.uid===u.uid);
   if(ci>=0) CACHE.users[ci]=u; else CACHE.users.push(u);
+  // Invalidate algorithm score cache for this user
+  if (typeof invalidateScoreCache === 'function') invalidateScoreCache(u.uid);
   // Save to Firebase — returns promise but don't block callers
   return fbSet('users', u.uid, u);
 }
@@ -62,10 +64,7 @@ async function checkMaintenanceMode(){
 }
 
 // Apply saved theme immediately on load
-(function(){
-  var saved=localStorage.getItem('ss_theme');
-  if(saved==='light') document.documentElement.setAttribute('data-theme','light');
-})();
+// (duplicate theme init removed by stability patch)
 
 function applyThemeBtn(){
   var isLight=document.documentElement.getAttribute('data-theme')==='light';
@@ -133,8 +132,9 @@ function addNotif(icon,msg){
 
 function updateNotifBadge(){
   const n=getNotifs();
-  const unread=n.filter(x=>!x.read).length;
+  const unread=n.filter(function(x){return !x.read;}).length;
   const el=document.getElementById('notif-count');
-  if(unread>0){el.textContent=unread;el.style.display='flex';}else el.style.display='none';
+  if(!el) return;  // guard: element may not exist yet
+  if(unread>0){el.textContent=unread>99?'99+':unread;el.style.display='flex';}else el.style.display='none';
 }
 
