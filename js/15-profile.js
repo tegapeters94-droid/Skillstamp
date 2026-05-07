@@ -60,6 +60,8 @@ function buildProfile(u,isOwn){
     clipboard: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>',
     check:     '<polyline points="20 6 9 17 4 12"/>',
     lock:      '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    link:      '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    clipboard: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>',
     bolt:      '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
     send:      '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
     plus:      '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
@@ -105,9 +107,14 @@ function buildProfile(u,isOwn){
   // ── AVAILABILITY ──────────────────────────────────────────
   var availBadge='';
   if(!isClient){
-    var avail=u.available!==false;
-    availBadge='<div class="prf-avail '+(avail?'open':'busy')+'"'+(isOwn?' onclick="toggleAvailability()"':'')+' style="cursor:'+(isOwn?'pointer':'default')+';">'
-      +'<span class="prf-avail-dot"></span>'+(avail?'Available for work':'Currently busy')+'</div>';
+    // Extended availability status (4 levels, backward-compatible)
+    var _aStatus = u.availabilityStatus || (u.available !== false ? 'available' : 'busy');
+    var _aLabels = { available: 'Available for work', open: 'Open to offers', busy: 'Busy', unavailable: 'Unavailable' };
+    var _aColors = { available: 'open', open: 'open', busy: 'busy', unavailable: 'busy' };
+    var availBadgeClass = _aColors[_aStatus] || 'busy';
+    var availBadgeTxt   = _aLabels[_aStatus] || 'Available for work';
+    availBadge='<div class="prf-avail '+availBadgeClass+'"'+(isOwn?' onclick="openEditProfile()"':'')+' style="cursor:'+(isOwn?'pointer':'default')+';">'
+      +'<span class="prf-avail-dot"></span>'+availBadgeTxt+'</div>';
   }
 
   // ── RESPONSE TIME (freelancers) ───────────────────────────
@@ -229,6 +236,14 @@ function buildProfile(u,isOwn){
       +'<div class="prf-skills-wrap">'+chipsHtml+'</div>'
       +verNote
       +'</div>';
+    // Services offered section
+    var svcs = u.services || [];
+    if (svcs.length) {
+      skillsSection += '<div class="prf-card"><div class="prf-card-title">'+icon('clipboard',14,'currentColor')+' Services Offered</div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'
+        +svcs.map(function(s){ return '<span style="padding:7px 14px;background:rgba(232,197,71,.08);border:1px solid rgba(232,197,71,.2);border-radius:20px;font-size:12px;font-weight:600;color:var(--gld);">'+s+'</span>'; }).join('')
+        +'</div></div>';
+    }
   }
 
   // ── ENDORSEMENTS section ──────────────────────────────────
@@ -283,6 +298,8 @@ function buildProfile(u,isOwn){
     +'<div class="prf-side-row"><span class="prf-side-lbl">Country</span><span class="prf-side-val">'+flag(u.country)+' '+u.country+'</span></div>'
     +'<div class="prf-side-row"><span class="prf-side-lbl">Category</span><span class="prf-side-val">'+(CAT_ICONS[u.category]||'')+' '+u.category+'</span></div>'
     +'<div class="prf-side-row"><span class="prf-side-lbl">Member since</span><span class="prf-side-val">'+timeAgo(u.created||Date.now())+'</span></div>'
+    +(u.city?'<div class="prf-side-row"><span class="prf-side-lbl">City</span><span class="prf-side-val">'+u.city+'</span></div>':'')
+    +(u.experience?'<div class="prf-side-row"><span class="prf-side-lbl">Experience</span><span class="prf-side-val" style="text-transform:capitalize;">'+u.experience.replace('entry','Entry Level').replace('mid','Mid Level').replace('senior','Senior').replace('expert','Expert / Lead')+'</span></div>':'')
     +'</div>';
 
   var walletCard='';
@@ -328,7 +345,8 @@ function buildProfile(u,isOwn){
         +'<div class="prf-name">'+u.name+(isVerifiedBadge?' <span class="prf-check">'+verifiedSVG(getVerifColor())+'</span>':'')+'</div>'
         +rolePill
         +(u.title&&!isClient?'<div class="prf-title-sub">'+u.title+'</div>':'')
-        +'<div class="prf-country">'+flag(u.country)+' '+u.country+'</div>'
+        +(u.headline&&!isClient?'<div style="font-size:11px;color:var(--td);margin-bottom:4px;font-style:italic;line-height:1.5;">'+u.headline+'</div>':'')
+        +'<div class="prf-country">'+flag(u.country)+' '+u.country+(u.city?', '+u.city:'')+'</div>'
         +availBadge
         +skillIdChip
       +'</div>'
@@ -341,6 +359,35 @@ function buildProfile(u,isOwn){
         +bioSection
         +(!isClient?skillsSection:'')
         +(!isClient?buildPortfolio(u,isOwn):'')
+        +(function(){
+          // ── LINKS SECTION ─────────────────────────────────────────
+          var lnk = u.links || {};
+          var hasLinks = lnk.linkedin || lnk.github || lnk.behance || lnk.dribbble || lnk.website;
+          if (!hasLinks && !isOwn) return '';
+          var LINK_META = [
+            { id:'linkedin', ico:'💼', label:'LinkedIn',        col:'#0a66c2' },
+            { id:'github',   ico:'🐙', label:'GitHub',          col:'#333' },
+            { id:'behance',  ico:'🎨', label:'Behance',         col:'#1769ff' },
+            { id:'dribbble', ico:'🏀', label:'Dribbble',        col:'#ea4c89' },
+            { id:'website',  ico:'🌐', label:'Website',         col:'var(--gld)' },
+          ];
+          var linksHtml = LINK_META.filter(function(l){return lnk[l.id];}).map(function(l){
+            var url = lnk[l.id]; if(!url.startsWith('http')) url='https://'+url;
+            var domain = url.replace(/^https?:\/\//,'').split('/')[0];
+            return '<a href="'+url+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s2);border:1px solid var(--br);border-radius:10px;text-decoration:none;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--gld)'" onmouseout="this.style.borderColor='var(--br)'">'
+              +'<span style="font-size:18px;">'+l.ico+'</span>'
+              +'<div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--tx);">'+l.label+'</div><div style="font-size:10px;color:var(--td);">'+domain+'</div></div>'
+              +'<span style="font-size:12px;color:var(--td);">→</span>'
+              +'</a>';
+          }).join('');
+          var addLinkBtn = isOwn && !hasLinks
+            ? '<div onclick="openEditProfile()" style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--s2);border:2px dashed var(--br);border-radius:10px;cursor:pointer;color:var(--td);" onmouseover="this.style.borderColor='var(--gld)'" onmouseout="this.style.borderColor='var(--br)'">'
+              +'<span style="font-size:18px;">🔗</span><span style="font-size:12px;font-weight:600;">Add professional links →</span></div>'
+            : '';
+          if (!hasLinks && !addLinkBtn) return '';
+          return '<div class="prf-card"><div class="prf-card-title">'+icon('link',14,'currentColor')+' Links</div>'
+            +'<div style="display:flex;flex-direction:column;gap:8px;">'+(linksHtml||addLinkBtn)+'</div></div>';
+        })()
         +buildWorkHistory(u)
         +endorseSection
         +footer
@@ -454,18 +501,16 @@ window.openEditProfile=function(){
   });
 };
 
-window.saveProfile=function(){
-  var title=document.getElementById('ep-t').value.trim();
-  var bio=document.getElementById('ep-b').value.trim();
-  var category=document.getElementById('ep-cat').value;
+// saveProfile is now handled by 31-edit-profile.js
+// This stub is kept for safety only — 31-edit-profile.js overrides it
+window._legacySaveProfile = function() {
+  var title=document.getElementById('ep-t');
+  var bio=document.getElementById('ep-b');
+  var cat=document.getElementById('ep-cat');
+  if(title) ME.title=title.value.trim()||ME.title;
+  if(bio)   ME.bio=bio.value.trim();
+  if(cat)   ME.category=cat.value;
   var skills=[].slice.call(document.querySelectorAll('#ep-skills [data-s].on')).map(function(el){return el.dataset.s;});
-  ME.title=title||ME.title;
-  ME.bio=bio;
-  ME.tagline=tagline;
-  ME.offers=offers;
-  ME.tagline=tagline;
-  ME.offers=offers;
-  ME.category=category;
   ME.skills=skills;
   saveUser(ME);
   closeModal();
