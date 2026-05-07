@@ -2535,3 +2535,8 @@ input, textarea, select {
 /* ── Response time stat icon SVG alignment ── */
 .prf-stat-icon-svg { display:flex;align-items:center;justify-content:center;margin-bottom:4px;opacity:.7; }
 .prf-verif-icon { display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+
+/* Extended availability dots */
+.prf-avail[data-status='open'] .prf-avail-dot{background:#e8c547;}
+.prf-avail[data-status='busy'] .prf-avail-dot{background:#ff6b35;}
+.prf-avail[data-status='unavailable'] .prf-avail-dot{background:#ef4444;}
