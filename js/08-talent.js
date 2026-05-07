@@ -2,6 +2,10 @@
 
 window.filterCat = function(cat, el) {
   activeCat = cat;
+  // Record behavioral signal for personalization
+  if (typeof recordSignal === 'function' && cat !== 'All') {
+    recordSignal('cat_interact', { cat: cat });
+  }
   document.querySelectorAll('#talent-cats .cat').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   renderTalent();
@@ -16,13 +20,18 @@ window.renderTalent = function() {
     (u.skills || []).some(s => s.toLowerCase().includes(search)) ||
     (u.title || '').toLowerCase().includes(search)
   );
-  // Sort: verified first, then by rating
-  users = users.sort((a, b) => {
-    var aV = (a.badgeStatus==='verified'||a.badgeStatus==='expert'||a.badgeStatus==='elite') ? 1 : 0;
-    var bV = (b.badgeStatus==='verified'||b.badgeStatus==='expert'||b.badgeStatus==='elite') ? 1 : 0;
-    if (bV !== aV) return bV - aV;
-    return (b.repPoints || 0) - (a.repPoints || 0);
-  });
+  // Sort: algorithm-ranked (profile strength, performance, trust, activity, availability)
+  if (typeof rankTalent === 'function') {
+    users = rankTalent(users, ME && ME.category);
+  } else {
+    // Fallback: verified first, then repPoints
+    users = users.sort(function(a, b) {
+      var aV = (a.badgeStatus==='verified'||a.badgeStatus==='expert'||a.badgeStatus==='elite') ? 1 : 0;
+      var bV = (b.badgeStatus==='verified'||b.badgeStatus==='expert'||b.badgeStatus==='elite') ? 1 : 0;
+      if (bV !== aV) return bV - aV;
+      return (b.repPoints || 0) - (a.repPoints || 0);
+    });
+  }
 
   var countEl = document.getElementById('talent-count');
   if (countEl) countEl.textContent = users.length + ' ' + (activeCat !== 'All' ? activeCat + ' ' : '') + 'freelancers';
@@ -76,7 +85,7 @@ function talentCard(u) {
     ? '<svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:middle;flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="#059669"/><polyline points="6 12 10 16 18 8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
     : '';
 
-  return `<div class="tc-card" onclick="viewProfile('${u.uid}')" style="cursor:pointer;">
+  return `<div class="tc-card" onclick="if(typeof recordSignal==='function')recordSignal('profile_view',{uid:'${u.uid}'});viewProfile('${u.uid}')" style="cursor:pointer;">
     <!-- Card top: avatar + name -->
     <div class="tc-top">
       <div class="tc-av-wrap">

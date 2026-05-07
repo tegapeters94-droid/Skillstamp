@@ -35,6 +35,10 @@ function renderGigs(){
   if(pgBtn) pgBtn.style.display=(ME&&ME.role==='employer')?'':'none';
   var list=document.getElementById('gig-list');
   if(!gigs.length){list.innerHTML='<div class="empty">'+(mode==='mine'?'No gigs posted yet.':'No gigs available.')+'</div>';return;}
+  // Rank gigs for freelancer using algorithm (safe fallback if not loaded)
+  if (mode !== 'mine' && ME && ME.role !== 'employer' && typeof rankGigsForUser === 'function') {
+    gigs = rankGigsForUser(gigs, ME);
+  }
   var rows='';
   gigs.filter(function(g){return g.title&&g.title.trim();}).slice(0,40).forEach(function(g,i){
     var statusTag=g.status&&g.status!=='open'?'<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(77,159,255,.1);color:#4d9fff;border:1px solid rgba(77,159,255,.2);margin-left:5px;">'+g.status+'</span>':'';
@@ -58,7 +62,15 @@ function renderGigs(){
   // Attach click handlers via event delegation (no inline onclick)
   list.onclick=function(e){
     var item=e.target.closest('[data-gid]');
-    if(item) showGigDetail(item.dataset.gid);
+    if(item) {
+      if (typeof recordSignal === 'function') {
+        var gid = item.dataset.gid;
+        var g = (typeof getGigs === 'function' ? getGigs() : []).find(function(x){ return x.id===gid; });
+        recordSignal('gig_view', { gigId: gid });
+        if (g && g.category) recordSignal('cat_interact', { cat: g.category });
+      }
+      showGigDetail(item.dataset.gid);
+    }
   };
 }
 

@@ -240,12 +240,18 @@ function fProposals() {
   return html;
 }
 
-// Matching gigs
+// Matching gigs — algorithm-ranked
 function fRecommendedGigs() {
-  var cat = ME.category || '';
-  var open = getGigs().filter(function(g){return g.status==='open';});
-  var matched = cat ? open.filter(function(g){return g.category===cat;}) : [];
-  var shown = (matched.length >= 2 ? matched : open).slice(0, 4);
+  // Use algorithm ranking if available, fall back to category filter
+  var shown;
+  if (typeof getHomeGigs === 'function') {
+    shown = getHomeGigs(4);
+  } else {
+    var cat  = ME.category || '';
+    var open = getGigs().filter(function(g){return g.status==='open';});
+    var matched = cat ? open.filter(function(g){return g.category===cat;}) : [];
+    shown = (matched.length >= 2 ? matched : open).slice(0, 4);
+  }
   if (!shown.length) return '';
 
   var applied = (ME.applications||[]).map(function(a){return a.gigId;});

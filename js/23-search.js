@@ -24,19 +24,39 @@ window.runGlobalSearch=function(q){
     results.innerHTML='<div class="search-empty"><div style="font-size:40px;margin-bottom:12px;opacity:.3;">🔍</div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;">Search SkillStamp</div><div style="font-size:12px;">Find people by name, skill, or country · Find open gigs by title or category</div></div>';
     return;
   }
-  var matchedUsers=(CACHE.users||[]).filter(function(u){
+  var _rawUsers = (CACHE.users||[]).filter(function(u){
     return (u.name||'').toLowerCase().includes(query)
       ||(u.skills||[]).some(function(s){return (s||'').toLowerCase().includes(query);})
       ||(u.title||'').toLowerCase().includes(query)
       ||(u.category||'').toLowerCase().includes(query)
-      ||(u.country||'').toLowerCase().includes(query);
-  }).slice(0,7);
-  var matchedGigs=(CACHE.gigs||[]).filter(function(g){
+      ||(u.country||'').toLowerCase().includes(query)
+      ||(u.services||[]).some(function(s){return (s||'').toLowerCase().includes(query);})
+      ||(u.headline||'').toLowerCase().includes(query);
+  });
+  // Rank by search relevance + talent quality
+  if (typeof getSearchRelevance === 'function') {
+    _rawUsers = _rawUsers.slice().sort(function(a,b){
+      return getSearchRelevance(b, query) - getSearchRelevance(a, query);
+    });
+  }
+  var matchedUsers = _rawUsers.slice(0,7);
+  // Record search signal
+  if (typeof recordSignal === 'function' && query.length >= 2) {
+    recordSignal('search', { query: query });
+  }
+  var _rawGigs = (CACHE.gigs||[]).filter(function(g){
     return g.status==='open'
       &&((g.title||'').toLowerCase().includes(query)
         ||(g.description||'').toLowerCase().includes(query)
-        ||(g.category||'').toLowerCase().includes(query));
-  }).slice(0,5);
+        ||(g.category||'').toLowerCase().includes(query)
+        ||(g.skills||[]).some(function(s){return (s||'').toLowerCase().includes(query);}));
+  });
+  if (typeof getGigSearchRelevance === 'function') {
+    _rawGigs = _rawGigs.slice().sort(function(a,b){
+      return getGigSearchRelevance(b, query) - getGigSearchRelevance(a, query);
+    });
+  }
+  var matchedGigs = _rawGigs.slice(0,5);
   var html='';
   if(matchedUsers.length){
     html+='<div class="search-section-title">👤 People</div>';
