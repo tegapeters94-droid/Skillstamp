@@ -95,18 +95,14 @@ function fHero() {
   var balance = Math.round(wallet.balance || 0);
   var isVerif = isVerified();
 
-  // Circular progress SVG (SVG-based donut)
-  var steps = [!!ME.avatar, !!(ME.title && ME.title !== 'Digital Professional'), !!(ME.bio && ME.bio.length >= 50), !!(ME.skills && ME.skills.length > 0), !!(ME.portfolio && ME.portfolio.length > 0), isVerif];
-  var done = steps.filter(Boolean).length;
-  var pct = Math.round((done / steps.length) * 100);
-  var radius = 22, circ = 2 * Math.PI * radius;
-  var dash = (pct / 100) * circ;
-  var color = pct < 40 ? '#ff6b35' : pct < 80 ? '#e8c547' : '#4ade80';
-  var ring = '<svg width="56" height="56" viewBox="0 0 56 56" style="flex-shrink:0;">'
-    + '<circle cx="28" cy="28" r="'+radius+'" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/>'
-    + '<circle cx="28" cy="28" r="'+radius+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-dasharray="'+dash+' '+circ+'" stroke-dashoffset="'+circ/4+'" stroke-linecap="round" style="transition:stroke-dasharray .6s ease"/>'
-    + '<text x="28" y="33" text-anchor="middle" fill="'+color+'" font-family="Plus Jakarta Sans,sans-serif" font-weight="800" font-size="11">'+pct+'%</text>'
-    + '</svg>';
+  // Circular progress — uses centralized completion system
+  var _comp = (typeof calculateProfileCompletion === 'function')
+    ? calculateProfileCompletion(ME)
+    : { pct: 0 };
+  var pct  = _comp.pct;
+  var ring = (typeof buildCompletionRing === 'function')
+    ? buildCompletionRing(pct, 56)
+    : '<svg width="56" height="56" viewBox="0 0 56 56"><text x="28" y="33" text-anchor="middle" font-size="11">'+pct+'%</text></svg>';
 
   var html = '<div style="background:linear-gradient(135deg,#0d2818 0%,#0f3a20 50%,#0e2e1a 100%);border-radius:16px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;">';
   // Decorative circle
@@ -149,20 +145,14 @@ function fHero() {
   return html;
 }
 
-// Profile completion card
+// Profile completion card — uses centralized calculateProfileCompletion()
 function fProfileCard() {
-  var steps = [
-    { label: 'Profile photo',       done: !!ME.avatar,                                       action: 'openChangePhoto()' },
-    { label: 'Professional title',  done: !!(ME.title && ME.title !== 'Digital Professional'), action: 'openEditProfile()' },
-    { label: 'Bio (50+ chars)',      done: !!(ME.bio && ME.bio.length >= 50),                 action: 'openEditProfile()' },
-    { label: 'Add skills',          done: !!(ME.skills && ME.skills.length > 0),              action: 'openEditProfile()' },
-    { label: 'Portfolio item',      done: !!(ME.portfolio && ME.portfolio.length > 0),        action: 'openAddPortfolio()' },
-    { label: 'Get verified',        done: isVerified(),                                       action: 'openSubmitSkill()' },
-  ];
-  var done = steps.filter(function(s){return s.done;}).length;
-  var pct = Math.round((done / steps.length) * 100);
-  if (pct === 100) return '';
-  var missing = steps.filter(function(s){return !s.done;}).slice(0, 2);
+  if (typeof calculateProfileCompletion !== 'function') return '';
+  var comp = calculateProfileCompletion(ME);
+  if (comp.pct >= 100) return '';
+
+  var pct      = comp.pct;
+  var prompts  = comp.missing.slice(0, 3);   // show up to 3 actionable prompts
   var barColor = pct < 40 ? 'var(--acc)' : pct < 80 ? 'var(--gld)' : 'var(--grn)';
 
   var html = '<div style="background:var(--s);border:1px solid var(--br);'+D.r16+';padding:16px;margin-bottom:12px;'+D.shadow+';">';
@@ -170,15 +160,16 @@ function fProfileCard() {
   html += '<div style="'+D.font+';font-weight:700;font-size:13px;">Profile Strength</div>';
   html += '<span style="'+D.font+';font-size:11px;font-weight:800;color:'+barColor+';">'+pct+'%</span>';
   html += '</div>';
-  // Bar
+  // Progress bar
   html += '<div style="height:5px;background:var(--s2);border-radius:3px;margin-bottom:12px;overflow:hidden;">';
   html += '<div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:3px;transition:width .5s ease;"></div>';
   html += '</div>';
   html += '<div style="font-size:10px;color:var(--td);margin-bottom:8px;">Complete these to attract more clients:</div>';
-  missing.forEach(function(s) {
-    html += '<div onclick="'+s.action+'" style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--s2);border-radius:9px;margin-bottom:6px;cursor:pointer;'+D.trans+'" onmouseover="this.style.background=\'var(--s3)\'" onmouseout="this.style.background=\'var(--s2)\'">';
-    html += '<div style="width:20px;height:20px;border-radius:50%;border:1.5px dashed var(--gld);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--gld)" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>';
-    html += '<div style="flex:1;font-size:11px;color:var(--tx);">'+s.label+'</div>';
+  prompts.forEach(function(step) {
+    html += '<div onclick="'+step.action+'" style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--s2);border-radius:9px;margin-bottom:6px;cursor:pointer;'+D.trans+'">';
+    html += '<div style="width:20px;height:20px;border-radius:50%;border:1.5px dashed var(--gld);display:flex;align-items:center;justify-content:center;flex-shrink:0;">';
+    html += '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--gld)" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>';
+    html += '<div style="flex:1;font-size:11px;color:var(--tx);">'+step.label+'</div>';
     html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gld)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
     html += '</div>';
   });

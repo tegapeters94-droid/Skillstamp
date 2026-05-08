@@ -45,7 +45,12 @@ var CAT_KEYWORDS = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // 1a. Profile Strength Score
+// Uses centralized calculateProfileCompletion() if available
 function getProfileStrengthScore(u) {
+  if (typeof calculateProfileCompletion === 'function') {
+    try { return calculateProfileCompletion(u).pct; } catch(e) {}
+  }
+  // Fallback if 34-profile-completion.js not loaded yet
   if (!u) return 0;
   var score = 0;
   if (u.avatar)                           score += 15;

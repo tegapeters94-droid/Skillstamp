@@ -61,6 +61,8 @@ global.normalizeUser = function (u) {
     lastSeen:           0,
     lastActive:         0,
     lastUsernameChange: 0,
+    industry:           '',
+    projectTypes:       [],
     _schemaVersion:     SCHEMA_VERSION,
   }, u, {
     // Force-safe nested arrays/objects even if u has them as null/undefined
@@ -69,6 +71,7 @@ global.normalizeUser = function (u) {
     portfolio:    Array.isArray(u.portfolio)    ? u.portfolio    : [],
     applications: Array.isArray(u.applications) ? u.applications : [],
     links:        (u.links && typeof u.links === 'object') ? u.links : {},
+    projectTypes: Array.isArray(u.projectTypes) ? u.projectTypes : [],
     wallet:       Object.assign(
       { balance: 0, pending: 0, earned: 0, transactions: [] },
       (u.wallet && typeof u.wallet === 'object') ? u.wallet : {},

@@ -14,6 +14,12 @@ var EP_SECTIONS = [
   { id: 'availability', label: 'Availability',         icon: '🟢' },
 ];
 
+// Client-specific sections (no skills/availability/professional)
+var EP_CLIENT_SECTIONS = [
+  { id: 'basic',  label: 'Basic Info', icon: '👤' },
+  { id: 'client', label: 'Business',   icon: '🏢' },
+];
+
 // ── Experience levels ──────────────────────────────────────────────────────
 var EXP_LEVELS = [
   { v: 'entry',    label: 'Entry Level',    sub: '0–1 years',   col: '#60a5fa' },
@@ -378,34 +384,24 @@ function _close() {
 }
 
 // ── Completion % ────────────────────────────────────────────────────────────
-function _completion() {
-  var checks = [
-    !!(ME.name||'').trim(),
-    !!(ME.title||'').trim(),
-    !!(ME.bio||'').trim(),
-    !!(ME.category||'').trim(),
-    (_EP.skills.length > 0),
-    (_EP.services.length > 0),
-    !!(ME.country||'').trim(),
-    !!((ME.links||{}).linkedin || (ME.links||{}).github || (ME.links||{}).website),
-    !!(ME.availabilityStatus||ME.available!==undefined),
-    !!(ME.headline||'').trim(),
-  ];
-  return Math.round(checks.filter(Boolean).length / checks.length * 100);
-}
+// _completion() removed — use calculateProfileCompletion(ME) from 34-profile-completion.js
 
 // ── Full render ──────────────────────────────────────────────────────────────
 function _render() {
   var panel = document.getElementById('ep-panel');
   if (!panel) return;
 
-  var pct  = _completion();
   var avImg = ME.avatar
     ? '<img src="'+ME.avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
     : '<div style="background:linear-gradient(135deg,'+(ME.gradient||'#16a25a')+','+(ME.gradient||'#16a25a')+'88);width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:#000;">'+initials(ME.name||'?')+'</div>';
 
-  // Tabs
-  var tabsHtml = EP_SECTIONS.map(function(sec) {
+  // Tabs — role-aware
+  var _activeSections = (ME && ME.role === 'employer') ? EP_CLIENT_SECTIONS : EP_SECTIONS;
+  // Reset to valid section if current one doesn't exist for this role
+  if (!_activeSections.find(function(s){return s.id===_EP.activeSection;})) {
+    _EP.activeSection = _activeSections[0].id;
+  }
+  var tabsHtml = _activeSections.map(function(sec) {
     var isDone = _isSectionDone(sec.id);
     return '<button class="ep-sec-tab'+(sec.id===_EP.activeSection?' active':'')+(isDone?' ep-sec-tab-done':'')+'" data-sec="'+sec.id+'">'
       + sec.icon + ' ' + sec.label
@@ -418,11 +414,7 @@ function _render() {
     +   '<div class="ep-header-title">Edit Profile</div>'
     +   '<button class="ep-save-pill" id="ep-header-save">'+_ICO.save+' Save</button>'
     + '</div>'
-    + '<div class="ep-comp-bar">'
-    +   '<div style="font-size:11px;color:var(--td);font-weight:700;white-space:nowrap;">Profile strength</div>'
-    +   '<div class="ep-comp-track"><div class="ep-comp-fill" style="width:'+pct+'%"></div></div>'
-    +   '<div class="ep-comp-label">'+pct+'%</div>'
-    + '</div>'
+    // Progress bar removed — lives on home dashboard only
     + '<div class="ep-section-nav" id="ep-section-nav">'+tabsHtml+'</div>'
     + '<div class="ep-body" id="ep-body">'
     + _renderSection(_EP.activeSection, avImg)
@@ -442,6 +434,7 @@ function _isSectionDone(id) {
   if (id === 'skills')       return _EP.skills.length > 0 && _EP.services.length > 0;
   if (id === 'links')        return !!((ME.links||{}).linkedin || (ME.links||{}).github || (ME.links||{}).website);
   if (id === 'availability') return !!(ME.availabilityStatus);
+  if (id === 'client')       return !!(ME.industry) && (ME.projectTypes||[]).length > 0;
   return false;
 }
 
@@ -452,6 +445,7 @@ function _renderSection(id, avImg) {
   if (id === 'skills')       return _secSkills();
   if (id === 'links')        return _secLinks();
   if (id === 'availability') return _secAvailability();
+  if (id === 'client')       return _secClient();
   return '';
 }
 
@@ -671,6 +665,44 @@ function _secAvailability() {
     + '</div>';
 }
 
+// ── SECTION: Client Business Info ────────────────────────────────────────────
+function _secClient() {
+  var u = ME;
+  var industries = ['Technology','Finance','Healthcare','Education','E-commerce',
+    'Media & Entertainment','Real Estate','Fashion','Food & Beverage',
+    'Non-profit','Consulting','Manufacturing','Other'];
+  var projectTypeOpts = ['Logo & Branding','Website Design','Mobile App',
+    'Content Creation','Social Media','Video Production','Data Analysis',
+    'Marketing Campaign','UI/UX Design','Copywriting','Other'];
+
+  var industryOpts = '<option value="">Select industry...</option>'
+    + industries.map(function(ind) {
+      return '<option value="'+ind+'"'+(u.industry===ind?' selected':'')+'>'+ind+'</option>';
+    }).join('');
+
+  var savedTypes = u.projectTypes || [];
+  var typeChips  = projectTypeOpts.map(function(t) {
+    var on = savedTypes.indexOf(t) >= 0;
+    return '<span class="ep-skill-chip'+(on?' on':'')+'" data-ptype="'+t+'">'+t+'</span>';
+  }).join('');
+
+  return '<div class="ep-section-card">'
+    + '<div class="ep-section-header"><div class="ep-section-icon">🏢</div>'
+    + '<div><div class="ep-section-title">Business Information</div>'
+    + '<div class="ep-section-sub">Help freelancers understand your company and needs</div></div></div>'
+    + '<div class="ep-fg">'
+    +   '<label class="ep-label">Industry</label>'
+    +   '<select class="ep-input ep-select" id="ep-industry">'+industryOpts+'</select>'
+    +   '<div class="ep-hint">Helps match you with the most relevant freelancers.</div>'
+    + '</div>'
+    + '<div class="ep-fg">'
+    +   '<label class="ep-label">Project Types <span style="font-size:10px;font-weight:400;color:var(--td);">(select all that apply)</span></label>'
+    +   '<div class="ep-skills-grid" id="ep-ptypes-grid">'+typeChips+'</div>'
+    +   '<div class="ep-skill-counter" id="ep-ptype-count"><span>'+savedTypes.length+'</span> selected</div>'
+    + '</div>'
+    + '</div>';
+}
+
 // ── Bind all interactions ────────────────────────────────────────────────────
 function _bindAll() {
   var panel = document.getElementById('ep-panel');
@@ -720,6 +752,7 @@ function _bindAll() {
   if (_EP.activeSection === 'skills')       _bindSkills();
   if (_EP.activeSection === 'links')        {} // links are pure inputs, nothing extra needed
   if (_EP.activeSection === 'availability') _bindAvailability();
+  if (_EP.activeSection === 'client')       _bindClient();
 }
 
 function _bindBasic() {
@@ -881,6 +914,26 @@ function _bindSkillGrid() {
   });
 }
 
+function _bindClient() {
+  // Project type chips
+  var grid = document.getElementById('ep-ptypes-grid');
+  if (!grid) return;
+  grid.addEventListener('click', function(e) {
+    var chip = e.target.closest('[data-ptype]');
+    if (!chip) return;
+    var t   = chip.getAttribute('data-ptype');
+    var pts = ME.projectTypes || [];
+    var idx = pts.indexOf(t);
+    if (idx >= 0) pts.splice(idx, 1);
+    else          pts.push(t);
+    ME.projectTypes = pts;
+    chip.classList.toggle('on', idx < 0);
+    var cnt = document.getElementById('ep-ptype-count');
+    if (cnt) cnt.innerHTML = '<span>'+pts.length+'</span> selected';
+    _EP.dirty = true;
+  });
+}
+
 function _bindAvailability() {
   var list = document.getElementById('ep-avail-list');
   if (!list) return;
@@ -957,6 +1010,11 @@ function _collectCurrentSection() {
 
   if (sec === 'availability') {
     // availability is set live via card clicks
+  }
+  if (sec === 'client') {
+    var indEl = document.getElementById('ep-industry');
+    if (indEl && indEl.value) ME.industry = indEl.value;
+    // projectTypes set live via chip clicks (stored in ME.projectTypes)
   }
 }
 
