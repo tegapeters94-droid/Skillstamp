@@ -109,7 +109,7 @@ window.adminSearchV6=function(q){
 
 // Tab switcher
 window.adminTab=function(name){
-  ['overview','users','content','skills','announce'].forEach(function(t){
+  ['overview','users','content','skills','announce','analytics'].forEach(function(t){
     var panel=document.getElementById('admtab-'+t);
     var btn=document.getElementById('admt-'+t);
     if(panel) panel.style.display=(t===name)?'block':'none';
@@ -119,7 +119,25 @@ window.adminTab=function(name){
       btn.style.borderColor=t===name?'var(--acc)':'var(--br)';
     }
   });
-  if(name==='users') adminFilterUsers();
+  if(name==='users')     adminFilterUsers();
+  if(name==='analytics') {
+    // Mount analytics into the dedicated container
+    var mnt = document.getElementById('admin-analytics-mount');
+    if (mnt) {
+      // Replace mount div with the real admtab-analytics element
+      var at = document.getElementById('admtab-analytics');
+      if (at) at.id = 'admtab-analytics'; // keep id
+    }
+    if (typeof renderAdminAnalytics === 'function') renderAdminAnalytics();
+  }
+  if(name==='analytics') {
+    // Lazy-load analytics dashboard on first click
+    setTimeout(function(){
+      if (typeof renderAnalyticsDashboard === 'function') {
+        renderAnalyticsDashboard('analytics-inner');
+      }
+    }, 50);
+  }
 };
 
 // User filtering
@@ -501,9 +519,9 @@ function buildAdminHTML(){
   }
 
   // ── Tab nav ──────────────────────────────────────────────────────────────
-  var tabs=['overview','users','content','skills','announce'];
-  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',announce:'📢'};
-  var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',announce:'Broadcast'};
+  var tabs=['overview','users','content','skills','announce','analytics'];
+  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',announce:'📢',analytics:'📈'};
+  var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',announce:'Broadcast',analytics:'Analytics'};
 
   var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">'
     +'<span style="font-size:24px;">⚙️</span>'
@@ -825,6 +843,13 @@ function buildAdminHTML(){
     +'</div>';
 
   h+='</div>'; // end announce tab
+  // ════════════════════════════════════════════════
+  //  TAB 6 — ANALYTICS
+  // ════════════════════════════════════════════════
+  h+='<div id="admtab-analytics" style="display:none;">';
+  h+='<div id="admin-analytics-mount"><div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">Click the Analytics tab to load data.</div></div>';
+  h+='</div>';
+
   h+='</div>'; // end adm-panel
   return h;
 }
@@ -864,6 +889,14 @@ function buildUsersList(users){
       +'<button onclick="adminAdjRep(\''+u.uid+'\')" style="padding:6px 10px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid var(--br);background:var(--s2);color:var(--t);">⭐ Rep</button>'
       +'</div></div>';
   }
+  // ══════════════════════════════════════════════════════
+  //  TAB: ANALYTICS (lazy-loaded, content injected on click)
+  // ══════════════════════════════════════════════════════
+  h+='<div id="admtab-analytics" style="display:none;padding:16px;">'
+    +'<div id="analytics-inner">'
+    +'<div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">'    +'<div style="font-size:28px;margin-bottom:10px;">📈</div>'    +'<div style="font-weight:700;margin-bottom:4px;">Analytics Dashboard</div>'    +'<div style="font-size:11px;">Click the Analytics tab to load platform insights.</div>'    +'</div></div></div>';
+
+  h+='</div>'; // close adm-panel
   return h;
 }
 window.renderAdminV6=renderAdminV6;

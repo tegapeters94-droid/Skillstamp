@@ -40,9 +40,13 @@ window.runGlobalSearch=function(q){
     });
   }
   var matchedUsers = _rawUsers.slice(0,7);
-  // Record search signal
+  // Record search signal + analytics
   if (typeof recordSignal === 'function' && query.length >= 2) {
     recordSignal('search', { query: query });
+  }
+  if (typeof trackSearch === 'function' && query.length >= 2) {
+    var _totalResults = matchedUsers.length + matchedGigs.length;
+    trackSearch(query, _totalResults);
   }
   var _rawGigs = (CACHE.gigs||[]).filter(function(g){
     return g.status==='open'

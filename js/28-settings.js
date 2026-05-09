@@ -124,7 +124,42 @@ window.openSettings = function() {
     },
   ]);
 
+  // ── Admin Access (isAdmin only — invisible to regular users) ───────────
+  if (ME && ME.isAdmin) {
+    html += '<div style="margin:0 16px 8px;">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.08em;padding:0 4px;margin-bottom:6px;">⚙️ Admin</div>';
+    html += '<div style="background:var(--s);border:1px solid rgba(255,107,53,.3);border-radius:14px;overflow:hidden;">';
+    html += '<div onclick="document.getElementById(\'settings-panel\').remove();showPage(\'admin\')" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--br);transition:background .15s;" onmouseover="this.style.background=\'var(--s2)\'" onmouseout="this.style.background=\'\'">';
+    html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(255,107,53,.1);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>';
+    html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;color:var(--acc);">Admin Panel</div><div style="font-size:10px;color:var(--td);margin-top:1px;">Users · Moderation · Platform Controls</div></div>';
+    html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    html += '</div>';
+    html += '<div onclick="document.getElementById(\'settings-panel\').remove();showPage(\'admin\');setTimeout(function(){adminTab(\'analytics\');},300);" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'var(--s2)\'" onmouseout="this.style.background=\'\'">';
+    html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(255,107,53,.08);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>';
+    html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;color:var(--acc);">Platform Analytics</div><div style="font-size:10px;color:var(--td);margin-top:1px;">Engagement · Search · Gigs · Recommendations</div></div>';
+    html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    html += '</div>';
+    html += '</div></div>';
+  }
+
   // ── Danger zone ───────────────────────────────────────────
+  // ── ADMIN PANEL ENTRY (admin users only) ──────────────────────────────
+  if (ME && ME.isAdmin) {
+    html += '<div style="margin:12px 16px 8px;">';
+    html += '<div style="font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">⚙️ Admin</div>';
+    html += '<div style="background:var(--s);border:1px solid rgba(99,102,241,.3);border-radius:12px;overflow:hidden;">';
+    html += '<div onclick="showPage(\'admin\')" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;">';
+    html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">';
+    html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>';
+    html += '</div>';
+    html += '<div style="flex:1;">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--tx);">Admin Control Center</div>';
+    html += '<div style="font-size:11px;color:var(--td);margin-top:2px;">Users · Analytics · Moderation</div>';
+    html += '</div>';
+    html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--td)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    html += '</div></div></div>';
+  }
+
   html += '<div style="margin:12px 16px 8px;">';
   html += '<div style="font-size:10px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.08em;padding:0 4px;margin-bottom:6px;">Danger Zone</div>';
   html += '<div style="background:var(--s);border:1px solid rgba(239,68,68,.2);border-radius:14px;overflow:hidden;">';

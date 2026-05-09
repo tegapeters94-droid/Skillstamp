@@ -68,6 +68,8 @@ function renderGigs(){
         var g = (typeof getGigs === 'function' ? getGigs() : []).find(function(x){ return x.id===gid; });
         recordSignal('gig_view', { gigId: gid });
         if (g && g.category) recordSignal('cat_interact', { cat: g.category });
+        // Analytics tracking
+        if (typeof trackGigClick === 'function') trackGigClick(gid, g ? g.category : '');
       }
       showGigDetail(item.dataset.gid);
     }

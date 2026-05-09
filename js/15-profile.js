@@ -4,6 +4,11 @@
 //  PROFILES
 // ══════════════════════════════════════════════
 window.viewProfile=function(uid){
+  // Analytics: track profile view (safe — never blocks render)
+  if (typeof trackProfileView === 'function') {
+    var _u = (CACHE.users||[]).find(function(x){return x.uid===uid;});
+    trackProfileView(uid, _u ? _u.role : 'freelancer');
+  }
   if(uid===ME.uid){showPage('myprofile');return;}
   const u=getUser(uid);if(!u)return;
   document.getElementById('viewprofile-content').innerHTML=buildProfile(u,false);

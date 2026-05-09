@@ -268,6 +268,7 @@ window.acceptProposal = async function(proposalId) {
     // Update ME applications
     if (!ME.applications) ME.applications = [];
     ME.applications.push({ gigId: gig.id, gigTitle: p.title, status: 'accepted', ts: Date.now() });
+    if (typeof trackApplication === 'function') trackApplication(gig.id, gig.category || '');
     await saveUser(ME);
 
     // Notify client

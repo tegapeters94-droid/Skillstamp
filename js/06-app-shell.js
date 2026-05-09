@@ -1418,6 +1418,9 @@ window.openDirectProposal = function(uid) {
     try {
       // ── Route through Proposal Hub (stores in proposals collection) ──
       var result = await sendDirectProposalToHub(uid, title, desc, budget, timeline, window._dpImages.slice());
+      if (result && result.ok && typeof trackApplication === 'function') {
+        trackApplication(window._dpGigId || '', '');
+      }
       if (!result.ok) {
         toast(result.error || 'Could not send proposal.', 'bad');
         submitBtn.disabled = false;

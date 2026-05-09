@@ -42,6 +42,10 @@ window.renderTalent = function() {
     return;
   }
   grid.innerHTML = users.slice(0, 60).map(u => talentCard(u)).join('');
+  // Track recommendation impressions
+  if (typeof trackRecommendationImpression === 'function' && users.length) {
+    trackRecommendationImpression('user', users.slice(0,20).map(function(u){return u.uid;}));
+  }
 };
 
 function talentCard(u) {
@@ -85,7 +89,7 @@ function talentCard(u) {
     ? '<svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:middle;flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="#059669"/><polyline points="6 12 10 16 18 8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
     : '';
 
-  return `<div class="tc-card" onclick="if(typeof recordSignal==='function')recordSignal('profile_view',{uid:'${u.uid}'});viewProfile('${u.uid}')" style="cursor:pointer;">
+  return `<div class="tc-card" onclick="if(typeof recordSignal==='function')recordSignal('profile_view',{uid:'${u.uid}'});if(typeof trackRecommendationClick==='function')trackRecommendationClick('user','${u.uid}',0);viewProfile('${u.uid}')" style="cursor:pointer;">
     <!-- Card top: avatar + name -->
     <div class="tc-top">
       <div class="tc-av-wrap">

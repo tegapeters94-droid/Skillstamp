@@ -136,6 +136,7 @@ window.updateUnreadBadge = updateUnreadBadge;
 
 // ── Main chat opener — called from workspace ───────────────
 window.openMsg = async function(uid) {
+  if (typeof trackMessageInit === 'function') trackMessageInit(uid);
   if (!uid || !ME || !ME.uid) { toast('Cannot open chat.', 'bad'); return; }
 
   // Cancellation token — if closeModal fires during our awaits, we abort
