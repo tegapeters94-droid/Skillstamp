@@ -352,8 +352,13 @@ window.openMsg = async function(uid) {
               // Rolling average: new_avg = (old_avg * count + new_val) / (count + 1)
               ME.avgResponseMs = Math.round((currentAvg * currentCount + responseMs) / (currentCount + 1));
               ME.responseCount = currentCount + 1;
-              // Save to Firestore in background (fire-and-forget)
-              fbSet('users', ME.uid, { avgResponseMs: ME.avgResponseMs, responseCount: ME.responseCount }).catch(function(){});
+              // Safe partial update — MUST use updateDoc not fbSet to avoid overwriting user doc
+              if (window.FB_FNS && window.FB_DB) {
+                window.FB_FNS.updateDoc(
+                  window.FB_FNS.doc(window.FB_DB, 'users', ME.uid),
+                  { avgResponseMs: ME.avgResponseMs, responseCount: ME.responseCount }
+                ).catch(function(e){ console.warn('[Messages] avgResponse update failed', e); });
+              }
               // Update CACHE
               var cachedMe = (CACHE.users||[]).find(function(u){return u.uid===ME.uid;});
               if (cachedMe) { cachedMe.avgResponseMs = ME.avgResponseMs; cachedMe.responseCount = ME.responseCount; }

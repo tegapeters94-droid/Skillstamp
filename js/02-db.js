@@ -55,7 +55,9 @@ async function fbGet(col, id) {
 }
 async function fbSet(col, id, data) {
   try {
-    await window.FB_FNS.setDoc(window.FB_FNS.doc(window.FB_DB, col, id), data);
+    // SAFETY: always use merge:true so we never accidentally overwrite a full document.
+    // This means fbSet is now always a PARTIAL update (like updateDoc but also creates if missing).
+    await window.FB_FNS.setDoc(window.FB_FNS.doc(window.FB_DB, col, id), data, { merge: true });
   } catch(e) { console.warn('fbSet error', col, id, e); }
 }
 async function fbGetAll(col, retries) {

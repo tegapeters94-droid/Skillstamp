@@ -978,3 +978,59 @@ window.addEventListener('load',function(){
     }
   },1000);
 });
+
+
+// ── Admin: Repair corrupted user document ─────────────────────────────────
+window.adminRepairUser = async function(uid) {
+  if (!ME || !ME.isAdmin) return;
+  if (!confirm('Restore missing fields for this user?')) return;
+
+  // Fetch the raw document to see what survived
+  var raw = await fbGet('users', uid);
+  if (!raw) { toast('User document not found in Firestore.', 'bad'); return; }
+
+  // Build a safe restore object — only fill in what is undefined/missing
+  var restore = {};
+  if (!raw.name     || raw.name     === 'undefined') restore.name     = 'Restored User';
+  if (!raw.email    || raw.email    === 'undefined') restore.email    = raw.email || '';
+  if (!raw.role     || raw.role     === 'undefined') restore.role     = 'freelancer';
+  if (!raw.country  || raw.country  === 'undefined') restore.country  = '';
+  if (!raw.title    || raw.title    === 'undefined') restore.title    = '';
+  if (!raw.bio      || raw.bio      === 'undefined') restore.bio      = '';
+  if (!raw.badgeStatus)                              restore.badgeStatus = 'beginner';
+  if (!raw.gradient)                                 restore.gradient = '#16a25a';
+  if (raw.score     === undefined)                   restore.score    = 0;
+  if (raw.repPoints === undefined)                   restore.repPoints= 0;
+  if (raw.gigsCount === undefined)                   restore.gigsCount= 0;
+  if (raw.earned    === undefined)                   restore.earned   = 0;
+  if (!raw.wallet || typeof raw.wallet !== 'object') {
+    restore.wallet = { balance: 0, pending: 0, earned: 0, transactions: [] };
+  }
+  if (!Array.isArray(raw.skills))       restore.skills       = [];
+  if (!Array.isArray(raw.services))     restore.services     = [];
+  if (!Array.isArray(raw.portfolio))    restore.portfolio    = [];
+  if (!Array.isArray(raw.applications)) restore.applications = [];
+  if (!raw.links || typeof raw.links !== 'object') restore.links = {};
+  if (raw.available === undefined)      restore.available    = true;
+  if (!raw.created)                     restore.created      = Date.now();
+
+  if (Object.keys(restore).length === 0) {
+    toast('No missing fields found — user looks intact.'); return;
+  }
+
+  try {
+    // Use updateDoc (safe partial) to restore only missing fields
+    await window.FB_FNS.updateDoc(
+      window.FB_FNS.doc(window.FB_DB, 'users', uid),
+      restore
+    );
+    // Update CACHE
+    var cached = (CACHE.users||[]).find(function(u){ return u.uid===uid; });
+    if (cached) Object.assign(cached, restore);
+    toast('User repaired (' + Object.keys(restore).length + ' fields restored).');
+    if (typeof adminFilterUsers === 'function') adminFilterUsers();
+  } catch(e) {
+    console.error('adminRepairUser failed:', e);
+    toast('Repair failed: ' + e.message, 'bad');
+  }
+};
