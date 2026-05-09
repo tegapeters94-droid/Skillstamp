@@ -6,41 +6,89 @@
 // ═══════════════════════════════════════════════════════
 
 var CONTACT_PATTERNS = [
-  // ── Platform keywords (word-boundary aware) ──────────────
-  { re: /\btelegram\b/i,                                    label: 'Telegram' },
-  { re: /\bt\.me\/[a-zA-Z0-9_]{2,}/i,                      label: 'Telegram link' },
-  { re: /\bwhatsapp\b/i,                                    label: 'WhatsApp' },
-  { re: /\bwa\.me\/[0-9]{6,}/i,                             label: 'WhatsApp link' },
-  { re: /\bsnapchat\b|\bsnap\b/i,                           label: 'Snapchat' },
-  { re: /\binstagram\b|\binsta\b|\big\b(?=\s*[:\/@])/i,     label: 'Instagram' },
-  { re: /\btwitter\b|\bx\.com\b/i,                          label: 'Twitter / X' },
-  { re: /\bfacebook\b|\bfb\b(?=\s*[:\/@])/i,                label: 'Facebook' },
-  { re: /\btiktok\b/i,                                      label: 'TikTok' },
-  { re: /\bwechat\b/i,                                      label: 'WeChat' },
+  // ═══════════════════════════════════════════════════════
+  //  GROUP 1 — NUMBER / CONTACT REQUESTS (most bypassed)
+  // ═══════════════════════════════════════════════════════
 
-  // ── "Hit me on / find me on / DM me on" + platform ──────
-  { re: /(?:hit|find|reach|dm|message|text|hmu|contact)\s+(?:me\s+)?(?:on|at|via|through)\s+\w+/i, label: 'off-platform contact request' },
-  { re: /(?:call\s*me|let['\u2019]?s\s*(?:call|talk|chat|speak)\s*(?:on|via|through)?)/i,           label: 'off-platform call request' },
+  // "send me your number" / "give me your number" / "drop your digits"
+  { re: /\b(?:send|give|share|drop|provide|type|write|put)\s+(?:me\s+)?(?:your\s+)?(?:phone\s+)?(?:number|num|no\.?|contact|digits|cell|mobile|whatsapp|telegram)\b/i, label: 'number request' },
 
-  // ── Platform username patterns without @ ─────────────────
+  // "what's your number" / "what is your contact"
+  { re: /\bwhat[\s'\u2019\u2018]+(?:is\s+)?your\s+(?:phone\s+)?(?:number|num|no\.?|contact|digits|whatsapp|telegram)\b/i, label: 'number request' },
+
+  // "my number is..." / "here is my whatsapp"
+  { re: /\b(?:my|here[\s']+is\s+my|this\s+is\s+my)\s+(?:phone\s+)?(?:number|whatsapp|telegram|contact|digits)\b/i, label: 'number sharing' },
+
+  // ═══════════════════════════════════════════════════════
+  //  GROUP 2 — PLATFORM KEYWORDS
+  // ═══════════════════════════════════════════════════════
+  { re: /\btelegram\b/i,                     label: 'Telegram' },
+  { re: /\bt\.me\/[a-zA-Z0-9_]{2,}/i,       label: 'Telegram link' },
+  { re: /\bwhatsapp\b/i,                     label: 'WhatsApp' },
+  { re: /\bwa\.me\/[0-9]{6,}/i,              label: 'WhatsApp link' },
+  { re: /\bsnapchat\b|\bsnap\b/i,            label: 'Snapchat' },
+  { re: /\binstagram\b|\binsta\b|\big\b(?=\s*[:\/@])/i, label: 'Instagram' },
+  { re: /\btwitter\b|\bx\.com\b/i,          label: 'Twitter / X' },
+  { re: /\bfacebook\b|\bfb\b(?=\s*[:\/@])/i, label: 'Facebook' },
+  { re: /\btiktok\b/i,                       label: 'TikTok' },
+  { re: /\bwechat\b/i,                       label: 'WeChat' },
+
+  // ═══════════════════════════════════════════════════════
+  //  GROUP 3 — SHORT PLATFORM ALIASES
+  //  "wb" (WhatsApp), "tg" (Telegram), "ig", "snap" + handle
+  // ═══════════════════════════════════════════════════════
+  { re: /\b(?:ig|insta|snap|wb|wapp|tg)\b\s*[:\-\/]?\s*[a-zA-Z0-9._]{2,}/i, label: 'social handle' },
+
+  // ═══════════════════════════════════════════════════════
+  //  GROUP 4 — CONTACT VERBS (extended)
+  // ═══════════════════════════════════════════════════════
+
+  // "text me" / "call me" / "ring me" / "ping me"
+  { re: /\btext\s+me\b|\bcall\s+me\b|\bring\s+me\b|\bping\s+me\b/i, label: 'off-platform contact' },
+
+  // "hit me up" / "slide into my DMs"
+  { re: /\bhit\s+me\s+up\b|\bslide\s+(?:into\s+)?my\s+dms?\b/i, label: 'off-platform contact' },
+
+  // "reach me on" / "find me on" / "contact me via" (with preposition)
+  { re: /(?:hit|find|reach|dm|message|text|hmu|contact)\s+(?:me\s+)?(?:on|at|via|through)\s+\w+/i, label: 'off-platform contact' },
+
+  // "let's call" / "let's chat on" / "call me"
+  { re: /(?:call\s*me|let[\s']*s\s*(?:call|talk|chat|speak)\s*(?:on|via|through)?)/i, label: 'off-platform call' },
+
+  // "message me outside" / "chat outside" / "connect privately"
+  { re: /\b(?:message|talk|chat|speak|communicate|connect)\s+(?:me\s+)?(?:outside|off(?:\s*platform)?|privately|directly)\b/i, label: 'off-platform request' },
+
+  // "outside SkillStamp" / "off the platform" / "leave the app"
+  { re: /\b(?:outside|off|away\s+from|leave)\s+(?:skillstamp|this\s+platform|this\s+app|the\s+platform|the\s+app)\b/i, label: 'off-platform request' },
+
+  // ═══════════════════════════════════════════════════════
+  //  GROUP 5 — USERNAME PATTERNS
+  // ═══════════════════════════════════════════════════════
+
   // "telegram: username" / "snap: username" / "ig - username"
   { re: /(?:telegram|whatsapp|snap(?:chat)?|insta(?:gram)?|ig|twitter|fb|tiktok)\s*[:\-\/]\s*[a-zA-Z0-9._]{2,30}/i, label: 'social username' },
 
-  // ── @handle detection ─────────────────────────────────────
-  { re: /(?:^|\s)@[a-zA-Z0-9._]{2,30}(?:\s|$)/,            label: 'social handle' },
+  // Catch-all: 'your number/digits/cell' in any phrasing
+  { re: /\byour\s+(?:phone\s+)?(?:number|num|digits|cell|mobile)\b/i, label: 'number request' },
 
-  // ── Email addresses ───────────────────────────────────────
+  // @handle detection
+  { re: /(?:^|\s)@[a-zA-Z0-9._]{2,30}(?:\s|$)/, label: 'social handle' },
+
+  // ═══════════════════════════════════════════════════════
+  //  GROUP 6 — EMAIL & PHONE
+  // ═══════════════════════════════════════════════════════
   { re: /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/, label: 'email address' },
-
-  // ── Phone: 8+ consecutive digits (with optional spaces/dashes) ──
   { re: /(?:\+?[\d][\s\-.]?){7,}\d/,                        label: 'phone number' },
 
-  // ── Shortlink/external link patterns ─────────────────────
+  // ═══════════════════════════════════════════════════════
+  //  GROUP 7 — SHORTLINKS
+  // ═══════════════════════════════════════════════════════
   { re: /(?:bit\.ly|tinyurl\.com|m\.me|fb\.me|wa\.me|t\.me|linktr\.ee)\/[a-zA-Z0-9._\-]{2,}/i, label: 'external link' },
 ];
 
 // Returns { flagged: bool, label: string, masked: string }
 function detectContactInfo(text) {
+  if (!text) return { flagged: false };
   for (var i = 0; i < CONTACT_PATTERNS.length; i++) {
     var p = CONTACT_PATTERNS[i];
     if (p.re.test(text)) {
@@ -48,9 +96,11 @@ function detectContactInfo(text) {
         if (m.length <= 4) return '***';
         return m.slice(0, 3) + m.slice(3).replace(/[\w+@.\-]/g, '*');
       });
+      console.log('[Guard] Flagged:', p.label, '| text:', text);
       return { flagged: true, label: p.label, masked: masked };
     }
   }
+  console.log('[Guard] Clean message passed:', text.slice(0, 40));
   return { flagged: false };
 }
 
@@ -249,6 +299,7 @@ window.openMsg = async function(uid) {
       var text = inp.value.trim();
       if (!text) return;
 
+      console.log('[Guard] doSend fired, checking:', text.slice(0, 40));
       var detection = detectContactInfo(text);
       if (detection.flagged) {
         inp.value = text;
