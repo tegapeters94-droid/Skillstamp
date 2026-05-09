@@ -115,14 +115,15 @@ async function _fetchEvents(types, days) {
   try {
     var typesArr = Array.isArray(types) ? types : [types];
     // Firestore: query by createdAt >= since (no composite index needed — just one field)
+    // Simple limit-only query — no where() to avoid index requirements
     var q = window.FB_FNS.query(
       window.FB_FNS.collection(window.FB_DB, ANALYTICS_COLLECTION),
-      window.FB_FNS.where('createdAt', '>=', since),
-      window.FB_FNS.limit(1000)
+      window.FB_FNS.limit(2000)
     );
     var snap = await window.FB_FNS.getDocs(q);
     var events = snap.docs.map(function (d) { return d.data(); });
-    // Filter by types client-side (avoids composite index)
+    // Filter by date and type client-side (no index needed)
+    events = events.filter(function (e) { return !e.createdAt || e.createdAt >= since; });
     if (typesArr.length) {
       events = events.filter(function (e) { return typesArr.indexOf(e.type) >= 0; });
     }

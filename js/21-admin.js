@@ -128,7 +128,12 @@ window.adminTab=function(name){
       var at = document.getElementById('admtab-analytics');
       if (at) at.id = 'admtab-analytics'; // keep id
     }
-    if (typeof renderAdminAnalytics === 'function') renderAdminAnalytics();
+    // Use whichever analytics renderer is available
+    if (typeof renderAnalyticsDashboard === 'function') {
+      renderAnalyticsDashboard('admtab-analytics');
+    } else if (typeof renderAdminAnalytics === 'function') {
+      renderAdminAnalytics();
+    }
   }
   if(name==='analytics') {
     // Lazy-load analytics dashboard on first click
