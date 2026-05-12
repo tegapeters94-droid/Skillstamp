@@ -49,106 +49,129 @@ window.renderTalent = function() {
 };
 
 function talentCard(u) {
-  const isMe = u.uid === ME.uid;
-  const endorse = getEndorsements().filter(e => e.toUid === u.uid);
-  const isVerif = u.badgeStatus === 'verified' || u.badgeStatus === 'expert' || u.badgeStatus === 'elite';
-  const skills = (u.skills || []).slice(0, 3);
-  const rating = u.score > 0 ? u.score.toFixed(1) : null;
-  const stars = rating ? Math.min(5, Math.round(u.score)) : 0;
+  var isMe    = u.uid === ME.uid;
+  var endorse = getEndorsements().filter(function(e){ return e.toUid === u.uid; });
+  var isVerif = u.badgeStatus === 'verified' || u.badgeStatus === 'expert' || u.badgeStatus === 'elite';
+  var skills  = (u.skills || []).slice(0, 3);
+  var rating  = u.score > 0 ? u.score.toFixed(1) : null;
+  var stars   = rating ? Math.min(5, Math.round(u.score)) : 0;
 
-  // Avatar
+  // Squircle avatar
   var av = u.avatar
-    ? '<img src="'+u.avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+    ? '<img src="'+u.avatar+'" style="width:100%;height:100%;object-fit:cover;display:block;">'
     : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:22px;color:#000;">'+initials(u.name)+'</div>';
 
-  // Star icons SVG
+  // Online glow dot
+  var availOnline = u.available !== false;
+  var dotClass    = availOnline ? 'tc-av-dot tc-av-dot-online' : 'tc-av-dot tc-av-dot-busy';
+
+  // Inline star row
   var starsHtml = '';
   for (var i = 1; i <= 5; i++) {
-    var filled = i <= stars;
-    starsHtml += '<svg width="11" height="11" viewBox="0 0 24 24" fill="'+(filled?'#e8c547':'none')+'" stroke="'+(filled?'#e8c547':'rgba(255,255,255,.2)')+'" stroke-width="2" style="flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+    var f = i <= stars;
+    starsHtml += '<svg width="10" height="10" viewBox="0 0 24 24" fill="'+(f?'#e8c547':'none')+'" stroke="'+(f?'#e8c547':'rgba(255,255,255,.18)')+'" stroke-width="1.8" style="flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
   }
 
-  // Availability dot
-  var availDot = u.available !== false
-    ? '<span style="width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;flex-shrink:0;" title="Available"></span>'
-    : '<span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0;" title="Busy"></span>';
-
-  // SkillID chain
-  var chainHtml = isVerif && u.skillId
-    ? '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:7px;margin-bottom:12px;">'
-      +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
-      +'<span style="font-size:9px;color:#60a5fa;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;letter-spacing:.06em;">'+u.skillId+'</span>'
-      +'</div>'
+  // Verified badge — high contrast inline
+  var verifBadge = isVerif
+    ? '<span style="display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,rgba(74,222,128,.16),rgba(74,222,128,.06));border:1px solid rgba(74,222,128,.35);color:#4ade80;font-size:8px;font-weight:800;padding:2px 7px;border-radius:20px;letter-spacing:.03em;flex-shrink:0;">&#10003; Verified</span>'
     : '';
+
+  // Rating inline
+  var ratingBadge = rating
+    ? '<span style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:11px;color:var(--gld);">'+rating+'</span>'
+    : '<span style="font-size:10px;color:var(--td);font-weight:600;">New</span>';
 
   // YOU badge
-  var youBadge = isMe ? '<span style="font-size:8px;background:rgba(232,197,71,.15);border:1px solid rgba(232,197,71,.3);color:var(--gld);padding:2px 6px;border-radius:6px;font-weight:700;font-family:Plus Jakarta Sans,sans-serif;">YOU</span>' : '';
-
-  // Verified badge
-  var verifBadge = isVerif
-    ? '<svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:middle;flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="#059669"/><polyline points="6 12 10 16 18 8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
+  var youBadge = isMe
+    ? '<span style="font-size:8px;background:rgba(232,197,71,.12);border:1px solid rgba(232,197,71,.28);color:var(--gld);padding:2px 7px;border-radius:6px;font-weight:800;font-family:Plus Jakarta Sans,sans-serif;flex-shrink:0;">YOU</span>'
     : '';
 
-  return `<div class="tc-card" onclick="if(typeof recordSignal==='function')recordSignal('profile_view',{uid:'${u.uid}'});if(typeof trackRecommendationClick==='function')trackRecommendationClick('user','${u.uid}',0);viewProfile('${u.uid}')" style="cursor:pointer;">
-    <!-- Card top: avatar + name -->
-    <div class="tc-top">
-      <div class="tc-av-wrap">
-        <div class="tc-av" style="background:linear-gradient(135deg,${u.gradient},${u.gradient}88);">${av}</div>
-        <div class="tc-av-dot">${availDot}</div>
-      </div>
-      <div class="tc-info">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
-          <div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--tx);line-height:1.2;">${u.name}</div>
-          ${youBadge}
-        </div>
-        <div style="font-size:10px;color:var(--td);margin-bottom:5px;line-height:1.4;">${u.title||'SkillStamp Freelancer'}</div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          ${verifBadge}
-          <span style="font-size:10px;color:var(--td);">${flag(u.country)} ${u.country}</span>
-        </div>
-      </div>
-    </div>
+  // SkillID — discreet, no background box
+  var chainHtml = isVerif && u.skillId
+    ? '<div style="font-size:8px;color:rgba(96,165,250,.45);font-family:Plus Jakarta Sans,sans-serif;font-weight:600;letter-spacing:.06em;margin-top:-4px;margin-bottom:10px;padding-left:1px;">'+u.skillId+'</div>'
+    : '';
 
-    <!-- Category pill -->
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-      <span style="font-size:10px;background:var(--s2);border:1px solid var(--br);color:var(--td);padding:3px 9px;border-radius:20px;font-family:Plus Jakarta Sans,sans-serif;">${CAT_ICONS[u.category]||''} ${u.category}</span>
-    </div>
+  // Skill tags — soft brand tint
+  var skillsHtml = skills.length
+    ? skills.map(function(s){ return '<span class="tc-skill">'+s+'</span>'; }).join('')
+    : '<span style="font-size:10px;color:var(--td);">No skills added</span>';
+  var moreHtml = (u.skills||[]).length > 3
+    ? '<span style="font-size:9px;color:var(--td);align-self:center;font-weight:600;">+'+((u.skills||[]).length-3)+'</span>'
+    : '';
 
-    <!-- Skills -->
-    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;">
-      ${skills.length
-        ? skills.map(s => '<span class="tc-skill">'+s+'</span>').join('')
-        : '<span style="font-size:10px;color:var(--td);">No skills added yet</span>'
-      }
-      ${(u.skills||[]).length > 3 ? '<span style="font-size:10px;color:var(--td);align-self:center;">+'+((u.skills||[]).length-3)+' more</span>' : ''}
-    </div>
+  // Category pill
+  var catHtml = u.category
+    ? '<span style="font-size:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--td);padding:2px 8px;border-radius:20px;font-family:Plus Jakarta Sans,sans-serif;font-weight:600;">'+(CAT_ICONS[u.category]||'')+'&nbsp;'+u.category+'</span>'
+    : '';
 
-    <!-- SkillID -->
-    ${chainHtml}
+  // Stats row — clean dividers, no background box
+  var statsHtml = '<div class="tc-stats">'
+    + '<div class="tc-stat">'
+    +   '<div style="display:flex;align-items:center;justify-content:center;gap:2px;margin-bottom:3px;">'+starsHtml+'</div>'
+    +   '<div style="display:flex;align-items:center;justify-content:center;">'+ratingBadge+'</div>'
+    +   '<div style="font-size:7px;color:var(--td);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Rating</div>'
+    + '</div>'
+    + '<div class="tc-stat-div"></div>'
+    + '<div class="tc-stat">'
+    +   '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--tx);line-height:1;">'+(u.gigsCount||0)+'</div>'
+    +   '<div style="font-size:7px;color:var(--td);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Gigs</div>'
+    + '</div>'
+    + '<div class="tc-stat-div"></div>'
+    + '<div class="tc-stat">'
+    +   '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--tx);line-height:1;">'+endorse.length+'</div>'
+    +   '<div style="font-size:7px;color:var(--td);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Endorsed</div>'
+    + '</div>'
+    + '</div>';
 
-    <!-- Stats row -->
-    <div class="tc-stats">
-      <div class="tc-stat">
-        <div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;">${starsHtml}</div>
-        <div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:${rating?'var(--gld)':'var(--td)'};">${rating||'New'}</div>
-        <div style="font-size:8px;color:var(--td);text-transform:uppercase;letter-spacing:.05em;">Rating</div>
-      </div>
-      <div class="tc-stat-div"></div>
-      <div class="tc-stat">
-        <div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:var(--tx);">${u.gigsCount||0}</div>
-        <div style="font-size:8px;color:var(--td);text-transform:uppercase;letter-spacing:.05em;">Gigs</div>
-      </div>
-      <div class="tc-stat-div"></div>
-      <div class="tc-stat">
-        <div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:var(--tx);">${endorse.length}</div>
-        <div style="font-size:8px;color:var(--td);text-transform:uppercase;letter-spacing:.05em;">Endorsements</div>
-      </div>
-    </div>
+  // Actions: primary View Profile + icon-only Endorse ghost
+  var actionsHtml = !isMe
+    ? '<div class="tc-actions" onclick="event.stopPropagation()">'
+      + '<button class="tc-btn-primary" onclick="viewProfile(\''+u.uid+'\')">View Profile</button>'
+      + '<button class="tc-btn-ghost" onclick="openEndorse(\''+u.uid+'\')" title="Endorse this freelancer">'
+      +   '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'
+      + '</button>'
+      + '</div>'
+    : '';
 
-    <!-- Actions -->
-    ${!isMe ? `<div class="tc-actions" onclick="event.stopPropagation()">
-      <button class="tc-btn-primary" onclick="viewProfile('${u.uid}')">View Profile</button>
-      <button class="tc-btn-ghost" onclick="openEndorse('${u.uid}')">Endorse</button>
-    </div>` : ''}
-  </div>`;
+  return '<div class="tc-card" onclick="if(typeof recordSignal===\'function\')recordSignal(\'profile_view\',{uid:\''+u.uid+'\'});if(typeof trackRecommendationClick===\'function\')trackRecommendationClick(\'user\',\''+u.uid+'\',0);viewProfile(\''+u.uid+'\')" style="cursor:pointer;">'
+
+    // Top: squircle avatar + name row with inline badges
+    + '<div class="tc-top">'
+    +   '<div class="tc-av-wrap">'
+    +     '<div class="tc-av" style="background:linear-gradient(135deg,'+u.gradient+','+u.gradient+'88);">'+av+'</div>'
+    +     '<div class="'+dotClass+'"></div>'
+    +   '</div>'
+    +   '<div class="tc-info">'
+    // Name + verified + YOU inline in one row
+    +     '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">'
+    +       '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--tx);line-height:1.2;letter-spacing:-.02em;">'+u.name+'</div>'
+    +       verifBadge
+    +       youBadge
+    +     '</div>'
+    // Title
+    +     '<div style="font-size:10px;color:var(--td);margin-bottom:6px;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+(u.title||'SkillStamp Freelancer')+'</div>'
+    // Country + category
+    +     '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+    +       '<span style="font-size:10px;color:var(--td);">'+flag(u.country)+'&nbsp;'+u.country+'</span>'
+    +       catHtml
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
+
+    // SkillID — discreet small text
+    + chainHtml
+
+    // Skills — soft brand tint tags
+    + '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;">'
+    +   skillsHtml + moreHtml
+    + '</div>'
+
+    // Metrics row — thin dividers, no grey box
+    + statsHtml
+
+    // Actions
+    + actionsHtml
+
+    + '</div>';
 }
