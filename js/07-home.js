@@ -142,7 +142,7 @@ function fHero() {
 
   // CTA buttons — clear hierarchy
   html += '<div style="display:flex;gap:10px;">';
-  html += '<button onclick="showPage(\'gigs\')" style="flex:1.6;'+D.font+';font-weight:800;font-size:13px;color:#000;background:#e8c547;border:none;padding:13px;border-radius:16px;cursor:pointer;'+D.trans+';box-shadow:0 4px 20px rgba(232,197,71,.45);letter-spacing:-.01em;" onmouseover="this.style.background=\'#f5d460\';this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.background=\'#e8c547\';this.style.transform=\'\'">💼 Browse Gigs</button>';
+  html += '<button onclick="showPage(\'gigs\')" style="flex:1.6;'+D.font+';font-weight:800;font-size:13px;color:#000;background:#e8c547;border:none;padding:13px;border-radius:16px;cursor:pointer;'+D.trans+';box-shadow:0 4px 20px rgba(232,197,71,.45);letter-spacing:-.01em;" onmouseover="this.style.background=\'#f5d460\';this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.background=\'#e8c547\';this.style.transform=\'\'\" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'\'">💼 Browse Gigs</button>';
   html += '<button onclick="showPage(\'myprofile\')" style="flex:1;'+D.font+';font-weight:600;font-size:12px;color:rgba(255,255,255,.75);background:rgba(255,255,255,.08);border:0.5px solid rgba(255,255,255,.18);padding:13px;border-radius:16px;cursor:pointer;'+D.trans+'" onmouseover="this.style.background=\'rgba(255,255,255,.13)\'" onmouseout="this.style.background=\'rgba(255,255,255,.08)\'">My Profile</button>';
   html += '</div>';
   html += '</div>';
@@ -285,7 +285,7 @@ function fTipCard() {
   var tip = tips[Math.floor(Date.now()/86400000) % tips.length];
   var key = 'tip_d_'+Math.floor(Date.now()/86400000);
   if (LOCAL.get(key)) return '';
-  var html = '<div style="background:linear-gradient(135deg,rgba(96,165,250,.07),rgba(96,165,250,.03));border:1px solid rgba(96,165,250,.2);border-radius:20px;padding:14px 15px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;">';
+  var html = '<div style="background:linear-gradient(135deg,rgba(96,165,250,.07),rgba(96,165,250,.03));border:1px solid rgba(96,165,250,.2);border-radius:20px;padding:14px 15px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start;">';
   html += '<div style="width:38px;height:38px;background:rgba(96,165,250,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">'+tip.icon+'</div>';
   html += '<div style="flex:1;">';
   html += '<div style="font-size:9px;font-weight:800;color:#60a5fa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Tip of the day</div>';
@@ -340,7 +340,7 @@ function cHero() {
 
   // CTAs
   html += '<div style="display:flex;gap:10px;">';
-  html += '<button onclick="openPostGig()" style="flex:1.5;'+D.font+';font-weight:800;font-size:13px;color:#000;background:#e8c547;border:none;padding:13px;border-radius:16px;cursor:pointer;'+D.trans+';box-shadow:0 4px 20px rgba(232,197,71,.4);letter-spacing:-.01em;" onmouseover="this.style.background=\'#f5d460\';this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.background=\'#e8c547\';this.style.transform=\'\'">+ Post a Gig</button>';
+  html += '<button onclick="openPostGig()" style="flex:1.5;'+D.font+';font-weight:800;font-size:13px;color:#000;background:#e8c547;border:none;padding:13px;border-radius:16px;cursor:pointer;'+D.trans+';box-shadow:0 4px 20px rgba(232,197,71,.4);letter-spacing:-.01em;" onmouseover="this.style.background=\'#f5d460\';this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.background=\'#e8c547\';this.style.transform=\'\'\" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'\'">+ Post a Gig</button>';
   html += '<button onclick="showPage(\'talent\')" style="flex:1;'+D.font+';font-weight:600;font-size:12px;color:rgba(255,255,255,.75);background:rgba(255,255,255,.08);border:0.5px solid rgba(255,255,255,.18);padding:13px;border-radius:16px;cursor:pointer;'+D.trans+'" onmouseover="this.style.background=\'rgba(255,255,255,.13)\'" onmouseout="this.style.background=\'rgba(255,255,255,.08)\'">Browse Talent</button>';
   html += '</div></div>';
   return html;
@@ -357,11 +357,11 @@ function cActiveGigs() {
       {icon:'✍️', title:'Get Content Written',    sub:'Blog, Copy, SEO', cat:'Content Writing'},
       {icon:'📣', title:'Boost Your Marketing',   sub:'Ads, Social, SEO', cat:'Digital Marketing'},
     ];
-    var html = '<div style="margin-bottom:18px;">';
+    var html = '<div style="margin-bottom:28px;">';
     html += sectionHeader('Quick Start', null, '');
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
     quickStart.forEach(function(q) {
-      html += '<div onclick="openPostGig()" style="background:var(--s);border:1px solid var(--br);border-radius:20px;padding:16px 14px;cursor:pointer;'+D.shadow+';'+D.trans+'" onmouseover="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 10px 28px rgba(0,0,0,.18)\';this.style.borderColor=\'rgba(232,197,71,.3)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.14),0 8px 24px rgba(0,0,0,.10)\';this.style.borderColor=\'var(--br)\'">';
+      html += '<div onclick="openPostGig()" style="background:var(--s);border:1px solid var(--br);border-radius:20px;padding:16px 14px;cursor:pointer;'+D.shadow+';'+D.trans+'" onmouseover="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 10px 28px rgba(0,0,0,.18)\';this.style.borderColor=\'rgba(232,197,71,.3)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.14),0 8px 24px rgba(0,0,0,.10)\';this.style.borderColor=\'var(--br)\'" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'translateY(-3px)\'">';
       html += '<div style="font-size:26px;margin-bottom:10px;">'+q.icon+'</div>';
       html += '<div style="'+D.font+';font-weight:700;font-size:12px;color:var(--tx);margin-bottom:3px;letter-spacing:-.01em;">'+q.title+'</div>';
       html += '<div style="font-size:10px;color:var(--td);">'+q.sub+'</div>';
