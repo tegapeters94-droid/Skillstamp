@@ -493,3 +493,12 @@ window.updateHomeStats = function() {
   var pg = document.getElementById('page-home');
   if (pg && pg.classList.contains('active') && ME) renderRoleHome();
 };
+
+
+// premiumGlassNav
+document.addEventListener('DOMContentLoaded', function(){
+  var nav = document.querySelector('.bottom-nav');
+  if(nav){
+    nav.style.transition = 'all .28s cubic-bezier(.22,.61,.36,1)';
+  }
+});
