@@ -38,7 +38,7 @@ window.renderTalent = function() {
 
   const grid = document.getElementById('tgrid');
   if (!users.length) {
-    grid.innerHTML = '<div style="padding:48px 16px;text-align:center;"><div style="font-size:40px;margin-bottom:12px;">🔍</div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;">No talent found</div><div style="font-size:12px;color:var(--td);">Try a different category or search term</div></div>';
+    grid.innerHTML = '<div style="padding:48px 16px;text-align:center;"><div style="font-size:40px;margin-bottom:12px;">🔍</div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:17px;margin-bottom:6px;">No talent found</div><div style="font-size:12px;color:var(--td);">Try a different category or search term</div></div>';
     return;
   }
   grid.innerHTML = users.slice(0, 60).map(u => talentCard(u)).join('');
@@ -89,7 +89,7 @@ function talentCard(u) {
 
   // SkillID — discreet, no background box
   var chainHtml = isVerif && u.skillId
-    ? '<div style="font-size:8px;color:rgba(96,165,250,.45);font-family:Plus Jakarta Sans,sans-serif;font-weight:600;letter-spacing:.06em;margin-top:-4px;margin-bottom:10px;padding-left:1px;">'+u.skillId+'</div>'
+    ? '<div style="font-size:7px;color:rgba(255,255,255,.22);font-family:Plus Jakarta Sans,sans-serif;font-weight:600;letter-spacing:.08em;margin-top:-2px;margin-bottom:12px;padding-left:2px;text-transform:uppercase;">'+u.skillId+'</div>'
     : '';
 
   // Skill tags — soft brand tint
@@ -110,17 +110,17 @@ function talentCard(u) {
     + '<div class="tc-stat">'
     +   '<div style="display:flex;align-items:center;justify-content:center;gap:2px;margin-bottom:3px;">'+starsHtml+'</div>'
     +   '<div style="display:flex;align-items:center;justify-content:center;">'+ratingBadge+'</div>'
-    +   '<div style="font-size:7px;color:var(--td);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Rating</div>'
+    +   '<div style="font-size:9px;color:var(--td);text-transform:uppercase;letter-spacing:.18em;margin-top:4px;">Rating</div>'
     + '</div>'
-    + '<div class="tc-stat-div"></div>'
+    + ''
     + '<div class="tc-stat">'
-    +   '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--tx);line-height:1;">'+(u.gigsCount||0)+'</div>'
-    +   '<div style="font-size:7px;color:var(--td);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Gigs</div>'
+    +   '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:17px;color:var(--tx);line-height:1;">'+(u.gigsCount||0)+'</div>'
+    +   '<div style="font-size:9px;color:var(--td);text-transform:uppercase;letter-spacing:.18em;margin-top:4px;">Gigs</div>'
     + '</div>'
-    + '<div class="tc-stat-div"></div>'
+    + ''
     + '<div class="tc-stat">'
-    +   '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--tx);line-height:1;">'+endorse.length+'</div>'
-    +   '<div style="font-size:7px;color:var(--td);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">Endorsed</div>'
+    +   '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:17px;color:var(--tx);line-height:1;">'+endorse.length+'</div>'
+    +   '<div style="font-size:9px;color:var(--td);text-transform:uppercase;letter-spacing:.18em;margin-top:4px;">Endorsed</div>'
     + '</div>'
     + '</div>';
 
@@ -145,7 +145,7 @@ function talentCard(u) {
     +   '<div class="tc-info">'
     // Name + verified + YOU inline in one row
     +     '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">'
-    +       '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--tx);line-height:1.2;letter-spacing:-.02em;">'+u.name+'</div>'
+    +       '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:17px;color:var(--tx);line-height:1.2;letter-spacing:-.02em;">'+u.name+'</div>'
     +       verifBadge
     +       youBadge
     +     '</div>'
