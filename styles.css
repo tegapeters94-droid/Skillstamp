@@ -16,7 +16,7 @@
 [data-theme="light"] .w-label{color:rgba(255,255,255,.7) !important;}
 [data-theme="light"] .w-btn{background:rgba(255,255,255,.15) !important;border-color:rgba(255,255,255,.25) !important;color:#fff !important;}
 [data-theme="light"] nav{background:var(--s) !important;border-bottom-color:var(--br);}
-[data-theme="light"] .bottom-nav{background:rgba(255,255,255,.80) !important;border-top:1px solid rgba(0,0,0,.06) !important;border-color:rgba(0,0,0,.06) !important;box-shadow:0 4px 24px rgba(0,0,0,.14),0 1px 4px rgba(0,0,0,.08) !important;}
+[data-theme="light"] .bottom-nav{background:rgba(255,255,255,0.80) !important;border-top:1px solid rgba(255,255,255,0.10) !important;border-color:transparent !important;box-shadow:0 4px 24px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.08) !important;}
 [data-theme="light"] .fi{background:var(--s);color:var(--tx);border-color:var(--br);}
 [data-theme="light"] .btn{background:var(--gld);color:#fff;}
 [data-theme="light"] .bsm{background:rgba(26,107,60,.08);color:var(--gld);border:1px solid rgba(26,107,60,.2);}
@@ -725,15 +725,15 @@ h1 em{font-family:Plus Jakarta Sans,sans-serif;font-style:italic;color:var(--gld
   display:none;
   position:fixed;
   bottom:12px;left:12px;right:12px;
-  background:rgba(12,12,10,.82);
+  background:rgba(255,255,255,0.80);
   border:none;
-  border-top:1px solid rgba(255,255,255,.09);
+  border-top:1px solid rgba(255,255,255,0.10);
   border-radius:26px;
   backdrop-filter:blur(12px);
   -webkit-backdrop-filter:blur(12px);
   z-index:300;
   padding:8px 6px max(10px, calc(env(safe-area-inset-bottom) - 2px));
-  box-shadow:0 4px 24px rgba(0,0,0,.38),0 1px 4px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.07);
+  box-shadow:0 4px 24px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.60);
 }
 .bottom-nav-inner{
   display:flex;
@@ -2647,3 +2647,11 @@ input, textarea, select {
 .squircle { border-radius: 28% !important; }
 /* Light theme dock badge border */
 [data-theme="light"] .bn .bn-badge { border-color: rgba(255,255,255,.92); }
+
+/* White glass dock — ensure icon colours have contrast on light background */
+.bottom-nav .bn { color: rgba(0,0,0,0.40); }
+.bottom-nav .bn svg { stroke: rgba(0,0,0,0.40); }
+.bottom-nav .bn.active { color: #16a25a; background: rgba(22,162,90,0.10); }
+.bottom-nav .bn.active svg { stroke: #16a25a; }
+.bottom-nav .bn.active::after { background: #16a25a; box-shadow: 0 0 6px rgba(22,162,90,.4); }
+.bottom-nav .bn:hover { background: rgba(0,0,0,0.05); }
