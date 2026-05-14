@@ -135,7 +135,21 @@ window.addEventListener('load',()=>{
 });
 
 let signupRole='freelancer';
-window.selRole=function(r_){signupRole=r_;document.getElementById('role-f').classList.toggle('sel',r_==='freelancer');document.getElementById('role-e').classList.toggle('sel',r_==='employer');};
+window.selRole=function(r_){
+  signupRole=r_;
+  // Legacy .sel class (kept for doSignup compatibility)
+  var rf=document.getElementById('role-f');
+  var re=document.getElementById('role-e');
+  if(rf) rf.classList.toggle('sel',r_==='freelancer');
+  if(re) re.classList.toggle('sel',r_==='employer');
+  // New ob-role-card styling
+  if(rf) rf.classList.toggle('ob-selected',r_==='freelancer');
+  if(re) re.classList.toggle('ob-selected',r_==='employer');
+  var chkF=document.getElementById('ob-chk-f');
+  var chkE=document.getElementById('ob-chk-e');
+  if(chkF) chkF.style.opacity=(r_==='freelancer')?'1':'0';
+  if(chkE) chkE.style.opacity=(r_==='employer')?'1':'0';
+};
 
 window.showBannedScreen=function(){
   document.getElementById('screen-app').classList.remove('active');
@@ -295,7 +309,13 @@ window.doSignup=async function(){
   const email=document.getElementById('ri-em').value.trim().toLowerCase();
   const pass=document.getElementById('ri-pw').value;
   const country=document.getElementById('ri-co').value;
+  // ri-cat is now a hidden input; obSelectCat() sets its value
   const category=document.getElementById('ri-cat').value;
+  // Pick up skills from new ob-skill-chips if present
+  var _obSkills=[];
+  document.querySelectorAll('.ob-skill-chip.ob-selected').forEach(function(el){
+    _obSkills.push(el.dataset.skill||el.textContent.trim());
+  });
   const save=document.getElementById('save-creds-s').checked;
   if(!fn||!ln||!email||!pass){toast('Please fill all fields.','bad');return;}
   var emailCheck=await validateEmail(email);
@@ -312,7 +332,7 @@ window.doSignup=async function(){
     const user={
       uid,email,name,role:signupRole,country,category,
       title:signupRole==='freelancer'?'Digital Professional':'Employer / Client',
-      bio:'',skills:[],badgeStatus:'beginner',score:0,repPoints:0,
+      bio:'',skills:_obSkills.length?_obSkills:[],badgeStatus:'beginner',score:0,repPoints:0,
       gigsCount:0,earned:0,skillId:null,gradient:gradFor(name),
       wallet:{balance:0,pending:0,earned:0,transactions:[]},
       created:Date.now(),isAdmin:false,avatar:null
@@ -366,3 +386,199 @@ window.doLogout=async function(){
   toast('Signed out.');
 };
 
+
+// ══════════════════════════════════════════════════════════════════
+//  CONDITIONAL ONBOARDING CONTROLLER (2-step signup flow)
+//  All logic lives here — index.html calls these functions.
+//  doSignup() / signupRole unchanged — 100% data compatibility.
+// ══════════════════════════════════════════════════════════════════
+
+(function(){
+'use strict';
+
+var _obStep      = 1;
+var _obCat       = '';
+var _obSkillsSel = [];
+var MAX_SKILLS   = 5;
+
+var SKILLS_MAP = {
+  'Graphics Design':   ['Photoshop','Illustrator','Logo Design','Branding','Figma','Motion Graphics'],
+  'UI/UX Design':      ['Figma','Wireframing','Prototyping','User Research','Webflow','Design Systems'],
+  'Content Writing':   ['Copywriting','SEO Writing','Blog Writing','Ghostwriting','Proofreading','Email Copy'],
+  'Data Analysis':     ['Python','SQL','Power BI','Tableau','Excel','Machine Learning'],
+  'Digital Marketing': ['Facebook Ads','Google Ads','SEO','Email Marketing','Social Media','Analytics'],
+  'Web & Mobile Dev':  ['React','Node.js','Flutter','Next.js','Firebase','API Design'],
+};
+
+// ── Role selection ────────────────────────────────────────────────
+window.obSelectRole = function(role) {
+  selRole(role); // calls the patched selRole which updates both old and new UI
+};
+
+// ── Step navigation ───────────────────────────────────────────────
+window.obNextStep = function() {
+  // Validate step 1 fields
+  var fn  = (document.getElementById('ri-fn')||{}).value||'';
+  var ln  = (document.getElementById('ri-ln')||{}).value||'';
+  var em  = (document.getElementById('ri-em')||{}).value||'';
+  var pw  = (document.getElementById('ri-pw')||{}).value||'';
+  var co  = (document.getElementById('ri-co')||{}).value||'';
+
+  if (!fn.trim() || !ln.trim()) { toast('Please enter your full name.','bad'); return; }
+  if (!em.trim() || !/^[^@]+@[^@]+\.[^@]+$/.test(em)) { toast('Please enter a valid email.','bad'); return; }
+  if (!pw || pw.length < 6) { toast('Password must be at least 6 characters.','bad'); return; }
+  if (!co) { toast('Please select your country.','bad'); return; }
+
+  // Slide to step 2
+  _obStep = 2;
+  var slider = document.getElementById('ob-slider');
+  if (slider) slider.style.transform = 'translateX(-100%)';
+
+  // Progress bar to 100%
+  var prog = document.getElementById('ob-progress');
+  if (prog) prog.style.width = '100%';
+
+  // Step label
+  var lbl = document.getElementById('ob-step-label');
+  if (lbl) lbl.textContent = '2 / 2';
+
+  // Show correct step 2 panel
+  var isFreelancer = (typeof signupRole !== 'undefined') ? signupRole !== 'employer' : true;
+  var fl  = document.getElementById('ob-step2-freelancer');
+  var cl  = document.getElementById('ob-step2-client');
+  if (fl) fl.style.display = isFreelancer ? '' : 'none';
+  if (cl) cl.style.display = isFreelancer ? 'none' : '';
+
+  // Build skill chips for freelancer
+  if (isFreelancer) _obBuildSkillChips(_obCat || '');
+};
+
+window.obBack = function() {
+  if (_obStep === 2) {
+    _obStep = 1;
+    var slider = document.getElementById('ob-slider');
+    if (slider) slider.style.transform = 'translateX(0)';
+    var prog = document.getElementById('ob-progress');
+    if (prog) prog.style.width = '50%';
+    var lbl = document.getElementById('ob-step-label');
+    if (lbl) lbl.textContent = '1 / 2';
+  } else {
+    showLsScreen('start');
+  }
+};
+
+// ── Category selection (step 2 freelancer) ───────────────────────
+window.obSelectCat = function(el) {
+  document.querySelectorAll('.ob-cat-pill').forEach(function(p){
+    p.classList.remove('ob-selected');
+  });
+  el.classList.add('ob-selected');
+  _obCat = el.dataset.val || el.getAttribute('data-val') || '';
+
+  // Set hidden ri-cat input
+  var catInput = document.getElementById('ri-cat');
+  if (catInput) catInput.value = _obCat;
+
+  // Rebuild skill chips for new category
+  _obSkillsSel = [];
+  _obBuildSkillChips(_obCat);
+};
+
+function _obBuildSkillChips(cat) {
+  var grid = document.getElementById('ob-skills-grid');
+  if (!grid) return;
+  var skills = SKILLS_MAP[cat] || [];
+  if (!skills.length) { grid.innerHTML = '<span style="font-size:11px;color:#b0bfaa;">Select a category first</span>'; return; }
+
+  grid.innerHTML = skills.map(function(s) {
+    var isSel = _obSkillsSel.indexOf(s) >= 0;
+    return '<span class="ob-skill-chip'+(isSel?' ob-selected':'')+'" data-skill="'+s+'" onclick="obToggleSkill(this)">'
+      + s + '</span>';
+  }).join('');
+  _obUpdateSkillCount();
+}
+
+window.obToggleSkill = function(el) {
+  var skill = el.dataset.skill || el.getAttribute('data-skill') || '';
+  var idx   = _obSkillsSel.indexOf(skill);
+  if (idx >= 0) {
+    _obSkillsSel.splice(idx, 1);
+    el.classList.remove('ob-selected');
+  } else {
+    if (_obSkillsSel.length >= MAX_SKILLS) {
+      // Shake feedback
+      el.style.animation = 'ob-shake .3s';
+      setTimeout(function(){ el.style.animation=''; }, 300);
+      return;
+    }
+    _obSkillsSel.push(skill);
+    el.classList.add('ob-selected');
+  }
+  _obUpdateSkillCount();
+};
+
+function _obUpdateSkillCount() {
+  var cnt = document.getElementById('ob-skills-count');
+  if (!cnt) return;
+  cnt.textContent = _obSkillsSel.length + ' / ' + MAX_SKILLS + ' selected';
+  cnt.style.color = _obSkillsSel.length === MAX_SKILLS ? '#1a6b3c' : '#b0bfaa';
+}
+
+// ── Client: set category from project intent ──────────────────────
+window.obSetClientCat = function(val) {
+  var catInput = document.getElementById('ri-cat');
+  if (catInput) catInput.value = val;
+};
+
+// ── Email validation inline ───────────────────────────────────────
+window.obValidateEmail = function(el) {
+  var valid = el.value && /^[^@]+@[^@]+\.[^@]+$/.test(el.value);
+  var check = document.getElementById('ob-em-check');
+  if (check) check.style.opacity = valid ? '1' : '0';
+};
+
+// ── Password strength meter ───────────────────────────────────────
+window.obPwStrength = function(val) {
+  var score = 0;
+  if (val.length >= 6)  score++;
+  if (val.length >= 10) score++;
+  if (/[A-Z]/.test(val) || /[0-9]/.test(val)) score++;
+  if (/[^a-zA-Z0-9]/.test(val)) score++;
+
+  var colors = ['','#ef4444','#f97316','#e8c547','#1a6b3c'];
+  var labels = ['','Weak','Fair','Good','Strong'];
+  for (var i = 1; i <= 4; i++) {
+    var bar = document.getElementById('ob-pw-b'+i);
+    if (bar) bar.style.background = i <= score ? colors[score] : '#e0e8dc';
+  }
+  var lbl = document.getElementById('ob-pw-label');
+  if (lbl) {
+    lbl.textContent = score > 0 ? labels[score] : '';
+    lbl.style.color = score > 0 ? colors[score] : '#b0bfaa';
+  }
+};
+
+// ── Reset when signup screen is shown ────────────────────────────
+var _origShowLsScreen = window.showLsScreen;
+window.showLsScreen = function(screen) {
+  if (typeof _origShowLsScreen === 'function') _origShowLsScreen(screen);
+  if (screen === 'signup') {
+    // Reset to step 1
+    _obStep = 1; _obCat = ''; _obSkillsSel = [];
+    var slider = document.getElementById('ob-slider');
+    if (slider) slider.style.transition = 'none';
+    if (slider) slider.style.transform  = 'translateX(0)';
+    // Re-enable transition after reset
+    setTimeout(function(){
+      if (slider) slider.style.transition = 'transform .42s cubic-bezier(.22,.68,0,1.2)';
+    }, 50);
+    var prog = document.getElementById('ob-progress');
+    if (prog) prog.style.width = '50%';
+    var lbl = document.getElementById('ob-step-label');
+    if (lbl) lbl.textContent = '1 / 2';
+    // Default to freelancer selected
+    selRole('freelancer');
+  }
+};
+
+})();
