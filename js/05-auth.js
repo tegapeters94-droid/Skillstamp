@@ -388,6 +388,158 @@ window.doLogout=async function(){
 
 
 // ══════════════════════════════════════════════════════════════════
+//  GOOGLE SIGN-IN
+//  Works for both sign-in (existing user) and sign-up (new user).
+//  On success: loads/creates user doc then enters app exactly like
+//  the email flow. Data shape is identical — 100% compatible.
+// ══════════════════════════════════════════════════════════════════
+
+window.doGoogleAuth = async function() {
+  if (!window.FB_FNS || !window.FB_AUTH || !window.FB_DB) {
+    toast('Auth not ready — please refresh.', 'bad'); return;
+  }
+
+  // Disable button to prevent double-tap
+  var btns = document.querySelectorAll('.ls-btn-google');
+  btns.forEach(function(b){ b.disabled = true; b.style.opacity = '.6'; });
+
+  var re_enable = function() {
+    btns.forEach(function(b){ b.disabled = false; b.style.opacity = ''; });
+  };
+
+  try {
+    var provider = new window.FB_FNS.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    var result = await window.FB_FNS.signInWithPopup(window.FB_AUTH, provider);
+    var fbUser  = result.user;
+    if (!fbUser) { re_enable(); toast('Google sign-in failed.', 'bad'); return; }
+
+    // Check if user already exists in Firestore
+    var snap = await window.FB_FNS.getDoc(
+      window.FB_FNS.doc(window.FB_DB, 'users', fbUser.uid)
+    );
+
+    if (snap.exists()) {
+      // ── Returning user — just log in ──────────────────────────
+      var existingUser = snap.data();
+      if (existingUser.isBanned || existingUser.badgeStatus === 'suspended') {
+        try { await window.FB_FNS.signOut(window.FB_AUTH); } catch(e) {}
+        re_enable();
+        toast('This account has been suspended.', 'bad');
+        return;
+      }
+      window.ME = existingUser;
+      if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
+      toast('Welcome back, ' + (window.ME.name||'').split(' ')[0] + '! 👋');
+      // enterApp() is triggered by onAuthStateChanged in firebase.js automatically
+      // but we help it along here for responsiveness
+      try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache load', e); }
+
+    } else {
+      // ── New user — determine role and create profile ──────────
+      // Read role from the onboarding selector (signupRole global), default freelancer
+      var role = (typeof signupRole !== 'undefined' && signupRole) ? signupRole : 'freelancer';
+      var displayName = fbUser.displayName || '';
+      var nameParts   = displayName.split(' ');
+      var firstName   = nameParts[0] || 'User';
+      var lastName    = nameParts.slice(1).join(' ') || '';
+      var fullName    = displayName || firstName;
+      var email       = fbUser.email || '';
+      var photoURL    = fbUser.photoURL || null;
+      var uid         = fbUser.uid;
+
+      // Build SkillID
+      var ts36 = Date.now().toString(36).toUpperCase();
+      var rand4 = Math.random().toString(36).substring(2, 6).toUpperCase();
+      var skillId = 'SKL-' + new Date().getFullYear() + '-' + ts36.slice(-2) + rand4;
+
+      var gradients = ['#16a25a','#0ea5e9','#8b5cf6','#f59e0b','#ef4444','#ec4899'];
+      var gradient  = gradients[Math.floor(Math.random() * gradients.length)];
+
+      var newUser = {
+        uid, email, name: fullName,
+        role: role,
+        title:       role === 'freelancer' ? 'Digital Professional' : 'Employer / Client',
+        bio: '', headline: '',
+        country: '', category: '',
+        skills: [], services: [], portfolio: [], applications: [],
+        links: {}, wallet: { balance: 0, pending: 0, earned: 0, transactions: [] },
+        badgeStatus: 'beginner', score: 0, repPoints: 0, gigsCount: 0, earned: 0,
+        skillId: role === 'freelancer' ? skillId : null,
+        gradient, avatar: photoURL,
+        available: true, availabilityStatus: 'available',
+        isAdmin: false, isBanned: false,
+        created: Date.now(), lastSeen: Date.now(), lastActive: Date.now(),
+        _schemaVersion: 1,
+      };
+
+      // Save welcome wallet credit
+      newUser.wallet.balance    = 0;
+      newUser.wallet.transactions = [];
+
+      await window.FB_FNS.setDoc(
+        window.FB_FNS.doc(window.FB_DB, 'users', uid),
+        newUser,
+        { merge: false }
+      );
+
+      window.ME = newUser;
+      if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
+
+      // Save avatar to avatars collection if Google provided a photo
+      if (photoURL) {
+        try {
+          await window.FB_FNS.setDoc(
+            window.FB_FNS.doc(window.FB_DB, 'avatars', uid),
+            { uid, data: photoURL, ts: Date.now() }
+          );
+        } catch(e) {}
+      }
+
+      toast('Welcome to SkillStamp, ' + firstName + '! 🎉');
+      try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache load', e); }
+    }
+
+  } catch(err) {
+    re_enable();
+    console.warn('doGoogleAuth error:', err);
+    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+      // User dismissed popup — silent, no error toast
+      return;
+    }
+    if (err.code === 'auth/popup-blocked') {
+      toast('Popup was blocked. Please allow popups for this site and try again.', 'bad');
+      return;
+    }
+    toast('Google sign-in failed: ' + (err.message || err.code || 'Unknown error'), 'bad');
+  }
+};
+
+// Shared helper: load CACHE and call enterApp()
+async function _loadCacheAndEnter() {
+  try {
+    var results = await Promise.all([
+      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'users')),
+      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'gigs')),
+      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'posts')),
+    ]);
+    window.CACHE = window.CACHE || {};
+    CACHE.users = results[0].docs.map(function(d){ return d.data(); });
+    CACHE.gigs  = results[1].docs.map(function(d){ return d.data(); });
+    CACHE.posts = results[2].docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+  } catch(e) { console.warn('_loadCacheAndEnter preload failed', e); }
+  var ls = document.getElementById('screen-loading');
+  if (ls) ls.style.display = 'none';
+  if (typeof enterApp === 'function') enterApp();
+  var saved = localStorage.getItem('ss_last_page') || 'home';
+  var valid = ['home','talent','gigs','myprofile','wallet'];
+  setTimeout(function(){
+    if (typeof showPage === 'function') showPage(valid.indexOf(saved) >= 0 ? saved : 'home');
+  }, 100);
+}
+
+// ══════════════════════════════════════════════════════════════════
 //  CONDITIONAL ONBOARDING CONTROLLER (2-step signup flow)
 //  All logic lives here — index.html calls these functions.
 //  doSignup() / signupRole unchanged — 100% data compatibility.
