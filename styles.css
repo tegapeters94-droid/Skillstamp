@@ -2655,3 +2655,97 @@ input, textarea, select {
 .bottom-nav .bn.active svg { stroke: #16a25a; }
 .bottom-nav .bn.active::after { background: #16a25a; box-shadow: 0 0 6px rgba(22,162,90,.4); }
 .bottom-nav .bn:hover { background: rgba(0,0,0,0.05); }
+
+/* ══════════════════════════════════════════════
+   CONDITIONAL ONBOARDING — 2-Step Signup (2026)
+   ══════════════════════════════════════════════ */
+
+/* Google button */
+.ls-btn-google {
+  width: 100%; padding: 15px; border: 1.5px solid #e0e8dc;
+  border-radius: 24px; background: #fff;
+  font-family: Plus Jakarta Sans, sans-serif; font-weight: 700; font-size: 14px;
+  color: #0d1109; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  transition: box-shadow .2s, transform .15s, border-color .2s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.ls-btn-google:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.ls-btn-google:active { transform: scale(.97); }
+
+/* Role cards */
+.ob-role-card {
+  position: relative;
+  background: #f7f9f6; border: 2px solid #e0e8dc; border-radius: 24px;
+  padding: 20px 14px 16px; text-align: center; cursor: pointer;
+  transition: all .22s cubic-bezier(.22,.68,0,1.2);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.ob-role-card:active { transform: scale(.97); }
+.ob-role-card.ob-selected {
+  border-color: #1a6b3c;
+  background: rgba(26,107,60,.05);
+  transform: scale(1.02);
+  box-shadow: 0 0 0 4px rgba(26,107,60,.1), 0 6px 24px rgba(26,107,60,.12);
+}
+
+/* Checkmark badge on role card */
+.ob-role-check {
+  position: absolute; top: 10px; right: 10px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #1a6b3c; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: scale(.5);
+  transition: opacity .2s, transform .22s cubic-bezier(.22,.68,0,1.2);
+}
+.ob-role-card.ob-selected .ob-role-check {
+  opacity: 1; transform: scale(1);
+}
+
+/* Password strength bars */
+.ob-pw-bar {
+  flex: 1; height: 4px; border-radius: 3px;
+  background: #e0e8dc;
+  transition: background .3s ease;
+}
+
+/* Category pills (step 2 freelancer) */
+.ob-cat-pill {
+  padding: 11px 8px; border: 1.5px solid #e0e8dc;
+  border-radius: 14px; background: #f7f9f6;
+  font-family: Plus Jakarta Sans, sans-serif; font-size: 11px; font-weight: 700;
+  color: #5a6650; text-align: center; cursor: pointer;
+  transition: all .2s cubic-bezier(.22,.68,0,1.2);
+  touch-action: manipulation; user-select: none;
+}
+.ob-cat-pill:active { transform: scale(.95); }
+.ob-cat-pill.ob-selected {
+  border-color: #1a6b3c; background: rgba(26,107,60,.07);
+  color: #1a6b3c; font-weight: 800;
+  box-shadow: 0 0 10px rgba(26,107,60,.15);
+}
+
+/* Skills chips (step 2 freelancer) */
+.ob-skill-chip {
+  padding: 7px 13px; border: 1.5px solid #e0e8dc;
+  border-radius: 20px; background: #f7f9f6;
+  font-family: Plus Jakarta Sans, sans-serif; font-size: 11px; font-weight: 600;
+  color: #5a6650; cursor: pointer;
+  transition: all .18s cubic-bezier(.22,.68,0,1.2);
+  touch-action: manipulation; user-select: none;
+}
+.ob-skill-chip:active { transform: scale(.94); }
+.ob-skill-chip.ob-selected {
+  border-color: #1a6b3c; background: rgba(26,107,60,.08);
+  color: #1a6b3c; font-weight: 700;
+}
+.ob-skill-chip.ob-disabled {
+  opacity: .4; cursor: not-allowed;
+}
+
+@keyframes ob-shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-5px); }
+  60%      { transform: translateX(5px); }
+}

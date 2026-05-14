@@ -134,89 +134,220 @@
 
   <!-- ── SCREEN C: Sign Up ── -->
   <div id="ls-signup" style="display:none;">
+    <!-- ── Progress bar ── -->
+    <div style="position:sticky;top:0;z-index:10;padding:0;">
+      <div style="height:3px;background:rgba(26,107,60,.12);">
+        <div id="ob-progress" style="height:100%;width:50%;background:linear-gradient(90deg,#1a6b3c,#2d9158);border-radius:3px;transition:width .45s cubic-bezier(.22,.68,0,1.2);"></div>
+      </div>
+    </div>
+
     <div class="ls-top-bar">
-      <button class="ls-back-btn" onclick="showLsScreen('start')" ontouchend="showLsScreen('start')">
+      <button class="ls-back-btn" id="ob-back-btn" onclick="obBack()" ontouchend="obBack()">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#1a6b3c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div class="ls-top-logo">
-        <div class="ls-top-wordmark"><span style="color:#1a6b3c;">Skill</span><span style="color:#fff;">stamp</span></div></div>
-      <div style="width:40px;"></div>
+        <div class="ls-top-wordmark"><span style="color:#1a6b3c;">Skill</span><span style="color:#fff;">stamp</span></div>
+      </div>
+      <div id="ob-step-label" style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55);width:40px;text-align:right;">1 / 2</div>
     </div>
 
-    <div class="ls-scroll">
-      <div class="ls-card">
-        <div class="ls-card-title">Create account <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--gld)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-        <div class="ls-card-sub">Get your verified SkillID in 60 seconds</div>
+    <!-- ── SLIDE VIEWPORT ── -->
+    <div style="overflow:hidden;position:relative;">
+      <div id="ob-slider" style="display:flex;transition:transform .42s cubic-bezier(.22,.68,0,1.2);will-change:transform;">
 
-        <div id="auth-signup">
-          <div class="ls-role-label">I am a…</div>
-          <div class="role-g">
-            <div class="rc sel" id="role-f" onclick="selRole('freelancer')" ontouchend="selRole('freelancer')"><div class="ri"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div><div class="rl">Freelancer</div><div class="rs">Find work</div></div>
-            <div class="rc" id="role-e" onclick="selRole('employer')" ontouchend="selRole('employer')"><div class="ri"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="rl">Employer</div><div class="rs">Hire talent</div></div>
-          </div>
+        <!-- ══════════ STEP 1: Identity & Basics ══════════ -->
+        <div class="ob-step" style="min-width:100%;padding:0 0 40px;">
+          <div class="ls-scroll" style="overflow:visible;">
+            <div class="ls-card">
+              <div class="ls-card-title">Join SkillStamp ✦</div>
+              <div class="ls-card-sub">Africa's verified talent marketplace</div>
 
-          <div class="ls-section-label">Personal Info</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div class="ls-fg">
-              <div class="ls-input-wrap">
-                <svg class="ls-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <input class="ls-input" id="ri-fn" placeholder="First name" autocomplete="given-name"/>
+              <!-- Google — top placement for one-tap -->
+              <div id="ob-google-wrap" style="margin-bottom:20px;">
+                <button onclick="doGoogleAuth()" ontouchend="doGoogleAuth()" class="ls-btn-google" type="button">
+                  <svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  Continue with Google
+                </button>
               </div>
-            </div>
-            <div class="ls-fg">
-              <div class="ls-input-wrap">
-                <input class="ls-input" id="ri-ln" placeholder="Last name" style="padding-left:14px;" autocomplete="family-name"/>
+
+              <div class="ls-divider" style="margin-bottom:18px;"><div class="ls-divider-line"></div><span>or fill in details</span><div class="ls-divider-line"></div></div>
+
+              <!-- Role cards — large interactive -->
+              <div class="ls-role-label">I want to…</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+                <div class="ob-role-card" id="role-f" onclick="obSelectRole('freelancer')" ontouchend="obSelectRole('freelancer')">
+                  <div class="ob-role-check" id="ob-chk-f">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div style="font-size:30px;margin-bottom:8px;">💼</div>
+                  <div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:#0d1109;">Freelancer</div>
+                  <div style="font-size:10px;color:#7a8a74;margin-top:3px;">Find work &amp; get paid</div>
+                </div>
+                <div class="ob-role-card" id="role-e" onclick="obSelectRole('employer')" ontouchend="obSelectRole('employer')">
+                  <div class="ob-role-check" id="ob-chk-e" style="opacity:0;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div style="font-size:30px;margin-bottom:8px;">🏢</div>
+                  <div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:#0d1109;">Client</div>
+                  <div style="font-size:10px;color:#7a8a74;margin-top:3px;">Hire verified talent</div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div class="ls-fg">
-            <div class="ls-input-wrap">
-              <svg class="ls-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              <input class="ls-input" id="ri-em" type="email" placeholder="Email address" autocomplete="email"/>
-            </div>
-            <div class="aerr ls-aerr" id="ri-err"></div>
-          </div>
+              <!-- Name -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div class="ls-fg">
+                  <div class="ls-input-wrap">
+                    <svg class="ls-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <input class="ls-input" id="ri-fn" placeholder="First name" autocomplete="given-name"/>
+                  </div>
+                </div>
+                <div class="ls-fg">
+                  <div class="ls-input-wrap">
+                    <input class="ls-input" id="ri-ln" placeholder="Last name" style="padding-left:14px;" autocomplete="family-name"/>
+                  </div>
+                </div>
+              </div>
 
-          <div class="ls-fg">
-            <div class="ls-input-wrap">
-              <svg class="ls-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input class="ls-input" id="ri-pw" type="password" placeholder="Password (min 6 chars)" style="padding-right:48px;" autocomplete="new-password"/>
-              <button class="ls-eye-btn" onclick="togglePwdVis('ri-pw',this)" type="button">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <!-- Email with live validation -->
+              <div class="ls-fg">
+                <div class="ls-input-wrap">
+                  <svg class="ls-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  <input class="ls-input" id="ri-em" type="email" placeholder="Email address" autocomplete="email" oninput="obValidateEmail(this)"/>
+                  <div id="ob-em-check" style="position:absolute;right:14px;opacity:0;transition:opacity .2s;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#1a6b3c" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                </div>
+                <div class="aerr ls-aerr" id="ri-err"></div>
+              </div>
+
+              <!-- Password with strength meter + eye -->
+              <div class="ls-fg">
+                <div class="ls-input-wrap">
+                  <svg class="ls-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <input class="ls-input" id="ri-pw" type="password" placeholder="Password (min 6 chars)" style="padding-right:48px;" autocomplete="new-password" oninput="obPwStrength(this.value)"/>
+                  <button class="ls-eye-btn" onclick="togglePwdVis('ri-pw',this)" type="button">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <!-- Strength bar -->
+                <div style="display:flex;gap:4px;margin-top:7px;" id="ob-pw-bars">
+                  <div class="ob-pw-bar" id="ob-pw-b1"></div>
+                  <div class="ob-pw-bar" id="ob-pw-b2"></div>
+                  <div class="ob-pw-bar" id="ob-pw-b3"></div>
+                  <div class="ob-pw-bar" id="ob-pw-b4"></div>
+                </div>
+                <div id="ob-pw-label" style="font-size:10px;color:#b0bfaa;margin-top:4px;font-weight:600;transition:color .2s;"></div>
+              </div>
+
+              <!-- Country (preserved for doSignup) -->
+              <div class="ls-fg">
+                <div class="ls-input-wrap">
+                  <select class="ls-input ls-select" id="ri-co" style="padding-left:14px;">
+                    <option value="" disabled selected>Country</option>
+                    <option>Nigeria</option><option>Ghana</option><option>Kenya</option><option>South Africa</option><option>Senegal</option><option>Rwanda</option><option>Ethiopia</option><option>Uganda</option><option>Tanzania</option><option>Cameroon</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Hidden category (filled in Step 2 for freelancers, defaults for clients) -->
+              <input type="hidden" id="ri-cat" value=""/>
+
+              <label class="ls-remember" style="margin-bottom:20px;"><input checked="" id="save-creds-s" type="checkbox"/> Remember me on this device</label>
+
+              <button class="ls-btn-primary" onclick="obNextStep()" ontouchend="obNextStep()" type="button">
+                Continue →
               </button>
+              <div class="ls-switch-text" style="margin-top:14px;">Already a member? <a onclick="showLsScreen('signin')" ontouchend="showLsScreen('signin')">Sign in →</a></div>
             </div>
           </div>
-
-          <div class="ls-section-label" style="margin-top:4px;">Location &amp; Field</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div class="ls-fg">
-              <div class="ls-input-wrap">
-                <select class="ls-input ls-select" id="ri-co">
-                  <option value="" disabled selected>Country</option>
-                  <option>Nigeria</option><option>Ghana</option><option>Kenya</option><option>South Africa</option><option>Senegal</option><option>Rwanda</option><option>Ethiopia</option><option>Uganda</option><option>Tanzania</option><option>Cameroon</option>
-                </select>
-              </div>
-            </div>
-            <div class="ls-fg">
-              <div class="ls-input-wrap">
-                <select class="ls-input ls-select" id="ri-cat">
-                  <option value="" disabled selected>Category</option>
-                  <option value="Graphics Design">🎨 Graphics Design</option><option value="UI/UX Design">🖥️ UI/UX Design</option><option value="Content Writing">✍️ Content Writing</option><option value="Data Analysis">📊 Data Analysis</option><option value="Digital Marketing">📣 Digital Marketing</option><option value="Web & Mobile Dev">💻 Web & Mobile Dev</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <label class="ls-remember" style="margin-bottom:22px;"><input checked="" id="save-creds-s" type="checkbox"/> Remember me on this device</label>
-          <button class="ls-btn-primary" id="ri-btn" onclick="doSignup()" ontouchend="doSignup()">Create Account &amp; Get SkillID</button>
-          <div style="font-size:10px;color:var(--td);text-align:center;margin-top:10px;line-height:1.7;">By creating an account you agree to our <span onclick="showTos()" style="color:var(--gld);cursor:pointer;text-decoration:underline;">Terms of Service</span> and <span onclick="showPrivacy()" style="color:var(--gld);cursor:pointer;text-decoration:underline;">Privacy Policy</span> (NDPA 2023 compliant).</div>
         </div>
 
-        <div class="ls-divider"><div class="ls-divider-line"></div><span>or</span><div class="ls-divider-line"></div></div>
-        <div class="ls-switch-text">Already a member? <a onclick="showLsScreen('signin')" ontouchend="showLsScreen('signin')">Sign in →</a></div>
-      </div>
-    </div>
+        <!-- ══════════ STEP 2: Role-Based Branching ══════════ -->
+        <div class="ob-step" style="min-width:100%;padding:0 0 40px;">
+          <div class="ls-scroll" style="overflow:visible;">
+            <div class="ls-card">
+
+              <!-- FREELANCER STEP 2 -->
+              <div id="ob-step2-freelancer">
+                <div class="ls-card-title" style="font-size:22px;">Your expertise ⚡</div>
+                <div class="ls-card-sub">What is your area of expertise?</div>
+
+                <div class="ls-fg">
+                  <div style="font-size:11px;font-weight:700;color:#9aad94;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Primary Category</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="ob-cat-grid">
+                    <div class="ob-cat-pill" data-val="Graphics Design" onclick="obSelectCat(this)">🎨 Graphics</div>
+                    <div class="ob-cat-pill" data-val="UI/UX Design" onclick="obSelectCat(this)">🖥️ UI/UX</div>
+                    <div class="ob-cat-pill" data-val="Content Writing" onclick="obSelectCat(this)">✍️ Writing</div>
+                    <div class="ob-cat-pill" data-val="Data Analysis" onclick="obSelectCat(this)">📊 Data</div>
+                    <div class="ob-cat-pill" data-val="Digital Marketing" onclick="obSelectCat(this)">📣 Marketing</div>
+                    <div class="ob-cat-pill" data-val="Web &amp; Mobile Dev" onclick="obSelectCat(this)">💻 Dev</div>
+                  </div>
+                </div>
+
+                <div class="ls-fg" style="margin-top:16px;">
+                  <div style="font-size:11px;font-weight:700;color:#9aad94;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Top Skills <span style="font-size:9px;color:#b0bfaa;font-weight:500;text-transform:none;">(pick up to 5)</span></div>
+                  <div id="ob-skills-grid" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
+                  <div id="ob-skills-count" style="font-size:10px;color:#b0bfaa;margin-top:8px;font-weight:600;">0 / 5 selected</div>
+                </div>
+
+                <button class="ls-btn-primary" id="ri-btn" onclick="doSignup()" ontouchend="doSignup()" style="margin-top:20px;">
+                  Create My Profile →
+                </button>
+              </div>
+
+              <!-- CLIENT STEP 2 -->
+              <div id="ob-step2-client" style="display:none;">
+                <div class="ls-card-title" style="font-size:22px;">What do you need? 🎯</div>
+                <div class="ls-card-sub">Tell us what you're looking to get done</div>
+
+                <div class="ls-fg">
+                  <div style="font-size:11px;font-weight:700;color:#9aad94;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Project Intent</div>
+                  <div class="ls-input-wrap">
+                    <select class="ls-input ls-select" id="ob-project-intent" style="padding-left:14px;" onchange="obSetClientCat(this.value)">
+                      <option value="" disabled selected>What are you looking to get done?</option>
+                      <option value="Graphics Design">🎨 Logo &amp; Brand Design</option>
+                      <option value="Web &amp; Mobile Dev">💻 Website / App Development</option>
+                      <option value="Content Writing">✍️ Content &amp; Copywriting</option>
+                      <option value="Digital Marketing">📣 Marketing &amp; Ads</option>
+                      <option value="UI/UX Design">🖥️ UI/UX &amp; Product Design</option>
+                      <option value="Data Analysis">📊 Data Analysis &amp; Reports</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Trust signals for client -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:20px 0;">
+                  <div style="text-align:center;padding:12px 6px;background:#f7f9f6;border-radius:14px;">
+                    <div style="font-size:18px;margin-bottom:4px;">🔒</div>
+                    <div style="font-size:9px;font-weight:700;color:#0d1109;line-height:1.3;">Escrow<br>Protected</div>
+                  </div>
+                  <div style="text-align:center;padding:12px 6px;background:#f7f9f6;border-radius:14px;">
+                    <div style="font-size:18px;margin-bottom:4px;">✅</div>
+                    <div style="font-size:9px;font-weight:700;color:#0d1109;line-height:1.3;">Verified<br>Talent</div>
+                  </div>
+                  <div style="text-align:center;padding:12px 6px;background:#f7f9f6;border-radius:14px;">
+                    <div style="font-size:18px;margin-bottom:4px;">⚡</div>
+                    <div style="font-size:9px;font-weight:700;color:#0d1109;line-height:1.3;">Fast<br>Matching</div>
+                  </div>
+                </div>
+
+                <!-- ri-btn must exist in DOM for doSignup() — use a second button that calls it -->
+                <button id="ri-btn" style="display:none;" onclick="doSignup()" ontouchend="doSignup()">hidden</button>
+                <button class="ls-btn-primary" onclick="doSignup()" ontouchend="doSignup()">
+                  Find Talent →
+                </button>
+              </div>
+
+              <div style="font-size:10px;color:#b0bfaa;text-align:center;margin-top:14px;line-height:1.7;">
+                By continuing you agree to our <span onclick="showTos()" style="color:#1a6b3c;cursor:pointer;text-decoration:underline;">Terms</span> &amp; <span onclick="showPrivacy()" style="color:#1a6b3c;cursor:pointer;text-decoration:underline;">Privacy Policy</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end slider -->
+    </div><!-- end viewport -->
+
     <div class="ls-footer">SkillStamp · <strong>Tega Technologies</strong></div>
   </div>
 
