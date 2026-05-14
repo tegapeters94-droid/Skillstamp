@@ -3,7 +3,7 @@
 //  FIREBASE CONFIG — Replace with YOUR config from Firebase Console
 // ═══════════════════════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, query, orderBy, onSnapshot, serverTimestamp, where, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -25,7 +25,8 @@ window.FB_AUTH = auth;
 window.FB_DB = db;
 window.FB_FNS = {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-  onAuthStateChanged, sendPasswordResetEmail, doc, setDoc, getDoc, getDocs,
+  onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup,
+  doc, setDoc, getDoc, getDocs,
   addDoc, updateDoc, deleteDoc, collection, query, orderBy, onSnapshot,
   serverTimestamp, where, limit
 };
