@@ -324,7 +324,8 @@ window.openMsg = async function(uid) {
     function actualSend(text, isFlagged) {
       var msg = { from: ME.uid, text: text, ts: Date.now(), read: false };
       if (isFlagged) msg._flagged = true;
-      // Optimistic UI — add to feed immediately
+
+      // ── Optimistic UI — add bubble immediately ──────────────────────
       var feed2 = document.getElementById('chat-feed');
       if (feed2) {
         var div = document.createElement('div');
@@ -332,49 +333,93 @@ window.openMsg = async function(uid) {
         feed2.appendChild(div.firstChild);
         feed2.scrollTop = feed2.scrollHeight;
       }
-      // Save to Firebase + track response time
-      fbGet('conversations', cid).then(function(latest) {
-        var c = latest || { participants: [ME.uid, uid], messages: [] };
 
-        // ── RESPONSE TIME TRACKING ──────────────────────────
-        // If the most recent message before this one was FROM the other person,
-        // this message is a reply — compute the gap and update ME.avgResponseMs
-        var prevMsgs = c.messages || [];
-        if (prevMsgs.length > 0) {
-          var lastMsg = prevMsgs[prevMsgs.length - 1];
-          if (lastMsg.from === uid && !lastMsg._auto) {
-            // This is a genuine reply — measure response time
-            var responseMs = Date.now() - lastMsg.ts;
-            // Only count reasonable responses (under 7 days, over 10 seconds)
-            if (responseMs > 10000 && responseMs < 604800000) {
-              var currentAvg = ME.avgResponseMs || 0;
-              var currentCount = ME.responseCount || 0;
-              // Rolling average: new_avg = (old_avg * count + new_val) / (count + 1)
-              ME.avgResponseMs = Math.round((currentAvg * currentCount + responseMs) / (currentCount + 1));
-              ME.responseCount = currentCount + 1;
-              // Safe partial update — MUST use updateDoc not fbSet to avoid overwriting user doc
-              if (window.FB_FNS && window.FB_DB) {
-                window.FB_FNS.updateDoc(
-                  window.FB_FNS.doc(window.FB_DB, 'users', ME.uid),
-                  { avgResponseMs: ME.avgResponseMs, responseCount: ME.responseCount }
-                ).catch(function(e){ console.warn('[Messages] avgResponse update failed', e); });
-              }
-              // Update CACHE
-              var cachedMe = (CACHE.users||[]).find(function(u){return u.uid===ME.uid;});
-              if (cachedMe) { cachedMe.avgResponseMs = ME.avgResponseMs; cachedMe.responseCount = ME.responseCount; }
+      // ── Response time tracking (runs regardless of send path) ───────
+      function _trackResponseTime(prevMsgs) {
+        if (!prevMsgs || prevMsgs.length === 0) return;
+        var lastMsg = prevMsgs[prevMsgs.length - 1];
+        if (lastMsg.from === uid && !lastMsg._auto) {
+          var responseMs = Date.now() - lastMsg.ts;
+          if (responseMs > 10000 && responseMs < 604800000) {
+            var currentAvg   = ME.avgResponseMs || 0;
+            var currentCount = ME.responseCount || 0;
+            ME.avgResponseMs  = Math.round((currentAvg * currentCount + responseMs) / (currentCount + 1));
+            ME.responseCount  = currentCount + 1;
+            if (window.FB_FNS && window.FB_DB) {
+              window.FB_FNS.updateDoc(
+                window.FB_FNS.doc(window.FB_DB, 'users', ME.uid),
+                { avgResponseMs: ME.avgResponseMs, responseCount: ME.responseCount }
+              ).catch(function(e){ console.warn('[Messages] avgResponse update failed', e); });
             }
+            var cachedMe = (CACHE.users||[]).find(function(u){ return u.uid === ME.uid; });
+            if (cachedMe) { cachedMe.avgResponseMs = ME.avgResponseMs; cachedMe.responseCount = ME.responseCount; }
           }
         }
-        // ───────────────────────────────────────────────────
+      }
 
+      // ── BRIDGE PATH: route through Cloud Function when bridge is active ─
+      if (window._BRIDGE_MESSAGE_GUARD && typeof window._bridgeSendMessage === 'function') {
+        // Pre-fetch conversation for response time tracking (best-effort)
+        fbGet('conversations', cid).then(function(latest) {
+          _trackResponseTime((latest && latest.messages) || []);
+        }).catch(function(){});
+
+        window._bridgeSendMessage(uid, cid, text, isFlagged).then(function(result) {
+          if (!result) return;
+
+          if (result.blocked) {
+            // Server-side contact guard fired (frontend guard was bypassed)
+            // Remove the optimistic bubble and show warning
+            if (feed2) {
+              var last = feed2.lastElementChild;
+              if (last) feed2.removeChild(last);
+            }
+            showContactWarning(
+              result.label || 'off-platform contact',
+              text, null,
+              function sendAnyway(originalText) { actualSend(originalText, true); },
+              function cancel() { var i = document.getElementById('chat-input'); if (i) i.focus(); }
+            );
+            return;
+          }
+
+          if (result.fallback) {
+            // Cloud Function failed — fall back to direct Firestore write silently
+            console.warn('[Messages] Bridge failed, using direct write fallback:', result.error);
+            _directFirestoreWrite(text, msg, cid, uid);
+            return;
+          }
+
+          // Success — fire notification
+          pushNotif(uid, 'message', '💬 New Message', ME.name + ': ' + text.slice(0, 80), { type: 'message', cid: cid, fromUid: ME.uid });
+
+        }).catch(function(err) {
+          console.warn('[Messages] Bridge send error, using fallback:', err);
+          _directFirestoreWrite(text, msg, cid, uid);
+        });
+
+        return; // don't fall through to direct write
+      }
+
+      // ── DIRECT PATH: legacy Firestore write (no bridge / fallback) ───
+      _directFirestoreWrite(text, msg, cid, uid);
+    } // end actualSend
+
+    // Direct Firestore write — used as fallback if bridge is unavailable
+    function _directFirestoreWrite(text, msg, cid, uid) {
+      fbGet('conversations', cid).then(function(latest) {
+        var c = latest || { participants: [ME.uid, uid], messages: [] };
         c.messages.push(msg);
         c.lastMsg = text;
-        c.lastTs = Date.now();
+        c.lastTs  = Date.now();
         return fbSet('conversations', cid, c);
       }).then(function() {
         pushNotif(uid, 'message', '💬 New Message', ME.name + ': ' + text.slice(0, 80), { type: 'message', cid: cid, fromUid: ME.uid });
-      }).catch(function(e) { console.warn('Send failed', e); toast('Failed to send. Try again.', 'bad'); });
-    } // end actualSend
+      }).catch(function(e) {
+        console.warn('[Messages] Direct send failed', e);
+        toast('Failed to send. Try again.', 'bad');
+      });
+    }
 
     var sendBtn = document.getElementById('chat-send');
     if (sendBtn) sendBtn.onclick = doSend;
