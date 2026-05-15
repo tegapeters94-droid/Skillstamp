@@ -351,8 +351,6 @@ window.doSignup=async function(){
     enterApp();
     showPage('home');
     setTimeout(function(){if(!LOCAL.get('ob_done_'+ME.uid)) showOnboarding();},800);
-    enterApp();
-    showPage('home');
   } catch(e) {
     const msg = e.code==='auth/email-already-in-use'
       ? 'Email already registered. Please sign in.'
@@ -405,7 +403,11 @@ window.doGoogleAuth = async function() {
 
   var re_enable = function() {
     btns.forEach(function(b){ b.disabled = false; b.style.opacity = ''; });
+    window._googleAuthInProgress = false;
   };
+
+  // Block onAuthStateChanged from racing with our flow
+  window._googleAuthInProgress = true;
 
   try {
     var provider = new window.FB_FNS.GoogleAuthProvider();
@@ -421,7 +423,7 @@ window.doGoogleAuth = async function() {
     );
 
     if (snap.exists()) {
-      // ── Returning user — just log in ──────────────────────────
+      // ── Returning user — log in ───────────────────────────────
       var existingUser = snap.data();
       if (existingUser.isBanned || existingUser.badgeStatus === 'suspended') {
         try { await window.FB_FNS.signOut(window.FB_AUTH); } catch(e) {}
@@ -432,16 +434,13 @@ window.doGoogleAuth = async function() {
       window.ME = existingUser;
       if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
       toast('Welcome back, ' + (window.ME.name||'').split(' ')[0] + '! 👋');
-      // enterApp() is triggered by onAuthStateChanged in firebase.js automatically
-      // but we help it along here for responsiveness
-      try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache load', e); }
+      await _loadCacheAndEnter(false); // false = returning user
 
     } else {
       // ── New user — show role picker FIRST, then create profile ──
       var displayName = fbUser.displayName || '';
       var firstName   = (displayName.split(' ')[0]) || 'there';
-      re_enable();
-      // Show role picker modal
+      re_enable(); // re-enable buttons; guard stays on until grConfirm completes
       _showGoogleRolePicker(fbUser, firstName);
     }
 
@@ -449,7 +448,6 @@ window.doGoogleAuth = async function() {
     re_enable();
     console.warn('doGoogleAuth error:', err);
     if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-      // User dismissed popup — silent, no error toast
       return;
     }
     if (err.code === 'auth/popup-blocked') {
@@ -460,29 +458,69 @@ window.doGoogleAuth = async function() {
   }
 };
 
-// Shared helper: load CACHE and call enterApp()
-async function _loadCacheAndEnter() {
+// Shared helper: fully load CACHE and enter app — mirrors email login path exactly.
+// isNew = true triggers onboarding for brand-new Google sign-ups.
+async function _loadCacheAndEnter(isNew) {
+  // Guard: prevent onAuthStateChanged from double-firing enterApp
+  window._googleAuthInProgress = true;
+
   try {
+    // Load all collections in parallel — same as email login
     var results = await Promise.all([
       window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'users')),
       window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'gigs')),
-      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'posts')),
+      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'endorsements')),
     ]);
     window.CACHE = window.CACHE || {};
-    CACHE.users = results[0].docs.map(function(d){ return d.data(); });
-    CACHE.gigs  = results[1].docs.map(function(d){ return d.data(); });
-    CACHE.posts = results[2].docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+    CACHE.users        = results[0].docs.map(function(d){ return d.data(); });
+    CACHE.gigs         = results[1].docs.map(function(d){ return d.data(); });
+    CACHE.endorsements = results[2].docs.map(function(d){ return d.data(); });
   } catch(e) { console.warn('_loadCacheAndEnter preload failed', e); }
+
+  // Persist session so page refresh keeps them logged in
+  if (window.ME && window.ME.uid) {
+    LOCAL.set('session', window.ME.uid);
+  }
+
+  // Start real-time listeners (posts feed, users feed)
+  if (typeof startRealtimeListeners === 'function') startRealtimeListeners();
+  if (typeof startNotifRealtimeListener === 'function') {
+    setTimeout(startNotifRealtimeListener, 1500);
+  }
+
+  // Load avatar from dedicated collection
+  if (window.ME && window.ME.uid) {
+    fbGet('avatars', window.ME.uid).then(function(av) {
+      if (av && av.data && !window.ME.avatar) {
+        window.ME.avatar = av.data;
+      }
+    }).catch(function(){});
+  }
+
+  // Hide loading screen and enter the app
   var ls = document.getElementById('screen-loading');
   if (ls) ls.style.display = 'none';
+
   if (typeof enterApp === 'function') enterApp();
-  // Small delay so enterApp's DOM operations complete before rendering home
-  setTimeout(function(){
+
+  // Navigate to home and render — small delay lets enterApp settle
+  setTimeout(function() {
     if (typeof showPage === 'function') showPage('home');
-    // Force re-render in case ME was not ready on first enterApp
-    setTimeout(function(){
-      if (typeof renderRoleHome === 'function' && window.ME) renderRoleHome();
-    }, 300);
+
+    // For new sign-ups: show onboarding; for returning users: check profile
+    setTimeout(function() {
+      window._googleAuthInProgress = false; // release the guard
+      if (!window.ME) return;
+      if (isNew) {
+        if (typeof showOnboarding === 'function' && !LOCAL.get('ob_done_' + window.ME.uid)) {
+          showOnboarding();
+        }
+      } else {
+        if (typeof checkProfileComplete === 'function') checkProfileComplete();
+      }
+      // Force re-render home with fresh data
+      if (typeof renderRoleHome === 'function') renderRoleHome();
+    }, 400);
   }, 150);
 }
 
@@ -856,7 +894,7 @@ window.grConfirm = async function() {
     window._grSelectedRole = null;
 
     toast('Welcome to SkillStamp, ' + firstName + '! 🎉');
-    try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache enter', e); }
+    try { await _loadCacheAndEnter(true); } catch(e) { console.warn('cache enter', e); }
 
   } catch(err) {
     console.error('grConfirm error:', err);
