@@ -5,6 +5,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, query, orderBy, onSnapshot, serverTimestamp, where, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBFYNYLGyHMpMwicgvDX1THQUoVsA7ewD4",
@@ -19,6 +20,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const fns = getFunctions(app, 'us-central1');
 
 // ── Expose Firebase to the rest of the app ──────────────
 window.FB_AUTH = auth;
@@ -30,6 +32,9 @@ window.FB_FNS = {
   addDoc, updateDoc, deleteDoc, collection, query, orderBy, onSnapshot,
   serverTimestamp, where, limit
 };
+// FB_CALL: factory for calling Cloud Functions from the backend bridge
+// Usage: window.FB_CALL('functionName')({ ...data }) → Promise
+window.FB_CALL = function(fnName) { return httpsCallable(fns, fnName); };
 
 // ── Auth state listener ─────────────────────────────────
 onAuthStateChanged(auth, async (fbUser) => {
