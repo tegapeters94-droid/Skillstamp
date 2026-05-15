@@ -109,7 +109,7 @@ window.adminSearchV6=function(q){
 
 // Tab switcher
 window.adminTab=function(name){
-  ['overview','users','content','skills','announce','analytics'].forEach(function(t){
+  ['overview','users','content','skills','announce','analytics','inbox'].forEach(function(t){
     var panel=document.getElementById('admtab-'+t);
     var btn=document.getElementById('admt-'+t);
     if(panel) panel.style.display=(t===name)?'block':'none';
@@ -143,7 +143,182 @@ window.adminTab=function(name){
       }
     }, 50);
   }
+  if(name==='inbox') {
+    setTimeout(function(){ adminLoadInbox(); }, 50);
+  }
 };
+
+// ── Admin Inbox: load bug reports + feedback from Firestore ──────────────
+window.adminLoadInbox = async function(filter) {
+  var el = document.getElementById('admin-inbox-inner');
+  if (!el) return;
+  filter = filter || 'all';
+
+  el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--td);font-size:12px;">'
+    + '<div style="font-size:24px;margin-bottom:8px;">⏳</div>Loading…</div>';
+
+  try {
+    // Load both collections in parallel
+    var results = await Promise.all([
+      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'bug_reports')),
+      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'feedback')),
+    ]);
+
+    var bugs = results[0].docs.map(function(d){ return Object.assign({_col:'bug', _id:d.id}, d.data()); });
+    var fbs  = results[1].docs.map(function(d){ return Object.assign({_col:'feedback', _id:d.id}, d.data()); });
+
+    // Count unread (status not set = new)
+    var unread = bugs.filter(function(b){ return !b.status || b.status==='new'; }).length
+               + fbs.filter(function(f){ return !f.status || f.status==='new'; }).length;
+    window._adminInboxUnread = unread;
+
+    // Merge + sort by timestamp descending
+    var all = bugs.concat(fbs).sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+
+    // Apply filter
+    var filtered = all;
+    if (filter === 'bugs')     filtered = all.filter(function(i){ return i._col==='bug'; });
+    if (filter === 'feedback') filtered = all.filter(function(i){ return i._col==='feedback'; });
+    if (filter === 'new')      filtered = all.filter(function(i){ return !i.status || i.status==='new'; });
+
+    var bugCount = bugs.length;
+    var fbCount  = fbs.length;
+
+    var h = '';
+
+    // ── Header + filter bar ──────────────────────────────────────────────
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">'
+       + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;flex:1;">📥 Inbox</div>'
+       + '<div style="font-size:10px;color:var(--td);">'
+       + bugCount + ' bug' + (bugCount!==1?'s':'') + ' · '
+       + fbCount  + ' feedback'
+       + (unread ? ' · <span style="color:#ef4444;font-weight:700;">'+unread+' new</span>' : '')
+       + '</div></div>';
+
+    // Filter pills
+    h += '<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">';
+    ['all','bugs','feedback','new'].forEach(function(f){
+      var labels = {all:'All',bugs:'🐛 Bugs',feedback:'💬 Feedback',new:'🔴 New'};
+      var active = f===filter;
+      h += '<button onclick="adminLoadInbox(\''+f+'\')" style="padding:5px 11px;font-size:10px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border-radius:20px;cursor:pointer;border:1px solid '+(active?'var(--acc)':'var(--br)')+';background:'+(active?'var(--acc)':'var(--s)')+';color:'+(active?'#fff':'var(--td)')+';">'
+           + labels[f] + '</button>';
+    });
+    h += '</div>';
+
+    if (!filtered.length) {
+      h += '<div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">'
+         + '<div style="font-size:28px;margin-bottom:8px;">🎉</div>'
+         + '<div style="font-weight:700;">Nothing here</div>'
+         + '<div style="font-size:11px;margin-top:4px;">No items match this filter.</div>'
+         + '</div>';
+      el.innerHTML = h;
+      return;
+    }
+
+    // ── Item cards ───────────────────────────────────────────────────────
+    filtered.forEach(function(item) {
+      var isBug     = item._col === 'bug';
+      var isNew     = !item.status || item.status === 'new';
+      var isResolved = item.status === 'resolved';
+      var date      = item.ts ? new Date(item.ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+      var typeLabel = isBug ? '🐛 Bug Report' : ('💬 ' + (item.type ? item.type.charAt(0).toUpperCase()+item.type.slice(1) : 'Feedback'));
+      var accentCol = isBug ? 'rgba(255,107,53,.12)' : 'rgba(96,165,250,.10)';
+      var borderCol = isBug ? 'rgba(255,107,53,.25)' : 'rgba(96,165,250,.22)';
+      var tagCol    = isBug ? 'var(--acc)' : '#60a5fa';
+
+      h += '<div style="background:var(--s2);border:1px solid '+(isNew?borderCol:'var(--br)')+';border-radius:10px;padding:13px;margin-bottom:10px;position:relative;">';
+
+      // New dot
+      if (isNew) {
+        h += '<div style="position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:#ef4444;"></div>';
+      }
+
+      // Type tag + name + date
+      h += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap;">'
+         + '<span style="font-size:9px;font-weight:700;font-family:Plus Jakarta Sans,sans-serif;background:'+accentCol+';border:1px solid '+borderCol+';color:'+tagCol+';padding:2px 7px;border-radius:10px;">'+typeLabel+'</span>'
+         + '<span style="font-size:10px;font-weight:700;color:var(--tx);">'+_esc(item.name||'Unknown')+'</span>'
+         + '<span style="font-size:9px;color:var(--td);">'+date+'</span>'
+         + (isResolved ? '<span style="font-size:9px;font-weight:700;color:var(--grn);margin-left:auto;">✅ Resolved</span>' : '')
+         + '</div>';
+
+      // Main content
+      var mainText = isBug ? item.desc : item.text;
+      h += '<div style="font-size:12px;color:var(--tx);line-height:1.6;margin-bottom:'+(isBug&&item.steps?'8px':'10px')+';">'+_esc(mainText||'')+'</div>';
+
+      // Steps to reproduce (bugs only)
+      if (isBug && item.steps) {
+        h += '<div style="background:var(--s);border:1px solid var(--br);border-radius:6px;padding:8px 10px;margin-bottom:10px;">'
+           + '<div style="font-size:9px;font-weight:700;color:var(--td);margin-bottom:4px;">STEPS TO REPRODUCE</div>'
+           + '<div style="font-size:11px;color:var(--td);white-space:pre-wrap;line-height:1.5;">'+_esc(item.steps)+'</div>'
+           + '</div>';
+      }
+
+      // Platform info (bugs only, collapsed)
+      if (isBug && item.platform) {
+        h += '<div style="font-size:9px;color:var(--td);margin-bottom:8px;word-break:break-all;">📱 '+_esc(item.platform.slice(0,120))+'</div>';
+      }
+
+      // Action buttons
+      h += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+      if (!isResolved) {
+        h += '<button onclick="adminMarkInboxItem(\''+item._col+'\',\''+item._id+'\',\'resolved\')" '
+           + 'style="flex:1;padding:6px;font-size:10px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border-radius:5px;cursor:pointer;border:1px solid rgba(46,213,115,.3);background:rgba(46,213,115,.08);color:var(--grn);">✅ Mark Resolved</button>';
+      }
+      h += '<button onclick="adminDeleteInboxItem(\''+item._col+'\',\''+item._id+'\')" '
+         + 'style="padding:6px 10px;font-size:10px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border-radius:5px;cursor:pointer;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.06);color:#ef4444;">🗑 Delete</button>';
+      h += '</div>';
+
+      h += '</div>'; // card
+    });
+
+    el.innerHTML = h;
+
+  } catch(err) {
+    console.error('[AdminInbox] Load failed', err);
+    el.innerHTML = '<div style="padding:30px;text-align:center;color:#ef4444;font-size:12px;">'
+      + '<div style="font-size:24px;margin-bottom:8px;">⚠️</div>'
+      + '<div style="font-weight:700;">Could not load inbox</div>'
+      + '<div style="font-size:11px;margin-top:4px;color:var(--td);">'+(_esc(err.message||'Unknown error'))+'</div>'
+      + '<button onclick="adminLoadInbox()" style="margin-top:12px;padding:7px 16px;font-size:11px;border-radius:6px;cursor:pointer;border:1px solid var(--br);background:var(--s);color:var(--fg);">Retry</button>'
+      + '</div>';
+  }
+};
+
+// ── Mark an inbox item resolved ───────────────────────────────────────────
+window.adminMarkInboxItem = async function(col, docId, status) {
+  try {
+    await window.FB_FNS.setDoc(
+      window.FB_FNS.doc(window.FB_DB, col, docId),
+      { status: status },
+      { merge: true }
+    );
+    window._adminInboxUnread = Math.max(0, (window._adminInboxUnread||1) - 1);
+    toast('Marked as ' + status + ' ✅');
+    adminLoadInbox();
+  } catch(e) {
+    toast('Could not update item.', 'bad');
+  }
+};
+
+// ── Delete an inbox item ──────────────────────────────────────────────────
+window.adminDeleteInboxItem = async function(col, docId) {
+  if (!confirm('Delete this item permanently?')) return;
+  try {
+    await window.FB_FNS.deleteDoc(window.FB_FNS.doc(window.FB_DB, col, docId));
+    toast('Deleted.');
+    adminLoadInbox();
+  } catch(e) {
+    toast('Could not delete item.', 'bad');
+  }
+};
+
+// ── HTML escape helper (used in inbox rendering) ──────────────────────────
+function _esc(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+
 
 // User filtering
 window.adminFilterUsers=function(){
@@ -524,9 +699,9 @@ function buildAdminHTML(){
   }
 
   // ── Tab nav ──────────────────────────────────────────────────────────────
-  var tabs=['overview','users','content','skills','announce','analytics'];
-  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',announce:'📢',analytics:'📈'};
-  var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',announce:'Broadcast',analytics:'Analytics'};
+  var tabs=['overview','users','content','skills','announce','analytics','inbox'];
+  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',announce:'📢',analytics:'📈',inbox:'📥'};
+  var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',announce:'Broadcast',analytics:'Analytics',inbox:'Inbox'};
 
   var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">'
     +'<span style="font-size:24px;">⚙️</span>'
@@ -537,7 +712,9 @@ function buildAdminHTML(){
 
   h+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:18px;" id="adm-tabs">';
   tabs.forEach(function(t){
-    var badge=(t==='skills'&&pendingList.length)?'<span style="margin-left:4px;background:var(--acc);color:#fff;border-radius:8px;padding:1px 5px;font-size:9px;">'+pendingList.length+'</span>':'';
+    var badge='';
+    if(t==='skills'&&pendingList.length) badge='<span style="margin-left:4px;background:var(--acc);color:#fff;border-radius:8px;padding:1px 5px;font-size:9px;">'+pendingList.length+'</span>';
+    if(t==='inbox'&&window._adminInboxUnread) badge='<span style="margin-left:4px;background:#ef4444;color:#fff;border-radius:8px;padding:1px 5px;font-size:9px;">'+window._adminInboxUnread+'</span>';
     h+='<button id="admt-'+t+'" onclick="adminTab(\''+t+'\')" style="padding:7px 13px;font-size:11px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border-radius:6px;border:1px solid var(--br);background:var(--s);color:var(--td);cursor:pointer;transition:all .15s;">'+tabIcons[t]+' '+tabLabels[t]+badge+'</button>';
   });
   h+='</div>';
@@ -900,6 +1077,17 @@ function buildUsersList(users){
   h+='<div id="admtab-analytics" style="display:none;padding:16px;">'
     +'<div id="analytics-inner">'
     +'<div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">'    +'<div style="font-size:28px;margin-bottom:10px;">📈</div>'    +'<div style="font-weight:700;margin-bottom:4px;">Analytics Dashboard</div>'    +'<div style="font-size:11px;">Click the Analytics tab to load platform insights.</div>'    +'</div></div></div>';
+
+  // ══════════════════════════════════════════════════════
+  //  TAB: INBOX — Bug Reports & Feedback
+  // ══════════════════════════════════════════════════════
+  h+='<div id="admtab-inbox" style="display:none;padding:4px 0;">'
+    +'<div id="admin-inbox-inner">'
+    +'<div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">'
+    +'<div style="font-size:28px;margin-bottom:8px;">📥</div>'
+    +'<div style="font-weight:700;margin-bottom:4px;">Bug Reports &amp; Feedback</div>'
+    +'<div style="font-size:11px;">Loading…</div>'
+    +'</div></div></div>';
 
   h+='</div>'; // close adm-panel
   return h;
