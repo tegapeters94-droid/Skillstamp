@@ -1032,6 +1032,17 @@ function buildAdminHTML(){
   h+='<div id="admin-analytics-mount"><div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">Click the Analytics tab to load data.</div></div>';
   h+='</div>';
 
+  // ══════════════════════════════════════════════════════
+  //  TAB: INBOX — Bug Reports & Feedback
+  // ══════════════════════════════════════════════════════
+  h+='<div id="admtab-inbox" style="display:none;padding:4px 0;">'
+    +'<div id="admin-inbox-inner">'
+    +'<div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">'
+    +'<div style="font-size:28px;margin-bottom:8px;">📥</div>'
+    +'<div style="font-weight:700;margin-bottom:4px;">Bug Reports &amp; Feedback</div>'
+    +'<div style="font-size:11px;">Loading…</div>'
+    +'</div></div></div>';
+
   h+='</div>'; // end adm-panel
   return h;
 }
@@ -1071,27 +1082,6 @@ function buildUsersList(users){
       +'<button onclick="adminAdjRep(\''+u.uid+'\')" style="padding:6px 10px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid var(--br);background:var(--s2);color:var(--t);">⭐ Rep</button>'
       +'</div></div>';
   }
-  // ══════════════════════════════════════════════════════
-  //  TAB: ANALYTICS (lazy-loaded, content injected on click)
-  // ══════════════════════════════════════════════════════
-  h+='<div id="admtab-analytics" style="display:none;padding:16px;">'
-    +'<div id="analytics-inner">'
-    +'<div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">'    +'<div style="font-size:28px;margin-bottom:10px;">📈</div>'    +'<div style="font-weight:700;margin-bottom:4px;">Analytics Dashboard</div>'    +'<div style="font-size:11px;">Click the Analytics tab to load platform insights.</div>'    +'</div></div></div>';
-
-  // ══════════════════════════════════════════════════════
-  //  TAB: INBOX — Bug Reports & Feedback
-  // ══════════════════════════════════════════════════════
-  h+='<div id="admtab-inbox" style="display:none;padding:4px 0;">'
-    +'<div id="admin-inbox-inner">'
-    +'<div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">'
-    +'<div style="font-size:28px;margin-bottom:8px;">📥</div>'
-    +'<div style="font-weight:700;margin-bottom:4px;">Bug Reports &amp; Feedback</div>'
-    +'<div style="font-size:11px;">Loading…</div>'
-    +'</div></div></div>';
-
-  h+='</div>'; // close adm-panel
-  return h;
-}
 window.renderAdminV6=renderAdminV6;
 
 function adminToggleBanV6(uid){
