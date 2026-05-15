@@ -1082,6 +1082,8 @@ function buildUsersList(users){
       +'<button onclick="adminAdjRep(\''+u.uid+'\')" style="padding:6px 10px;font-size:10px;border-radius:4px;cursor:pointer;border:1px solid var(--br);background:var(--s2);color:var(--t);">⭐ Rep</button>'
       +'</div></div>';
   }
+  return h;
+}
 window.renderAdminV6=renderAdminV6;
 
 function adminToggleBanV6(uid){
