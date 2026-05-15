@@ -33,6 +33,9 @@ window.FB_FNS = {
 
 // ── Auth state listener ─────────────────────────────────
 onAuthStateChanged(auth, async (fbUser) => {
+  // Skip if the Google auth flow is already handling login/signup
+  // (prevents double enterApp + stale-ME race condition)
+  if (window._googleAuthInProgress) return;
   if (fbUser) {
     try {
       const snap = await getDoc(doc(db, 'users', fbUser.uid));
