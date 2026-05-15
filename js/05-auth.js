@@ -437,68 +437,12 @@ window.doGoogleAuth = async function() {
       try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache load', e); }
 
     } else {
-      // ── New user — determine role and create profile ──────────
-      // Read role from the onboarding selector (signupRole global), default freelancer
-      var role = (typeof signupRole !== 'undefined' && signupRole) ? signupRole : 'freelancer';
+      // ── New user — show role picker FIRST, then create profile ──
       var displayName = fbUser.displayName || '';
-      var nameParts   = displayName.split(' ');
-      var firstName   = nameParts[0] || 'User';
-      var lastName    = nameParts.slice(1).join(' ') || '';
-      var fullName    = displayName || firstName;
-      var email       = fbUser.email || '';
-      var photoURL    = fbUser.photoURL || null;
-      var uid         = fbUser.uid;
-
-      // Build SkillID
-      var ts36 = Date.now().toString(36).toUpperCase();
-      var rand4 = Math.random().toString(36).substring(2, 6).toUpperCase();
-      var skillId = 'SKL-' + new Date().getFullYear() + '-' + ts36.slice(-2) + rand4;
-
-      var gradients = ['#16a25a','#0ea5e9','#8b5cf6','#f59e0b','#ef4444','#ec4899'];
-      var gradient  = gradients[Math.floor(Math.random() * gradients.length)];
-
-      var newUser = {
-        uid, email, name: fullName,
-        role: role,
-        title:       role === 'freelancer' ? 'Digital Professional' : 'Employer / Client',
-        bio: '', headline: '',
-        country: '', category: '',
-        skills: [], services: [], portfolio: [], applications: [],
-        links: {}, wallet: { balance: 0, pending: 0, earned: 0, transactions: [] },
-        badgeStatus: 'beginner', score: 0, repPoints: 0, gigsCount: 0, earned: 0,
-        skillId: role === 'freelancer' ? skillId : null,
-        gradient, avatar: photoURL,
-        available: true, availabilityStatus: 'available',
-        isAdmin: false, isBanned: false,
-        created: Date.now(), lastSeen: Date.now(), lastActive: Date.now(),
-        _schemaVersion: 1,
-      };
-
-      // Save welcome wallet credit
-      newUser.wallet.balance    = 0;
-      newUser.wallet.transactions = [];
-
-      await window.FB_FNS.setDoc(
-        window.FB_FNS.doc(window.FB_DB, 'users', uid),
-        newUser,
-        { merge: false }
-      );
-
-      window.ME = newUser;
-      if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
-
-      // Save avatar to avatars collection if Google provided a photo
-      if (photoURL) {
-        try {
-          await window.FB_FNS.setDoc(
-            window.FB_FNS.doc(window.FB_DB, 'avatars', uid),
-            { uid, data: photoURL, ts: Date.now() }
-          );
-        } catch(e) {}
-      }
-
-      toast('Welcome to SkillStamp, ' + firstName + '! 🎉');
-      try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache load', e); }
+      var firstName   = (displayName.split(' ')[0]) || 'there';
+      re_enable();
+      // Show role picker modal
+      _showGoogleRolePicker(fbUser, firstName);
     }
 
   } catch(err) {
@@ -532,11 +476,14 @@ async function _loadCacheAndEnter() {
   var ls = document.getElementById('screen-loading');
   if (ls) ls.style.display = 'none';
   if (typeof enterApp === 'function') enterApp();
-  var saved = localStorage.getItem('ss_last_page') || 'home';
-  var valid = ['home','talent','gigs','myprofile','wallet'];
+  // Small delay so enterApp's DOM operations complete before rendering home
   setTimeout(function(){
-    if (typeof showPage === 'function') showPage(valid.indexOf(saved) >= 0 ? saved : 'home');
-  }, 100);
+    if (typeof showPage === 'function') showPage('home');
+    // Force re-render in case ME was not ready on first enterApp
+    setTimeout(function(){
+      if (typeof renderRoleHome === 'function' && window.ME) renderRoleHome();
+    }, 300);
+  }, 150);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -734,3 +681,186 @@ window.showLsScreen = function(screen) {
 };
 
 })();
+
+// ══════════════════════════════════════════════════════════════════
+//  GOOGLE ROLE PICKER MODAL
+//  Shown to new Google users BEFORE their account is created.
+//  After picking role, creates the full user doc and enters app.
+// ══════════════════════════════════════════════════════════════════
+
+function _showGoogleRolePicker(fbUser, firstName) {
+  // Remove any existing picker
+  var old = document.getElementById('google-role-modal');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id  = 'google-role-modal';
+  modal.style.cssText = [
+    'position:fixed;inset:0;z-index:9999',
+    'background:rgba(0,0,0,.55)',
+    'backdrop-filter:blur(8px)',
+    '-webkit-backdrop-filter:blur(8px)',
+    'display:flex;align-items:center;justify-content:center',
+    'padding:24px',
+    'animation:fadeIn .2s ease',
+  ].join(';');
+
+  modal.innerHTML = [
+    '<div style="background:#fff;border-radius:28px;padding:28px 22px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.3);">',
+      // Avatar + name
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">',
+        fbUser.photoURL
+          ? '<img src="'+fbUser.photoURL+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #e8f5e9;">'
+          : '<div style="width:48px;height:48px;border-radius:50%;background:#1a6b3c;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#fff;flex-shrink:0;">'+firstName[0].toUpperCase()+'</div>',
+        '<div>',
+          '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:#0d1109;">Hi, '+firstName+'! 👋</div>',
+          '<div style="font-size:11px;color:#7a8a74;margin-top:2px;">How will you use SkillStamp?</div>',
+        '</div>',
+      '</div>',
+
+      // Role cards
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:22px;">',
+
+        // Freelancer
+        '<div id="gr-card-f" onclick="grSelectRole(\'freelancer\')" style="border:2px solid #e0e8dc;border-radius:20px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;background:#f7f9f6;">',
+          '<div style="font-size:32px;margin-bottom:10px;">💼</div>',
+          '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:#0d1109;">Freelancer</div>',
+          '<div style="font-size:10px;color:#7a8a74;margin-top:4px;line-height:1.4;">Find work<br>& get paid</div>',
+          '<div id="gr-chk-f" style="margin-top:10px;opacity:0;transition:opacity .2s;">',
+            '<span style="background:#1a6b3c;color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">✓ Selected</span>',
+          '</div>',
+        '</div>',
+
+        // Client
+        '<div id="gr-card-e" onclick="grSelectRole(\'employer\')" style="border:2px solid #e0e8dc;border-radius:20px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;background:#f7f9f6;">',
+          '<div style="font-size:32px;margin-bottom:10px;">🏢</div>',
+          '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:#0d1109;">Client</div>',
+          '<div style="font-size:10px;color:#7a8a74;margin-top:4px;line-height:1.4;">Hire verified<br>talent</div>',
+          '<div id="gr-chk-e" style="margin-top:10px;opacity:0;transition:opacity .2s;">',
+            '<span style="background:#1a6b3c;color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">✓ Selected</span>',
+          '</div>',
+        '</div>',
+
+      '</div>',
+
+      // CTA
+      '<button id="gr-confirm-btn" onclick="grConfirm()" ',
+        'style="width:100%;padding:15px;background:#1a6b3c;border:none;border-radius:16px;',
+        'font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;',
+        'color:#fff;cursor:pointer;transition:opacity .15s;opacity:.4;" disabled>',
+        'Continue →',
+      '</button>',
+      '<div style="font-size:10px;color:#b0bfaa;text-align:center;margin-top:12px;">',
+        'You can change this later in Settings',
+      '</div>',
+    '</div>',
+  ].join('');
+
+  document.body.appendChild(modal);
+
+  // Store fbUser for grConfirm to access
+  window._grFbUser      = fbUser;
+  window._grSelectedRole = null;
+}
+
+// Role selection inside the picker
+window.grSelectRole = function(role) {
+  window._grSelectedRole = role;
+
+  var cardF = document.getElementById('gr-card-f');
+  var cardE = document.getElementById('gr-card-e');
+  var chkF  = document.getElementById('gr-chk-f');
+  var chkE  = document.getElementById('gr-chk-e');
+  var btn   = document.getElementById('gr-confirm-btn');
+
+  if (cardF) cardF.style.cssText = 'border:2px solid '+(role==='freelancer'?'#1a6b3c':'#e0e8dc')+';border-radius:20px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;background:'+(role==='freelancer'?'rgba(26,107,60,.06)':'#f7f9f6')+';transform:'+(role==='freelancer'?'scale(1.03)':'scale(1)')+';box-shadow:'+(role==='freelancer'?'0 0 0 3px rgba(26,107,60,.15)':'none')+';';
+  if (cardE) cardE.style.cssText = 'border:2px solid '+(role==='employer'?'#1a6b3c':'#e0e8dc')+';border-radius:20px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;background:'+(role==='employer'?'rgba(26,107,60,.06)':'#f7f9f6')+';transform:'+(role==='employer'?'scale(1.03)':'scale(1)')+';box-shadow:'+(role==='employer'?'0 0 0 3px rgba(26,107,60,.15)':'none')+';';
+  if (chkF)  chkF.style.opacity  = role==='freelancer' ? '1' : '0';
+  if (chkE)  chkE.style.opacity  = role==='employer'   ? '1' : '0';
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+};
+
+// Confirm and create the user account
+window.grConfirm = async function() {
+  var role   = window._grSelectedRole;
+  var fbUser = window._grFbUser;
+  if (!role || !fbUser) return;
+
+  var btn = document.getElementById('gr-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating account…'; }
+
+  try {
+    var displayName = fbUser.displayName || '';
+    var firstName   = displayName.split(' ')[0] || 'User';
+    var fullName    = displayName || firstName;
+    var email       = fbUser.email || '';
+    var photoURL    = fbUser.photoURL || null;
+    var uid         = fbUser.uid;
+
+    // Build SkillID
+    var ts36    = Date.now().toString(36).toUpperCase();
+    var rand4   = Math.random().toString(36).substring(2,6).toUpperCase();
+    var skillId = 'SKL-' + new Date().getFullYear() + '-' + ts36.slice(-2) + rand4;
+
+    var gradients = ['#16a25a','#0ea5e9','#8b5cf6','#f59e0b','#ef4444','#ec4899'];
+    var gradient  = gradients[Math.floor(Math.random() * gradients.length)];
+
+    var newUser = {
+      uid:      uid,
+      email:    email,
+      name:     fullName,
+      role:     role,
+      title:    role === 'freelancer' ? 'Digital Professional' : 'Client',
+      bio: '', headline: '', country: '', category: '',
+      skills: [], services: [], portfolio: [], applications: [],
+      links: {},
+      wallet: { balance: 0, pending: 0, earned: 0, transactions: [] },
+      badgeStatus: 'beginner', score: 0, repPoints: 0, gigsCount: 0, earned: 0,
+      skillId:  role === 'freelancer' ? skillId : null,
+      gradient: gradient,
+      avatar:   photoURL,
+      available: true, availabilityStatus: 'available',
+      isAdmin: false, isBanned: false,
+      created:    Date.now(),
+      lastSeen:   Date.now(),
+      lastActive: Date.now(),
+      _schemaVersion: 1,
+    };
+
+    // Save to Firestore
+    await window.FB_FNS.setDoc(
+      window.FB_FNS.doc(window.FB_DB, 'users', uid),
+      newUser
+    );
+
+    // Save avatar separately
+    if (photoURL) {
+      try {
+        await window.FB_FNS.setDoc(
+          window.FB_FNS.doc(window.FB_DB, 'avatars', uid),
+          { uid: uid, data: photoURL, ts: Date.now() }
+        );
+      } catch(e) {}
+    }
+
+    // Set ME
+    window.ME = newUser;
+    if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
+
+    // Remove modal
+    var modal = document.getElementById('google-role-modal');
+    if (modal) modal.remove();
+
+    // Clean up globals
+    window._grFbUser = null;
+    window._grSelectedRole = null;
+
+    toast('Welcome to SkillStamp, ' + firstName + '! 🎉');
+    try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache enter', e); }
+
+  } catch(err) {
+    console.error('grConfirm error:', err);
+    if (btn) { btn.disabled = false; btn.textContent = 'Continue →'; }
+    toast('Account creation failed: ' + (err.message || err.code), 'bad');
+  }
+};
