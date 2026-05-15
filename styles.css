@@ -2749,3 +2749,5 @@ input, textarea, select {
   20%      { transform: translateX(-5px); }
   60%      { transform: translateX(5px); }
 }
+
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
