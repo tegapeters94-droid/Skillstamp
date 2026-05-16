@@ -208,18 +208,30 @@ window.openBugReport = function() {
     var btn = document.getElementById('bug-submit-btn');
     btn.disabled = true; btn.textContent = 'Sending…';
     var steps = (document.getElementById('bug-steps').value || '').trim();
-    // Save bug report to Firebase
+    // Save bug report to Firestore
     try {
-      await fbSet('bug_reports', 'bug_' + Date.now(), {
+      var reportId = 'bug_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+      var reportData = {
         uid: ME.uid, name: ME.name, email: ME.email || '',
+        role: ME.role || '', badgeStatus: ME.badgeStatus || 'beginner',
         desc: desc, steps: steps, ts: Date.now(),
-        platform: navigator.userAgent
-      });
+        platform: navigator.userAgent, status: 'new'
+      };
+      // Use direct Firestore call so we can detect permission errors (fbSet swallows them)
+      await window.FB_FNS.setDoc(
+        window.FB_FNS.doc(window.FB_DB, 'bug_reports', reportId),
+        reportData
+      );
+      console.log('[BugReport] Saved:', reportId);
       closeModal();
       toast('Bug report submitted. Thank you! 🙏');
     } catch(e) {
+      console.error('[BugReport] Write failed:', e.code, e.message);
       btn.disabled = false; btn.textContent = 'Submit Bug Report →';
-      toast('Could not submit. Try again.', 'bad');
+      var msg = e.code === 'permission-denied'
+        ? 'Permission denied. Please sign in and try again.'
+        : 'Could not submit. Try again.';
+      toast(msg, 'bad');
     }
   };
 };
@@ -243,14 +255,26 @@ window.openFeedbackForm = function() {
     btn.disabled = true; btn.textContent = 'Sending…';
     var type = document.getElementById('fb-type').value;
     try {
-      await fbSet('feedback', 'fb_' + Date.now(), {
-        uid: ME.uid, name: ME.name, type: type, text: text, ts: Date.now()
-      });
+      var fbId = 'fb_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+      var fbData = {
+        uid: ME.uid, name: ME.name, type: type, text: text, ts: Date.now(),
+        role: ME.role || '', badgeStatus: ME.badgeStatus || 'beginner', status: 'new'
+      };
+      // Use direct Firestore call so we can detect permission errors (fbSet swallows them)
+      await window.FB_FNS.setDoc(
+        window.FB_FNS.doc(window.FB_DB, 'feedback', fbId),
+        fbData
+      );
+      console.log('[Feedback] Saved:', fbId);
       closeModal();
       toast('Feedback sent! Thanks for helping us improve. 🙏');
     } catch(e) {
+      console.error('[Feedback] Write failed:', e.code, e.message);
       btn.disabled = false; btn.textContent = 'Send Feedback →';
-      toast('Could not send. Try again.', 'bad');
+      var msg = e.code === 'permission-denied'
+        ? 'Permission denied. Please sign in and try again.'
+        : 'Could not send. Try again.';
+      toast(msg, 'bad');
     }
   };
 };
