@@ -157,22 +157,44 @@ window.adminLoadInbox = async function(filter) {
   el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--td);font-size:12px;">'
     + '<div style="font-size:24px;margin-bottom:8px;">⏳</div>Loading…</div>';
 
+  var bugs = [];
+  var fbs  = [];
+
+  // ── Load bug_reports ──────────────────────────────────────────────────
   try {
-    // Load both collections in parallel
-    var results = await Promise.all([
-      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'bug_reports')),
-      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'feedback')),
-    ]);
+    if (window.FB_FNS && window.FB_DB) {
+      var bugsSnap = await window.FB_FNS.getDocs(
+        window.FB_FNS.collection(window.FB_DB, 'bug_reports')
+      );
+      bugsSnap.docs.forEach(function(d) {
+        try { bugs.push(Object.assign({ _col:'bug', _id:d.id }, d.data())); } catch(e) {}
+      });
+    }
+  } catch(e) {
+    console.warn('[AdminInbox] bug_reports load failed:', e.message);
+  }
 
-    var bugs = results[0].docs.map(function(d){ return Object.assign({_col:'bug', _id:d.id}, d.data()); });
-    var fbs  = results[1].docs.map(function(d){ return Object.assign({_col:'feedback', _id:d.id}, d.data()); });
+  // ── Load feedback ─────────────────────────────────────────────────────
+  try {
+    if (window.FB_FNS && window.FB_DB) {
+      var fbSnap = await window.FB_FNS.getDocs(
+        window.FB_FNS.collection(window.FB_DB, 'feedback')
+      );
+      fbSnap.docs.forEach(function(d) {
+        try { fbs.push(Object.assign({ _col:'feedback', _id:d.id }, d.data())); } catch(e) {}
+      });
+    }
+  } catch(e) {
+    console.warn('[AdminInbox] feedback load failed:', e.message);
+  }
 
-    // Count unread (status not set = new)
+  try {
+    // Count unread
     var unread = bugs.filter(function(b){ return !b.status || b.status==='new'; }).length
                + fbs.filter(function(f){ return !f.status || f.status==='new'; }).length;
     window._adminInboxUnread = unread;
 
-    // Merge + sort by timestamp descending
+    // Merge + sort newest first
     var all = bugs.concat(fbs).sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
 
     // Apply filter
@@ -181,21 +203,18 @@ window.adminLoadInbox = async function(filter) {
     if (filter === 'feedback') filtered = all.filter(function(i){ return i._col==='feedback'; });
     if (filter === 'new')      filtered = all.filter(function(i){ return !i.status || i.status==='new'; });
 
-    var bugCount = bugs.length;
-    var fbCount  = fbs.length;
-
     var h = '';
 
-    // ── Header + filter bar ──────────────────────────────────────────────
+    // ── Header ────────────────────────────────────────────────────────
     h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">'
        + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;flex:1;">📥 Inbox</div>'
        + '<div style="font-size:10px;color:var(--td);">'
-       + bugCount + ' bug' + (bugCount!==1?'s':'') + ' · '
-       + fbCount  + ' feedback'
+       + bugs.length + ' bug' + (bugs.length!==1?'s':'') + ' · '
+       + fbs.length  + ' feedback'
        + (unread ? ' · <span style="color:#ef4444;font-weight:700;">'+unread+' new</span>' : '')
        + '</div></div>';
 
-    // Filter pills
+    // ── Filter pills ──────────────────────────────────────────────────
     h += '<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">';
     ['all','bugs','feedback','new'].forEach(function(f){
       var labels = {all:'All',bugs:'🐛 Bugs',feedback:'💬 Feedback',new:'🔴 New'};
@@ -205,81 +224,77 @@ window.adminLoadInbox = async function(filter) {
     });
     h += '</div>';
 
+    // ── Empty state ───────────────────────────────────────────────────
     if (!filtered.length) {
       h += '<div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">'
-         + '<div style="font-size:28px;margin-bottom:8px;">🎉</div>'
-         + '<div style="font-weight:700;">Nothing here</div>'
-         + '<div style="font-size:11px;margin-top:4px;">No items match this filter.</div>'
+         + '<div style="font-size:28px;margin-bottom:8px;">'+(filter==='new'?'✅':'📭')+'</div>'
+         + '<div style="font-weight:700;">'+(filter==='new'?'All caught up!':filter==='bugs'?'No bug reports yet':filter==='feedback'?'No feedback yet':'Nothing here')+'</div>'
          + '</div>';
       el.innerHTML = h;
       return;
     }
 
-    // ── Item cards ───────────────────────────────────────────────────────
+    // ── Cards ─────────────────────────────────────────────────────────
     filtered.forEach(function(item) {
-      var isBug     = item._col === 'bug';
-      var isNew     = !item.status || item.status === 'new';
-      var isResolved = item.status === 'resolved';
-      var date      = item.ts ? new Date(item.ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-      var typeLabel = isBug ? '🐛 Bug Report' : ('💬 ' + (item.type ? item.type.charAt(0).toUpperCase()+item.type.slice(1) : 'Feedback'));
-      var accentCol = isBug ? 'rgba(255,107,53,.12)' : 'rgba(96,165,250,.10)';
-      var borderCol = isBug ? 'rgba(255,107,53,.25)' : 'rgba(96,165,250,.22)';
-      var tagCol    = isBug ? 'var(--acc)' : '#60a5fa';
+      try {
+        var isBug      = item._col === 'bug';
+        var isNew      = !item.status || item.status === 'new';
+        var isResolved = item.status === 'resolved';
+        var dateStr    = '—';
+        try { if(item.ts) dateStr = new Date(item.ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){}
+        var typeLabel  = isBug ? '🐛 Bug Report' : ('💬 ' + _esc((item.type||'Feedback').charAt(0).toUpperCase()+(item.type||'Feedback').slice(1)));
+        var accentCol  = isBug ? 'rgba(255,107,53,.12)' : 'rgba(96,165,250,.10)';
+        var borderCol  = isBug ? 'rgba(255,107,53,.25)' : 'rgba(96,165,250,.22)';
+        var tagCol     = isBug ? 'var(--acc)' : '#60a5fa';
+        var mainText   = _esc(isBug ? (item.desc||'') : (item.text||''));
 
-      h += '<div style="background:var(--s2);border:1px solid '+(isNew?borderCol:'var(--br)')+';border-radius:10px;padding:13px;margin-bottom:10px;position:relative;">';
+        h += '<div style="background:var(--s2);border:1px solid '+(isNew?borderCol:'var(--br)')+';border-radius:10px;padding:13px;margin-bottom:10px;position:relative;">';
+        if (isNew) h += '<div style="position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:#ef4444;"></div>';
 
-      // New dot
-      if (isNew) {
-        h += '<div style="position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:#ef4444;"></div>';
-      }
-
-      // Type tag + name + date
-      h += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap;">'
-         + '<span style="font-size:9px;font-weight:700;font-family:Plus Jakarta Sans,sans-serif;background:'+accentCol+';border:1px solid '+borderCol+';color:'+tagCol+';padding:2px 7px;border-radius:10px;">'+typeLabel+'</span>'
-         + '<span style="font-size:10px;font-weight:700;color:var(--tx);">'+_esc(item.name||'Unknown')+'</span>'
-         + '<span style="font-size:9px;color:var(--td);">'+date+'</span>'
-         + (isResolved ? '<span style="font-size:9px;font-weight:700;color:var(--grn);margin-left:auto;">✅ Resolved</span>' : '')
-         + '</div>';
-
-      // Main content
-      var mainText = isBug ? item.desc : item.text;
-      h += '<div style="font-size:12px;color:var(--tx);line-height:1.6;margin-bottom:'+(isBug&&item.steps?'8px':'10px')+';">'+_esc(mainText||'')+'</div>';
-
-      // Steps to reproduce (bugs only)
-      if (isBug && item.steps) {
-        h += '<div style="background:var(--s);border:1px solid var(--br);border-radius:6px;padding:8px 10px;margin-bottom:10px;">'
-           + '<div style="font-size:9px;font-weight:700;color:var(--td);margin-bottom:4px;">STEPS TO REPRODUCE</div>'
-           + '<div style="font-size:11px;color:var(--td);white-space:pre-wrap;line-height:1.5;">'+_esc(item.steps)+'</div>'
+        h += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap;">'
+           + '<span style="font-size:9px;font-weight:700;font-family:Plus Jakarta Sans,sans-serif;background:'+accentCol+';border:1px solid '+borderCol+';color:'+tagCol+';padding:2px 7px;border-radius:10px;">'+typeLabel+'</span>'
+           + '<span style="font-size:10px;font-weight:700;color:var(--tx);">'+_esc(item.name||'Unknown')+'</span>'
+           + '<span style="font-size:9px;color:var(--td);">'+dateStr+'</span>'
+           + (isResolved ? '<span style="font-size:9px;font-weight:700;color:var(--grn);margin-left:auto;">✅ Resolved</span>' : '')
            + '</div>';
-      }
 
-      // Platform info (bugs only, collapsed)
-      if (isBug && item.platform) {
-        h += '<div style="font-size:9px;color:var(--td);margin-bottom:8px;word-break:break-all;">📱 '+_esc(item.platform.slice(0,120))+'</div>';
-      }
+        h += '<div style="font-size:12px;color:var(--tx);line-height:1.6;margin-bottom:'+(isBug&&item.steps?'8px':'10px')+';">'+mainText+'</div>';
 
-      // Action buttons
-      h += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
-      if (!isResolved) {
-        h += '<button onclick="adminMarkInboxItem(\''+item._col+'\',\''+item._id+'\',\'resolved\')" '
-           + 'style="flex:1;padding:6px;font-size:10px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border-radius:5px;cursor:pointer;border:1px solid rgba(46,213,115,.3);background:rgba(46,213,115,.08);color:var(--grn);">✅ Mark Resolved</button>';
-      }
-      h += '<button onclick="adminDeleteInboxItem(\''+item._col+'\',\''+item._id+'\')" '
-         + 'style="padding:6px 10px;font-size:10px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border-radius:5px;cursor:pointer;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.06);color:#ef4444;">🗑 Delete</button>';
-      h += '</div>';
+        if (isBug && item.steps) {
+          h += '<div style="background:var(--s);border:1px solid var(--br);border-radius:6px;padding:8px 10px;margin-bottom:10px;">'
+             + '<div style="font-size:9px;font-weight:700;color:var(--td);margin-bottom:4px;">STEPS TO REPRODUCE</div>'
+             + '<div style="font-size:11px;color:var(--td);white-space:pre-wrap;line-height:1.5;">'+_esc(item.steps)+'</div>'
+             + '</div>';
+        }
 
-      h += '</div>'; // card
+        if (isBug && item.platform) {
+          h += '<div style="font-size:9px;color:var(--td);margin-bottom:8px;word-break:break-all;">📱 '+_esc(String(item.platform).slice(0,120))+'</div>';
+        }
+
+        h += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+        if (!isResolved) {
+          h += '<button onclick="adminMarkInboxItem(\''+item._col+'\',\''+item._id+'\',\'resolved\')" '
+             + 'style="flex:1;padding:6px;font-size:10px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border-radius:5px;cursor:pointer;border:1px solid rgba(46,213,115,.3);background:rgba(46,213,115,.08);color:var(--grn);">✅ Mark Resolved</button>';
+        }
+        h += '<button onclick="adminDeleteInboxItem(\''+item._col+'\',\''+item._id+'\')" '
+           + 'style="padding:6px 10px;font-size:10px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;border-radius:5px;cursor:pointer;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.06);color:#ef4444;">🗑 Delete</button>';
+        h += '</div></div>';
+      } catch(cardErr) {
+        // One broken card never crashes the whole inbox
+        console.warn('[AdminInbox] Card render failed:', cardErr.message);
+        h += '<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--td);">⚠️ Could not render this item.</div>';
+      }
     });
 
     el.innerHTML = h;
 
   } catch(err) {
-    console.error('[AdminInbox] Load failed', err);
-    el.innerHTML = '<div style="padding:30px;text-align:center;color:#ef4444;font-size:12px;">'
+    console.error('[AdminInbox] Render failed:', err);
+    el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--td);font-size:12px;">'
       + '<div style="font-size:24px;margin-bottom:8px;">⚠️</div>'
-      + '<div style="font-weight:700;">Could not load inbox</div>'
-      + '<div style="font-size:11px;margin-top:4px;color:var(--td);">'+(_esc(err.message||'Unknown error'))+'</div>'
-      + '<button onclick="adminLoadInbox()" style="margin-top:12px;padding:7px 16px;font-size:11px;border-radius:6px;cursor:pointer;border:1px solid var(--br);background:var(--s);color:var(--fg);">Retry</button>'
+      + '<div style="font-weight:700;margin-bottom:4px;">Could not load inbox</div>'
+      + '<div style="font-size:11px;color:var(--td);margin-bottom:12px;">'+_esc((err&&err.message)||'Unknown error')+'</div>'
+      + '<button onclick="adminLoadInbox()" style="padding:7px 16px;font-size:11px;border-radius:6px;cursor:pointer;border:1px solid var(--br);background:var(--s);color:var(--fg);">🔄 Retry</button>'
       + '</div>';
   }
 };
@@ -657,18 +672,39 @@ function renderAdminV6(){
     root.innerHTML='<div style="padding:60px;text-align:center;color:var(--td);font-size:13px;">🔒 Access denied. Admins only.</div>';
     return;
   }
-  root.innerHTML=buildAdminHTML();
+  try {
+    var html = buildAdminHTML();
+    if (!html) throw new Error('buildAdminHTML returned empty');
+    root.innerHTML = html;
+  } catch(err) {
+    console.error('[Admin] renderAdminV6 crashed:', err);
+    root.innerHTML = '<div style="padding:40px;text-align:center;">'
+      + '<div style="font-size:28px;margin-bottom:12px;">⚠️</div>'
+      + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;margin-bottom:6px;">Admin panel error</div>'
+      + '<div style="font-size:11px;color:var(--td);margin-bottom:16px;">'+_esc((err&&err.message)||'Unknown error')+'</div>'
+      + '<button onclick="renderAdminV6()" style="padding:8px 18px;border-radius:6px;border:1px solid var(--br);background:var(--s);color:var(--fg);font-size:12px;cursor:pointer;">🔄 Retry</button>'
+      + '</div>';
+    return;
+  }
   // activate first tab
-  adminTab('overview');
+  try { adminTab('overview'); } catch(e) { console.warn('[Admin] adminTab failed:', e); }
 }
 
 function buildAdminHTML(){
-  var users=getAllUsers();
-  var posts=CACHE.posts||[];
-  var gigs=CACHE.gigs||[];
-  var endorse=CACHE.endorsements||[];
-  var pending=LOCAL.get('pending')||[];
-  var pendingList=pending.filter(function(p){return p.status==='pending';});
+  var users = [];
+  var posts = [];
+  var gigs = [];
+  var endorse = [];
+  var pendingList = [];
+
+  try { users   = getAllUsers()   || []; } catch(e) { users   = []; }
+  try { posts   = CACHE.posts    || []; } catch(e) { posts   = []; }
+  try { gigs    = CACHE.gigs     || []; } catch(e) { gigs    = []; }
+  try { endorse = CACHE.endorsements || []; } catch(e) { endorse = []; }
+  try {
+    var pending = LOCAL.get('pending') || [];
+    pendingList = pending.filter(function(p){ return p && p.status === 'pending'; });
+  } catch(e) { pendingList = []; }
   var now=Date.now();
   var week=now-7*864e5; var day=now-864e5; var hour=now-36e5;
   var newToday=0,newWeek=0,freelancers=0,employers=0,verified=0,banned=0,experts=0,activeWeek=0;
