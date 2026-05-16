@@ -238,26 +238,36 @@ window.doLogin=async function(){
   const btn=document.getElementById('li-btn');
   if(btn){btn.textContent='Signing in...';btn.disabled=true;}
 
+  // Block onAuthStateChanged from racing with our manual login flow
+  window._loginInProgress = true;
+
   try {
     const cred = await window.FB_FNS.signInWithEmailAndPassword(window.FB_AUTH, email, pass);
+
+    // Load user profile + CACHE before entering app so role is known at render time
     const snap = await fbGet('users', cred.user.uid);
-    if(!snap){showAErr('li-err','Account not found. Please sign up.');return;}
+    if(!snap){showAErr('li-err','Account not found. Please sign up.'); window._loginInProgress=false; return;}
     ME = snap;
-    // Normalize ME to ensure all fields have safe defaults
     if (typeof normalizeUser === 'function') ME = normalizeUser(ME);
-    // Check if banned BEFORE letting them in
+
     if(ME.isBanned||ME.badgeStatus==='suspended'){
       await window.FB_FNS.signOut(window.FB_AUTH);
+      window._loginInProgress = false;
       showBannedScreen();
       return;
     }
+
     if(save) LOCAL.set('saved_creds',{email,pass}); else LOCAL.del('saved_creds');
     LOCAL.set('session', ME.uid);
-    startRealtimeListeners();
-    if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
-    await loadGigsToCache();
-    await loadEndorsementsToCache();
-    // Load avatar from dedicated collection (more reliable than user doc)
+
+    // Pre-load all CACHE collections BEFORE enterApp so renderRoleHome has real data
+    await Promise.all([
+      fbGetAll('users').then(function(r){ if(r&&r.length) CACHE.users=r; }).catch(function(){}),
+      fbGetAll('gigs').then(function(r){ if(r&&r.length) CACHE.gigs=r; }).catch(function(){}),
+      fbGetAll('endorsements').then(function(r){ if(r&&r.length) CACHE.endorsements=r; }).catch(function(){})
+    ]);
+
+    // Load avatar in background
     fbGet('avatars', ME.uid).then(function(av){
       if(av&&av.data&&!ME.avatar){
         ME.avatar=av.data;
@@ -265,8 +275,7 @@ window.doLogin=async function(){
         if(navAv){navAv.innerHTML='<img src="'+av.data+'" style="width:100%;height:100%;object-fit:cover;">';navAv.style.background='';}
       }
     }).catch(function(){});
-    toast('Welcome back, '+ME.name.split(' ')[0]+'! 👋');
-    setTimeout(function(){if(!LOCAL.get('ob_done_'+ME.uid)) showOnboarding(); else checkProfileComplete();},1200);
+
     // Seed test wallet if empty
     if(!ME.wallet) ME.wallet={balance:0,pending:0,earned:0,transactions:[]};
     var hasWelcome=(ME.wallet.transactions||[]).find(function(t){return t.id==='t_welcome';});
@@ -275,11 +284,25 @@ window.doLogin=async function(){
       ME.wallet.transactions.unshift({id:'t_welcome',type:'in',amount:1000,from:'SkillStamp',desc:'Demo credit — not withdrawable (for testing only)',ts:Date.now()});
       saveUser(ME);
     }
+
+    // enterApp() is idempotent — safe to call once here.
+    // It calls startRealtimeListeners() internally, so we do NOT call it here.
     enterApp();
-    // Force admin tab visible if isAdmin
-    // Admin access via admin.html only
-    showPage('home');
+
+    toast('Welcome back, '+ME.name.split(' ')[0]+'! 👋');
+    setTimeout(function(){
+      if (typeof startNotifRealtimeListener === 'function') startNotifRealtimeListener();
+    }, 1500);
+    setTimeout(function(){
+      if(!LOCAL.get('ob_done_'+ME.uid)) {
+        if (typeof showOnboarding === 'function') showOnboarding();
+      } else {
+        if (typeof checkProfileComplete === 'function') checkProfileComplete();
+      }
+    }, 1200);
+
   } catch(e) {
+    window._loginInProgress = false;
     const msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password'||e.code==='auth/invalid-credential'
       ? 'Invalid email or password.' : 'Login failed. Try again.';
     showAErr('li-err', msg);
@@ -342,15 +365,25 @@ window.doSignup=async function(){
     if(save) LOCAL.set('saved_creds',{email,pass}); else LOCAL.del('saved_creds');
     LOCAL.set('session', uid);
     ME = user;
-    startRealtimeListeners();
-    if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
-    await loadGigsToCache();
-    await loadEndorsementsToCache();
+    window._loginInProgress = true;
+    // Pre-load CACHE before enterApp so role is available at first render
+    await Promise.all([
+      fbGetAll('users').then(function(r){ if(r&&r.length) CACHE.users=r; }).catch(function(){}),
+      fbGetAll('gigs').then(function(r){ if(r&&r.length) CACHE.gigs=r; }).catch(function(){}),
+      fbGetAll('endorsements').then(function(r){ if(r&&r.length) CACHE.endorsements=r; }).catch(function(){})
+    ]);
     toast('Welcome to SkillStamp, '+fn+'! 🎉');
     ME._isNew=true;
+    // enterApp() handles startRealtimeListeners internally — do NOT call it separately
     enterApp();
-    showPage('home');
-    setTimeout(function(){if(!LOCAL.get('ob_done_'+ME.uid)) showOnboarding();},800);
+    setTimeout(function(){
+      if (typeof startNotifRealtimeListener === 'function') startNotifRealtimeListener();
+    }, 1500);
+    setTimeout(function(){
+      if(!LOCAL.get('ob_done_'+ME.uid)) {
+        if (typeof showOnboarding === 'function') showOnboarding();
+      }
+    }, 800);
   } catch(e) {
     const msg = e.code==='auth/email-already-in-use'
       ? 'Email already registered. Please sign in.'
@@ -374,6 +407,10 @@ window.doLogout=async function(){
     if(_unsubUsers){_unsubUsers();_unsubUsers=null;}
   }
   if (typeof stopNotifRealtimeListener === 'function') stopNotifRealtimeListener();
+  // Reset all init guards so the next login starts clean
+  window._appEntered       = false;
+  window._loginInProgress  = false;
+  window._googleAuthInProgress = false;
   ME=null; LOCAL.del('session'); activeConv=null;
   CACHE.users=[]; CACHE.posts=[]; CACHE.gigs=[]; CACHE.endorsements=[];
   var appEl=document.getElementById('screen-app');
@@ -458,14 +495,15 @@ window.doGoogleAuth = async function() {
   }
 };
 
-// Shared helper: fully load CACHE and enter app — mirrors email login path exactly.
+// Shared helper: fully load CACHE and enter app — used by Google auth flow.
 // isNew = true triggers onboarding for brand-new Google sign-ups.
 async function _loadCacheAndEnter(isNew) {
-  // Guard: prevent onAuthStateChanged from double-firing enterApp
+  // Both guards: block onAuthStateChanged from racing with us
   window._googleAuthInProgress = true;
+  window._loginInProgress = true;
 
+  // Pre-load CACHE before enterApp so role-based rendering has real data
   try {
-    // Load all collections in parallel — same as email login
     var results = await Promise.all([
       window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'users')),
       window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'gigs')),
@@ -475,20 +513,14 @@ async function _loadCacheAndEnter(isNew) {
     CACHE.users        = results[0].docs.map(function(d){ return d.data(); });
     CACHE.gigs         = results[1].docs.map(function(d){ return d.data(); });
     CACHE.endorsements = results[2].docs.map(function(d){ return d.data(); });
-  } catch(e) { console.warn('_loadCacheAndEnter preload failed', e); }
+  } catch(e) { console.warn('[GoogleAuth] Cache preload failed', e); }
 
-  // Persist session so page refresh keeps them logged in
+  // Persist session
   if (window.ME && window.ME.uid) {
     LOCAL.set('session', window.ME.uid);
   }
 
-  // Start real-time listeners (posts feed, users feed)
-  if (typeof startRealtimeListeners === 'function') startRealtimeListeners();
-  if (typeof startNotifRealtimeListener === 'function') {
-    setTimeout(startNotifRealtimeListener, 1500);
-  }
-
-  // Load avatar from dedicated collection
+  // Load avatar in background
   if (window.ME && window.ME.uid) {
     fbGet('avatars', window.ME.uid).then(function(av) {
       if (av && av.data && !window.ME.avatar) {
@@ -497,31 +529,24 @@ async function _loadCacheAndEnter(isNew) {
     }).catch(function(){});
   }
 
-  // Hide loading screen and enter the app
-  var ls = document.getElementById('screen-loading');
-  if (ls) ls.style.display = 'none';
-
+  // enterApp() is idempotent and handles startRealtimeListeners internally.
+  // Do NOT call startRealtimeListeners() here.
   if (typeof enterApp === 'function') enterApp();
 
-  // Navigate to home and render — small delay lets enterApp settle
+  // Release guards and show deferred UX
   setTimeout(function() {
-    if (typeof showPage === 'function') showPage('home');
-
-    // For new sign-ups: show onboarding; for returning users: check profile
-    setTimeout(function() {
-      window._googleAuthInProgress = false; // release the guard
-      if (!window.ME) return;
-      if (isNew) {
-        if (typeof showOnboarding === 'function' && !LOCAL.get('ob_done_' + window.ME.uid)) {
-          showOnboarding();
-        }
-      } else {
-        if (typeof checkProfileComplete === 'function') checkProfileComplete();
+    window._googleAuthInProgress = false;
+    window._loginInProgress = false;
+    if (!window.ME) return;
+    if (typeof startNotifRealtimeListener === 'function') startNotifRealtimeListener();
+    if (isNew) {
+      if (typeof showOnboarding === 'function' && !LOCAL.get('ob_done_' + window.ME.uid)) {
+        showOnboarding();
       }
-      // Force re-render home with fresh data
-      if (typeof renderRoleHome === 'function') renderRoleHome();
-    }, 400);
-  }, 150);
+    } else {
+      if (typeof checkProfileComplete === 'function') checkProfileComplete();
+    }
+  }, 600);
 }
 
 // ══════════════════════════════════════════════════════════════════
