@@ -38,9 +38,11 @@ window.FB_CALL = function(fnName) { return httpsCallable(fns, fnName); };
 
 // ── Auth state listener ─────────────────────────────────
 onAuthStateChanged(auth, async (fbUser) => {
-  // Skip if the Google auth flow is already handling login/signup
-  // (prevents double enterApp + stale-ME race condition)
+  // Skip if Google OR email login flows are already handling the session.
+  // Both set their own _loginInProgress / _googleAuthInProgress flags.
+  // onAuthStateChanged is only responsible for RESTORING sessions on page load.
   if (window._googleAuthInProgress) return;
+  if (window._loginInProgress) return;
   if (fbUser) {
     try {
       const snap = await getDoc(doc(db, 'users', fbUser.uid));
@@ -76,7 +78,9 @@ onAuthStateChanged(auth, async (fbUser) => {
           var validPages=['home','talent','gigs','myprofile','wallet'];
           var pageToRestore=validPages.indexOf(savedPage)>=0?savedPage:'home';
           // Small delay ensures renderXxx functions have data ready
-          setTimeout(function(){showPage(pageToRestore);},100);
+          setTimeout(function(){
+            if(window.showPage) showPage(pageToRestore);
+          },100);
           // Load avatar fresh from avatars collection
           fbGet('avatars', window.ME.uid).then(function(av){
             if(av&&av.data){
