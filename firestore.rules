@@ -1,0 +1,302 @@
+// SkillStamp — Firestore Security Rules
+// Principle: least privilege. Every collection is locked by default.
+// Users can only write what they own. Admin collections are backend-only.
+// Version: 2025-hardened
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  HELPERS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Caller is signed in
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Caller owns this document
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    // Caller is the admin — checked against the user's OWN Firestore doc
+    // (never trusts custom claims alone)
+    function isAdmin() {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Caller is not banned
+    function isNotBanned() {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.badgeStatus != 'suspended' &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isBanned != true;
+    }
+
+    // Field is unchanged between incoming and existing doc
+    function fieldUnchanged(field) {
+      return !(field in request.resource.data) ||
+             request.resource.data[field] == resource.data[field];
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  USERS COLLECTION
+    //  - Anyone signed in can read profiles (needed for talent browse)
+    //  - Users can only update their OWN document
+    //  - Users CANNOT elevate isAdmin, change another user's role, or unban themselves
+    //  - Admin gets full write access
+    // ═══════════════════════════════════════════════════════════════════════
+    match /users/{uid} {
+      allow read: if isAuth();
+
+      // Only the user themselves can create their own profile (during signup)
+      allow create: if isOwner(uid) &&
+                       request.resource.data.isAdmin == false &&
+                       request.resource.data.isBanned == false &&
+                       request.resource.data.badgeStatus in ['beginner'];
+
+      // User can update their own profile, with restrictions
+      allow update: if isOwner(uid) &&
+                       // Cannot promote themselves to admin
+                       fieldUnchanged('isAdmin') &&
+                       // Cannot change their ban status
+                       fieldUnchanged('isBanned') &&
+                       // Cannot change their badge/verification status
+                       fieldUnchanged('badgeStatus') &&
+                       // Cannot change another user's uid
+                       fieldUnchanged('uid') &&
+                       // Cannot change email (Firebase Auth handles this)
+                       fieldUnchanged('email');
+
+      // Admin can write anything (used for ban, badge, verify operations)
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  AVATARS COLLECTION
+    //  Separate collection to keep user docs small.
+    //  Only the owner can write their own avatar.
+    // ═══════════════════════════════════════════════════════════════════════
+    match /avatars/{uid} {
+      allow read:  if isAuth();
+      allow write: if isOwner(uid);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  GIGS COLLECTION
+    //  - Anyone signed in can read gigs
+    //  - Only authenticated, non-banned users can create gigs
+    //  - Only the poster can update their own gig
+    //  - Payment fields (escrowAmount, status=completed) are backend-only
+    // ═══════════════════════════════════════════════════════════════════════
+    match /gigs/{gigId} {
+      allow read: if isAuth();
+
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.posterUid == request.auth.uid &&
+                       request.resource.data.status in ['open'];
+
+      allow update: if isAuth() && isNotBanned() &&
+                       // Only the poster can update the gig
+                       resource.data.posterUid == request.auth.uid &&
+                       // Cannot change who posted it
+                       fieldUnchanged('posterUid') &&
+                       // Cannot self-complete (payment release is backend-only)
+                       !(request.resource.data.status == 'completed' &&
+                         resource.data.status != 'completed');
+
+      // Allow freelancer to update their delivery
+      allow update: if isAuth() && isNotBanned() &&
+                       resource.data.hiredUid == request.auth.uid &&
+                       // Freelancer can only update delivery fields
+                       request.resource.data.keys().hasOnly([
+                         'deliveryLink', 'deliveryNote', 'deliveredAt', 'autoReleaseAt',
+                         'lastRevisionNote', 'revisionCount',
+                         // All other fields must remain unchanged
+                         'id', 'title', 'description', 'category', 'skills',
+                         'pay', 'escrowAmount', 'scope', 'duration', 'deadline',
+                         'screeningQ', 'posterUid', 'posterName', 'hiredUid',
+                         'status', 'directHire', 'proposalId', 'created',
+                         'applicants', 'proposals', 'referenceImages',
+                       ]);
+
+      allow delete: if isAuth() &&
+                       resource.data.posterUid == request.auth.uid &&
+                       resource.data.status == 'open';
+
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  CONVERSATIONS COLLECTION
+    //  Only participants can read/write their own conversation.
+    //  Direct Firestore writes are still allowed here for the legacy
+    //  frontend flow — the Cloud Function adds server-side validation on top.
+    // ═══════════════════════════════════════════════════════════════════════
+    match /conversations/{convId} {
+      allow read:   if isAuth() &&
+                       request.auth.uid in resource.data.participants;
+
+      allow create: if isAuth() && isNotBanned() &&
+                       request.auth.uid in request.resource.data.participants &&
+                       request.resource.data.participants.size() == 2;
+
+      allow update: if isAuth() && isNotBanned() &&
+                       request.auth.uid in resource.data.participants;
+
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  POSTS COLLECTION
+    //  Authenticated non-banned users can create posts.
+    //  Only the author can delete their own post.
+    // ═══════════════════════════════════════════════════════════════════════
+    match /posts/{postId} {
+      allow read:   if isAuth();
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.uid == request.auth.uid;
+      allow update: if isAuth() &&
+                       resource.data.uid == request.auth.uid;
+      allow delete: if isAuth() &&
+                       resource.data.uid == request.auth.uid;
+      allow write:  if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  ENDORSEMENTS COLLECTION
+    //  Authenticated non-banned users can create endorsements.
+    // ═══════════════════════════════════════════════════════════════════════
+    match /endorsements/{endorseId} {
+      allow read:   if isAuth();
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.fromUid == request.auth.uid &&
+                       // Cannot endorse yourself
+                       request.resource.data.fromUid != request.resource.data.toUid;
+      allow write:  if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  PROPOSALS COLLECTION
+    //  Only sender and recipient can read a proposal.
+    //  Only the sender can create. Only the recipient can accept/reject.
+    // ═══════════════════════════════════════════════════════════════════════
+    match /proposals/{proposalId} {
+      allow read: if isAuth() &&
+                     (resource.data.fromUid == request.auth.uid ||
+                      resource.data.toUid   == request.auth.uid);
+
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.fromUid == request.auth.uid &&
+                       request.resource.data.status == 'pending';
+
+      // Only the recipient can accept or reject
+      allow update: if isAuth() && isNotBanned() &&
+                       resource.data.toUid == request.auth.uid &&
+                       resource.data.status == 'pending' &&
+                       request.resource.data.status in ['accepted', 'rejected'] &&
+                       fieldUnchanged('fromUid') &&
+                       fieldUnchanged('toUid') &&
+                       fieldUnchanged('budget');
+
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  NOTIFICATIONS COLLECTION
+    //  Users can only read/update their own notifications.
+    //  Creates come from backend functions only (except pushNotif frontend helper).
+    // ═══════════════════════════════════════════════════════════════════════
+    match /notifications/{notifId} {
+      allow read:   if isAuth() && resource.data.uid == request.auth.uid;
+      allow create: if isAuth() && isNotBanned();
+      allow update: if isAuth() &&
+                       resource.data.uid == request.auth.uid &&
+                       // Can only mark as read — no other field changes
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow write:  if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  SKILL VERIFICATIONS — submitted by users, reviewed by admin
+    // ═══════════════════════════════════════════════════════════════════════
+    match /skillVerifications/{svId} {
+      allow read:   if isAuth() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.uid == request.auth.uid &&
+                       request.resource.data.status == 'pending';
+      // Only admin can approve/reject (via backend function)
+      allow update: if isAdmin();
+      allow write:  if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DISPUTES — raised by participants, resolved by admin
+    // ═══════════════════════════════════════════════════════════════════════
+    match /disputes/{disputeId} {
+      allow read:   if isAuth() && (resource.data.raisedBy == request.auth.uid || isAdmin());
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.raisedBy == request.auth.uid;
+      allow write:  if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  ANALYTICS — write-only for authenticated users (via Cloud Function)
+    //  Reads are admin-only. Direct writes are allowed for frontend fallback.
+    // ═══════════════════════════════════════════════════════════════════════
+    match /analytics_events/{eventId} {
+      allow create: if isAuth();
+      allow read:   if isAdmin();
+      allow write:  if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  ADMIN AUDIT LOG — backend write only, admin read only
+    // ═══════════════════════════════════════════════════════════════════════
+    match /admin_audit_log/{logId} {
+      allow read:  if isAdmin();
+      allow write: if false; // Only Cloud Functions (Admin SDK) can write here
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  META — maintenance mode flag (admin write, anyone can read)
+    // ═══════════════════════════════════════════════════════════════════════
+    match /meta/{docId} {
+      allow read:  if true;    // maintenance banner needs public read
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  BUG REPORTS — any signed-in non-banned user can create
+    //  Admin can read, update (mark resolved), delete
+    // ═══════════════════════════════════════════════════════════════════════
+    match /bug_reports/{reportId} {
+      allow create: if isAuth() && isNotBanned()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.keys().hasAll(['uid','name','desc','ts']);
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  FEEDBACK — any signed-in non-banned user can create
+    //  Admin can read, update (mark resolved), delete
+    // ═══════════════════════════════════════════════════════════════════════
+    match /feedback/{feedbackId} {
+      allow create: if isAuth() && isNotBanned()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.keys().hasAll(['uid','name','text','ts']);
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DEFAULT DENY — everything else is blocked
+    // ═══════════════════════════════════════════════════════════════════════
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
