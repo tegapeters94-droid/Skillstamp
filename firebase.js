@@ -36,16 +36,17 @@ window.FB_FNS = {
 // Usage: window.FB_CALL('functionName')({ ...data }) → Promise
 window.FB_CALL = function(fnName) { return httpsCallable(fns, fnName); };
 
-// ── Auth state listener ─────────────────────────────────────────────────
-// NOTE: Full session restore, CACHE preload, and enterApp() sequencing
-// are handled by js/00-init-gate.js which attaches its own onAuthStateChanged.
-// This listener is kept only to expose the FB_AUTH ready signal to the gate.
-// It does NO rendering itself — it simply notifies the gate.
-onAuthStateChanged(auth, function(fbUser) {
-  // The gate's own listener handles everything.
-  // This is intentionally a no-op to prevent double session restore.
-  // window._fbAuthResolved is read by 00-init-gate.js as a readiness signal.
-  window._fbAuthUser = fbUser;
+// ── Auth resolution promise ──────────────────────────────────────────────
+// firebase.js owns the ONLY onAuthStateChanged listener.
+// It resolves a promise with the auth result (user or null) so that
+// 00-init-gate.js can consume it without any timing/race issues.
+// The promise resolves exactly once — on the first auth state event.
+window._fbAuthReady = new Promise(function(resolve) {
+  var unsubscribe = onAuthStateChanged(auth, function(fbUser) {
+    unsubscribe(); // detach immediately — we only need the first event
+    window._fbAuthUser = fbUser; // also expose directly for convenience
+    resolve(fbUser);
+  });
 });
 
 console.log('Firebase initialized ✓');
