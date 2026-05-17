@@ -54,84 +54,34 @@ if('serviceWorker' in navigator){
   });
 }
 
-window.addEventListener('load',()=>{
+window.addEventListener('load', function() {
   generateUsers();
-  // Never read saved passwords - Firebase handles session persistence
   LOCAL.del('saved_creds');
-  // Load real user count — wait for Firebase to be ready first
-  setTimeout(function(){
-    try{
-      var db=window.FB_DB;
-      var fns=window.FB_FNS;
-      if(!db||!fns){
-        var el=document.getElementById('login-user-count');
-        if(el) el.textContent='Growing';
+
+  // ── Session restore and auth sequencing is handled entirely by
+  //    00-init-gate.js (onAuthStateChanged).
+  //    This block only handles the login page user count display.
+  setTimeout(function() {
+    try {
+      var db  = window.FB_DB;
+      var fns = window.FB_FNS;
+      if (!db || !fns) {
+        var el = document.getElementById('login-user-count');
+        if (el) el.textContent = 'Growing';
         return;
       }
-      fns.getDocs(fns.collection(db,'users')).then(function(snap){
-        var el=document.getElementById('login-user-count');
-        if(el) el.textContent=(snap.size||0).toLocaleString()+'+';
-      }).catch(function(){
-        var el=document.getElementById('login-user-count');
-        if(el) el.textContent='Growing';
+      fns.getDocs(fns.collection(db, 'users')).then(function(snap) {
+        var el = document.getElementById('login-user-count');
+        if (el) el.textContent = (snap.size || 0).toLocaleString() + '+';
+      }).catch(function() {
+        var el = document.getElementById('login-user-count');
+        if (el) el.textContent = 'Growing';
       });
-    }catch(e){
-      var el=document.getElementById('login-user-count');
-      if(el) el.textContent='Growing';
+    } catch(e) {
+      var el = document.getElementById('login-user-count');
+      if (el) el.textContent = 'Growing';
     }
   }, 1500);
-
-  const sid=LOCAL.get('session');
-  if(sid){
-    // Keep loading screen visible (it already shows by default)
-    fbGet('users', sid).then(async function(u){
-      if(u){
-        ME=u;
-        // Normalize ME to ensure all fields have safe defaults
-        if (typeof normalizeUser === 'function') ME = normalizeUser(ME);
-        if(ME.isBanned||ME.badgeStatus==='suspended'){
-          LOCAL.del('session');
-          // Hide loading screen and show login
-          var lsEl=document.getElementById('screen-loading');
-          if(lsEl) lsEl.style.display='none';
-          return;
-        }
-        try {
-          // Load ALL cache data before entering the app so pages never render empty
-          var results = await Promise.all([
-            fbGetAll('users').catch(function(){ return []; }),
-            fbGetAll('gigs').catch(function(){ return []; }),
-            fbGetAll('endorsements').catch(function(){ return []; })
-          ]);
-          if(results[0]&&results[0].length) CACHE.users=results[0];
-          if(results[1]&&results[1].length) CACHE.gigs=results[1];
-          if(results[2]&&results[2].length) CACHE.endorsements=results[2];
-          // Load avatar in background (non-blocking)
-          fbGet('avatars', ME.uid).then(function(av){
-            if(av&&av.data&&!ME.avatar){
-              ME.avatar=av.data;
-            }
-          }).catch(function(){});
-        } catch(e) {
-          console.warn('Cache preload failed, continuing anyway', e);
-        }
-        // enterApp() hides screen-loading, shows screen-app, and calls showPage('home')
-        enterApp();
-      } else {
-        LOCAL.del('session');
-        var lsEl2=document.getElementById('screen-loading');
-        if(lsEl2) lsEl2.style.display='none';
-      }
-    }).catch(function(){
-      LOCAL.del('session');
-      var lsEl3=document.getElementById('screen-loading');
-      if(lsEl3) lsEl3.style.display='none';
-    });
-    return;
-  }
-  // No session — hide loading screen and show login
-  var lsNoSess=document.getElementById('screen-loading');
-  if(lsNoSess) lsNoSess.style.display='none';
 });
 
 let signupRole='freelancer';
@@ -285,21 +235,15 @@ window.doLogin=async function(){
       saveUser(ME);
     }
 
-    // enterApp() is idempotent — safe to call once here.
-    // It calls startRealtimeListeners() internally, so we do NOT call it here.
-    enterApp();
-
     toast('Welcome back, '+ME.name.split(' ')[0]+'! 👋');
-    setTimeout(function(){
-      if (typeof startNotifRealtimeListener === 'function') startNotifRealtimeListener();
-    }, 1500);
-    setTimeout(function(){
-      if(!LOCAL.get('ob_done_'+ME.uid)) {
-        if (typeof showOnboarding === 'function') showOnboarding();
-      } else {
-        if (typeof checkProfileComplete === 'function') checkProfileComplete();
-      }
-    }, 1200);
+
+    // _gateEnter is the single controlled entry point — handles enterApp(),
+    // showPage(), onboarding, and notif listener in the correct order.
+    if (typeof window._gateEnter === 'function') {
+      window._gateEnter('home', false);
+    } else {
+      enterApp(); // fallback if gate not loaded
+    }
 
   } catch(e) {
     window._loginInProgress = false;
@@ -373,17 +317,14 @@ window.doSignup=async function(){
       fbGetAll('endorsements').then(function(r){ if(r&&r.length) CACHE.endorsements=r; }).catch(function(){})
     ]);
     toast('Welcome to SkillStamp, '+fn+'! 🎉');
-    ME._isNew=true;
-    // enterApp() handles startRealtimeListeners internally — do NOT call it separately
-    enterApp();
-    setTimeout(function(){
-      if (typeof startNotifRealtimeListener === 'function') startNotifRealtimeListener();
-    }, 1500);
-    setTimeout(function(){
-      if(!LOCAL.get('ob_done_'+ME.uid)) {
-        if (typeof showOnboarding === 'function') showOnboarding();
-      }
-    }, 800);
+    ME._isNew = true;
+
+    // _gateEnter handles enterApp(), showPage(), onboarding in correct order
+    if (typeof window._gateEnter === 'function') {
+      window._gateEnter('home', true);
+    } else {
+      enterApp();
+    }
   } catch(e) {
     const msg = e.code==='auth/email-already-in-use'
       ? 'Email already registered. Please sign in.'
@@ -529,23 +470,18 @@ async function _loadCacheAndEnter(isNew) {
     }).catch(function(){});
   }
 
-  // enterApp() is idempotent and handles startRealtimeListeners internally.
-  // Do NOT call startRealtimeListeners() here.
-  if (typeof enterApp === 'function') enterApp();
+  // _gateEnter is the single controlled entry point — handles enterApp(),
+  // showPage(), and onboarding in the correct order.
+  if (typeof window._gateEnter === 'function') {
+    window._gateEnter('home', !!isNew);
+  } else {
+    if (typeof enterApp === 'function') enterApp(); // fallback
+  }
 
-  // Release guards and show deferred UX
+  // Release guards after a short delay
   setTimeout(function() {
     window._googleAuthInProgress = false;
     window._loginInProgress = false;
-    if (!window.ME) return;
-    if (typeof startNotifRealtimeListener === 'function') startNotifRealtimeListener();
-    if (isNew) {
-      if (typeof showOnboarding === 'function' && !LOCAL.get('ob_done_' + window.ME.uid)) {
-        showOnboarding();
-      }
-    } else {
-      if (typeof checkProfileComplete === 'function') checkProfileComplete();
-    }
   }, 600);
 }
 
