@@ -36,73 +36,16 @@ window.FB_FNS = {
 // Usage: window.FB_CALL('functionName')({ ...data }) → Promise
 window.FB_CALL = function(fnName) { return httpsCallable(fns, fnName); };
 
-// ── Auth state listener ─────────────────────────────────
-onAuthStateChanged(auth, async (fbUser) => {
-  // Skip if Google OR email login flows are already handling the session.
-  // Both set their own _loginInProgress / _googleAuthInProgress flags.
-  // onAuthStateChanged is only responsible for RESTORING sessions on page load.
-  if (window._googleAuthInProgress) return;
-  if (window._loginInProgress) return;
-  if (fbUser) {
-    try {
-      const snap = await getDoc(doc(db, 'users', fbUser.uid));
-      if (snap.exists()) {
-        window.ME = snap.data();
-        // Block banned users even on session restore
-        if(window.ME && (window.ME.isBanned || window.ME.badgeStatus==='suspended')){
-          try{ await signOut(auth); }catch(e){}
-          localStorage.clear();
-          document.getElementById('screen-login').classList.add('active'); if(window.showLsScreen) showLsScreen('start');
-          document.getElementById('screen-app').classList.remove('active');
-          setTimeout(function(){ if(window.showBannedScreen) window.showBannedScreen(); },400);
-          return;
-        }
-        // Admin access via admin.html only — tab permanently hidden
-        // Restore session — load all data first then enter app
-        if (!document.getElementById('screen-app').classList.contains('active')) {
-          // Load data in parallel before showing app
-          try {
-            const [users, gigs, posts] = await Promise.all([
-              window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB,'users')),
-              window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB,'gigs')),
-              window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB,'posts'))
-            ]);
-            CACHE.users = users.docs.map(d=>d.data());
-            CACHE.gigs = gigs.docs.map(d=>d.data());
-            CACHE.posts = posts.docs.map(d=>d.data()).sort((a,b)=>(b.ts||0)-(a.ts||0));
-          } catch(loadErr){ console.warn('Preload failed, continuing anyway', loadErr); }
-          var loadScreen=document.getElementById('screen-loading');
-          if(loadScreen) loadScreen.style.display='none';
-          enterApp();
-          var savedPage=localStorage.getItem('ss_last_page')||sessionStorage.getItem('ss_page')||'home';
-          var validPages=['home','talent','gigs','myprofile','wallet'];
-          var pageToRestore=validPages.indexOf(savedPage)>=0?savedPage:'home';
-          // Small delay ensures renderXxx functions have data ready
-          setTimeout(function(){
-            if(window.showPage) showPage(pageToRestore);
-          },100);
-          // Load avatar fresh from avatars collection
-          fbGet('avatars', window.ME.uid).then(function(av){
-            if(av&&av.data){
-              window.ME.avatar=av.data;
-              var navAv=document.getElementById('nav-av');
-              if(navAv){navAv.innerHTML='<img src="'+av.data+'" style="width:100%;height:100%;object-fit:cover;">';navAv.style.background='';}
-            }
-          }).catch(function(){});
-        } else {
-          // Already in app - refresh admin tab visibility
-          if (adminTab && window.ME && window.ME.isAdmin) adminTab.style.display = '';
-        }
-      }
-    } catch(e) {
-      console.warn('Session restore failed', e);
-      document.getElementById('screen-loading').style.display='none';
-      document.getElementById('screen-login').classList.add('active'); if(window.showLsScreen) showLsScreen('start');
-    }
-  } else {
-    document.getElementById('screen-loading').style.display='none';
-    document.getElementById('screen-login').classList.add('active'); if(window.showLsScreen) showLsScreen('start');
-  }
+// ── Auth state listener ─────────────────────────────────────────────────
+// NOTE: Full session restore, CACHE preload, and enterApp() sequencing
+// are handled by js/00-init-gate.js which attaches its own onAuthStateChanged.
+// This listener is kept only to expose the FB_AUTH ready signal to the gate.
+// It does NO rendering itself — it simply notifies the gate.
+onAuthStateChanged(auth, function(fbUser) {
+  // The gate's own listener handles everything.
+  // This is intentionally a no-op to prevent double session restore.
+  // window._fbAuthResolved is read by 00-init-gate.js as a readiness signal.
+  window._fbAuthUser = fbUser;
 });
 
 console.log('Firebase initialized ✓');
