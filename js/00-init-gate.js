@@ -213,13 +213,31 @@ function _attachAuthListener() {
         _restoreSession(fbUser);
       }
     } else {
-      // Not signed in — show login screen
-      _hideLoading();
-      var loginEl = document.getElementById('screen-login');
-      if (loginEl) {
-        loginEl.classList.add('active');
-        if (global.showLsScreen) global.showLsScreen('start');
+      // Guest/unauthenticated flow
+      // Ensure startup gate fully resolves instead of leaving the app
+      // in a partial loading state.
+      global._appReady = true;
+      global._appEntered = false;
+
+      // Cleanly reset app shell visibility
+      var appEl = document.getElementById('screen-app');
+      if (appEl) {
+        appEl.classList.remove('active');
+        appEl.style.display = 'none';
       }
+
+      var navEl = document.getElementById('bottom-nav');
+      if (navEl) {
+        navEl.style.display = 'none';
+      }
+
+      // Clear stale session references
+      try {
+        if (global.LOCAL) global.LOCAL.del('session');
+      } catch(e) {}
+
+      // Properly show login/start screen
+      _showLogin();
     }
   });
 }
