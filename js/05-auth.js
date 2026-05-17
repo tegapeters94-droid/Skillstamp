@@ -341,23 +341,29 @@ function showAErr(id,msg){const el=document.getElementById(id);if(el){el.textCon
 window.doLogout=async function(){
   var bn=document.getElementById('bottom-nav');if(bn){bn.style.display='none';bn.classList.remove('app-visible');}
   try { await window.FB_FNS.signOut(window.FB_AUTH); } catch(e){}
-  // Use central listener registry for clean shutdown
   if (typeof unregisterAllListeners === 'function') unregisterAllListeners();
   else {
-    if(_unsubPosts){_unsubPosts();_unsubPosts=null;}
-    if(_unsubUsers){_unsubUsers();_unsubUsers=null;}
+    if(typeof _unsubPosts!=='undefined'&&_unsubPosts){_unsubPosts();_unsubPosts=null;}
+    if(typeof _unsubUsers!=='undefined'&&_unsubUsers){_unsubUsers();_unsubUsers=null;}
   }
   if (typeof stopNotifRealtimeListener === 'function') stopNotifRealtimeListener();
-  // Reset all init guards so the next login starts clean
-  window._appEntered       = false;
-  window._loginInProgress  = false;
+  // Reset ALL init gate flags so the next login starts clean
+  window._appEntered           = false;
+  window._appReady             = false;
+  window._loginInProgress      = false;
   window._googleAuthInProgress = false;
+  // Reset auth promise so gate can consume a fresh onAuthStateChanged on next login
+  window._fbAuthReady = new Promise(function(resolve) {
+    var unsub = window.FB_FNS.onAuthStateChanged(window.FB_AUTH, function(u) {
+      unsub(); resolve(u);
+    });
+  });
   ME=null; LOCAL.del('session'); activeConv=null;
   CACHE.users=[]; CACHE.posts=[]; CACHE.gigs=[]; CACHE.endorsements=[];
   var appEl=document.getElementById('screen-app');
-  appEl.classList.remove('active'); appEl.style.display='none';
+  if(appEl){appEl.classList.remove('active'); appEl.style.display='none';}
   var loginEl=document.getElementById('screen-login');
-  loginEl.classList.add('active'); loginEl.style.display='';
+  if(loginEl){loginEl.classList.add('active'); loginEl.style.display='';}
   if(window.showLsScreen) showLsScreen('start');
   toast('Signed out.');
 };

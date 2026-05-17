@@ -2,51 +2,53 @@
 // ─────────────────────────────────────────────────────────────────────────
 // THE SINGLE AUTHORITY for app startup sequencing.
 //
-// Every previous startup path (onAuthStateChanged in firebase.js,
-// window.addEventListener('load') in 05-auth.js) was competing and
-// causing double/triple enterApp() calls and role flicker.
+// How it works:
+//   firebase.js (ES module) owns the ONE onAuthStateChanged listener.
+//   It resolves window._fbAuthReady promise with the user (or null).
+//   This gate awaits that promise — no polling, no race, no missed fires.
 //
-// This file owns the entire sequence:
-//   1. Wait for Firebase auth to resolve (one-time onAuthStateChanged)
-//   2. If user found → fetch profile + CACHE in parallel
-//   3. Hydrate ME + role fully
-//   4. THEN call enterApp() exactly once
-//   5. Restore the last page (or home)
-//   6. Trigger welcome/onboarding ONCE
-//
-// ALL other modules must NOT call enterApp() during startup.
-// doLogin / doSignup / doGoogleAuth are the only other callers,
-// and they set window._loginInProgress = true before doing so,
-// which prevents this gate from double-firing.
+// Startup paths:
+//   A) Session restore  → _fbAuthReady resolves with fbUser
+//                       → fetch profile + CACHE → enterApp() once
+//   B) Guest / no auth  → _fbAuthReady resolves with null
+//                       → show login immediately
+//   C) Manual login     → doLogin sets _loginInProgress=true
+//                       → gate's session path skips
+//                       → doLogin calls _gateEnter() after hydration
 // ─────────────────────────────────────────────────────────────────────────
 
 (function(global) {
 'use strict';
 
-// ── State ────────────────────────────────────────────────────────────────
-// All flags are on window so any module can read them safely.
-global._appReady         = false;   // true after full hydration + enterApp
-global._appEntered       = false;   // true after enterApp() DOM wiring runs
-global._loginInProgress  = false;   // true during doLogin/doSignup/doGoogleAuth
+// ── Global state flags ────────────────────────────────────────────────────
+global._appReady             = false;
+global._appEntered           = false;
+global._loginInProgress      = false;
 global._googleAuthInProgress = false;
 
-// ── Screen helpers ────────────────────────────────────────────────────────
-function _showLoading() {
-  var el = document.getElementById('screen-loading');
-  if (el) el.style.display = '';
-}
+// ── Deadlock safety ───────────────────────────────────────────────────────
+// If nothing resolves within 8 seconds, force the login screen.
+// This prevents infinite blank state if Firebase fails to respond.
+var _hardTimeout = setTimeout(function() {
+  if (!global._appEntered) {
+    console.warn('[InitGate] Hard timeout — forcing login screen');
+    _showLogin();
+  }
+}, 8000);
 
+// ── Screen helpers ────────────────────────────────────────────────────────
 function _hideLoading() {
   var el = document.getElementById('screen-loading');
   if (el) el.style.display = 'none';
 }
 
 function _showLogin() {
+  clearTimeout(_hardTimeout);
   _hideLoading();
-  var el = document.getElementById('screen-login');
-  if (el) { el.classList.add('active'); el.style.display = ''; }
-  var app = document.getElementById('screen-app');
-  if (app) { app.classList.remove('active'); app.style.display = 'none'; }
+  var loginEl = document.getElementById('screen-login');
+  if (loginEl) { loginEl.classList.add('active'); loginEl.style.display = ''; }
+  var appEl = document.getElementById('screen-app');
+  if (appEl) { appEl.classList.remove('active'); appEl.style.display = 'none'; }
   if (global.showLsScreen) global.showLsScreen('start');
 }
 
@@ -58,7 +60,6 @@ function _showBanned() {
 }
 
 // ── Safe CACHE preload ────────────────────────────────────────────────────
-// Loads all collections in parallel. Never throws.
 async function _preloadCache() {
   if (!global.FB_FNS || !global.FB_DB) return;
   try {
@@ -68,29 +69,22 @@ async function _preloadCache() {
       global.FB_FNS.getDocs(global.FB_FNS.collection(global.FB_DB, 'endorsements')),
     ]);
     global.CACHE = global.CACHE || {};
-    if (results[0] && !results[0].empty) {
-      CACHE.users = results[0].docs.map(function(d) { return d.data(); });
-    }
-    if (results[1] && !results[1].empty) {
-      CACHE.gigs = results[1].docs.map(function(d) { return d.data(); });
-    }
-    if (results[2] && !results[2].empty) {
-      CACHE.endorsements = results[2].docs.map(function(d) { return d.data(); });
-    }
+    if (results[0] && !results[0].empty) CACHE.users        = results[0].docs.map(function(d){ return d.data(); });
+    if (results[1] && !results[1].empty) CACHE.gigs         = results[1].docs.map(function(d){ return d.data(); });
+    if (results[2] && !results[2].empty) CACHE.endorsements = results[2].docs.map(function(d){ return d.data(); });
   } catch(e) {
     console.warn('[InitGate] Cache preload failed (non-fatal):', e.message);
   }
 }
 
-// ── Avatar loader ─────────────────────────────────────────────────────────
+// ── Avatar loader (background, non-blocking) ──────────────────────────────
 function _loadAvatar(uid) {
   if (!global.fbGet) return;
   global.fbGet('avatars', uid).then(function(av) {
     if (av && av.data && global.ME && !global.ME.avatar) {
       global.ME.avatar = av.data;
-      // Update nav avatar if already rendered
       var navAv = document.getElementById('nav-av');
-      if (navAv && navAv.tagName) {
+      if (navAv) {
         navAv.innerHTML = '<img src="' + av.data + '" style="width:100%;height:100%;object-fit:cover;">';
         navAv.style.background = '';
       }
@@ -98,63 +92,59 @@ function _loadAvatar(uid) {
   }).catch(function() {});
 }
 
-// ── Core: enter app exactly once ──────────────────────────────────────────
-// Called only AFTER ME is fully hydrated and CACHE is loaded.
+// ── Core: enter app ONCE after full hydration ─────────────────────────────
 function _doEnter(pageToShow, isNewUser) {
+  clearTimeout(_hardTimeout);
+
   if (global._appEntered) {
-    console.info('[InitGate] enterApp already ran — skipping');
+    console.info('[InitGate] Already entered — skipping duplicate call');
     return;
   }
 
-  // Call the app-shell's enterApp() which wires DOM, starts listeners, etc.
+  // enterApp() in 06-app-shell.js wires DOM, starts realtime listeners
   if (typeof global.enterApp === 'function') {
     global.enterApp();
   }
 
   global._appReady = true;
 
-  // Navigate to the correct page
+  // Navigate to correct page AFTER enterApp wires the DOM
   var targetPage = pageToShow || 'home';
   if (typeof global.showPage === 'function') {
     global.showPage(targetPage);
   }
 
-  // Deferred: welcome popup / onboarding — fires ONCE after render settles
+  // Deferred UX — fires once, after render settles
   setTimeout(function() {
     if (!global.ME) return;
-    var obDone = global.LOCAL && global.LOCAL.get('ob_done_' + global.ME.uid);
+    var obKey  = 'ob_done_' + global.ME.uid;
+    var obDone = global.LOCAL && global.LOCAL.get(obKey);
     if (isNewUser && !obDone) {
       if (typeof global.showOnboarding === 'function') global.showOnboarding();
-    } else if (!isNewUser && !obDone) {
+    } else if (!obDone) {
       if (typeof global.checkProfileComplete === 'function') global.checkProfileComplete();
     }
-    // Notif listener — start late so it doesn't compete with initial render
     if (typeof global.startNotifRealtimeListener === 'function') {
       global.startNotifRealtimeListener();
     }
   }, 800);
 }
 
-// ── Session restore path ──────────────────────────────────────────────────
-// Called by onAuthStateChanged when a returning session is detected.
-// (NOT called during manual login — doLogin sets _loginInProgress to block this)
+// ── Session restore ───────────────────────────────────────────────────────
 async function _restoreSession(fbUser) {
   try {
-    // Fetch user profile from Firestore
     var snap = await global.FB_FNS.getDoc(
       global.FB_FNS.doc(global.FB_DB, 'users', fbUser.uid)
     );
 
     if (!snap.exists()) {
-      // Firebase Auth user exists but no Firestore profile — treat as logged out
-      console.warn('[InitGate] No user profile found for uid:', fbUser.uid);
+      console.warn('[InitGate] No Firestore profile for uid:', fbUser.uid);
       _showLogin();
       return;
     }
 
     var user = snap.data();
 
-    // Ban check
     if (user.isBanned || user.badgeStatus === 'suspended') {
       try { await global.FB_FNS.signOut(global.FB_AUTH); } catch(e) {}
       localStorage.clear();
@@ -162,101 +152,63 @@ async function _restoreSession(fbUser) {
       return;
     }
 
-    // Hydrate ME — role is now confirmed before any rendering
+    // Hydrate ME with confirmed role BEFORE any rendering
     global.ME = user;
     if (typeof global.normalizeUser === 'function') {
       global.ME = global.normalizeUser(global.ME);
     }
-
-    // Set session key
     if (global.LOCAL) global.LOCAL.set('session', global.ME.uid);
 
-    // Load CACHE in parallel — role is already known, so rendering will be correct
+    // Load CACHE with role already known — first render will be correct
     await _preloadCache();
-
-    // Load avatar in background (non-blocking)
     _loadAvatar(global.ME.uid);
 
-    // Restore last visited page
-    var savedPage = localStorage.getItem('ss_last_page') ||
-                    sessionStorage.getItem('ss_page') || 'home';
-    var validPages = ['home', 'talent', 'gigs', 'myprofile', 'wallet'];
-    var pageToRestore = validPages.indexOf(savedPage) >= 0 ? savedPage : 'home';
+    var saved = localStorage.getItem('ss_last_page') ||
+                sessionStorage.getItem('ss_page') || 'home';
+    var valid = ['home', 'talent', 'gigs', 'myprofile', 'wallet'];
+    var page  = valid.indexOf(saved) >= 0 ? saved : 'home';
 
-    _doEnter(pageToRestore, false);
+    _doEnter(page, false);
 
   } catch(e) {
-    console.error('[InitGate] Session restore failed:', e);
+    console.error('[InitGate] Session restore error:', e);
     _showLogin();
   }
 }
 
-// ── Main startup listener ─────────────────────────────────────────────────
-// Runs once on page load. After that, it's only relevant for manual
-// login/logout flows which set _loginInProgress to skip this path.
-function _attachAuthListener() {
-  if (!global.FB_AUTH || !global.FB_FNS) {
-    // Firebase not ready yet — retry in 100ms
-    setTimeout(_attachAuthListener, 100);
+// ── Main boot ─────────────────────────────────────────────────────────────
+function _boot() {
+  if (global._loginInProgress || global._googleAuthInProgress) return;
+
+  // Poll for _fbAuthReady — set by firebase.js ES module asynchronously
+  if (typeof global._fbAuthReady === 'undefined') {
+    setTimeout(_boot, 50);
     return;
   }
 
-  global.FB_FNS.onAuthStateChanged(global.FB_AUTH, function(fbUser) {
-    // Skip entirely if a manual login/signup/google flow is handling the session.
-    // Those flows call enterApp() themselves after full hydration.
-    if (global._loginInProgress)      return;
-    if (global._googleAuthInProgress) return;
+  global._fbAuthReady.then(function(fbUser) {
+    // Step aside if a manual login fired while we were waiting
+    if (global._loginInProgress || global._googleAuthInProgress) return;
+    if (global._appEntered) return;
 
     if (fbUser) {
-      // Only restore session if app hasn't entered yet (prevents double-fire)
-      if (!global._appEntered) {
-        _restoreSession(fbUser);
-      }
+      _restoreSession(fbUser);
     } else {
-      // Guest/unauthenticated flow
-      // Ensure startup gate fully resolves instead of leaving the app
-      // in a partial loading state.
-      global._appReady = true;
-      global._appEntered = false;
-
-      // Cleanly reset app shell visibility
-      var appEl = document.getElementById('screen-app');
-      if (appEl) {
-        appEl.classList.remove('active');
-        appEl.style.display = 'none';
-      }
-
-      var navEl = document.getElementById('bottom-nav');
-      if (navEl) {
-        navEl.style.display = 'none';
-      }
-
-      // Clear stale session references
-      try {
-        if (global.LOCAL) global.LOCAL.del('session');
-      } catch(e) {}
-
-      // Properly show login/start screen
+      // No session — show login immediately
       _showLogin();
     }
+  }).catch(function(e) {
+    console.error('[InitGate] Auth promise failed:', e);
+    _showLogin();
   });
 }
 
-// ── Expose _doEnter for use by doLogin/doSignup/doGoogleAuth ─────────────
-// These flows set _loginInProgress, pre-load CACHE themselves, then call
-// global._gateEnter(pageToShow, isNewUser) to complete startup.
+// ── Public API ────────────────────────────────────────────────────────────
 global._gateEnter = function(pageToShow, isNewUser) {
-  _doEnter(pageToShow, isNewUser);
+  _doEnter(pageToShow || 'home', !!isNewUser);
 };
 
-// ── Boot ──────────────────────────────────────────────────────────────────
-// Wait for DOM + Firebase SDK before attaching the auth listener.
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(_attachAuthListener, 0);
-  });
-} else {
-  setTimeout(_attachAuthListener, 0);
-}
+// Boot after all synchronous scripts have loaded
+setTimeout(_boot, 0);
 
 })(window);
