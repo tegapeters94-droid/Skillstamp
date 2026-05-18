@@ -50,11 +50,12 @@ function enterApp(){
   } catch(e) {}
 
   // ── Start realtime listeners ONCE ─────────────────────────────────────
-  // startRealtimeListeners guards against duplicates internally.
-  // DO NOT call showPage() here — the init gate (_doEnter) controls routing.
   startRealtimeListeners();
   if (typeof updateUnreadBadge === 'function') updateUnreadBadge();
   if (typeof updateNotifBadge  === 'function') updateNotifBadge();
+
+  // ── Show home page ────────────────────────────────────────────────────
+  showPage('home');
 
   // ── Deferred tasks ────────────────────────────────────────────────────
   setTimeout(function(){
