@@ -36,19 +36,50 @@ window.FB_FNS = {
 // Usage: window.FB_CALL('functionName')({ ...data }) → Promise
 window.FB_CALL = function(fnName) { return httpsCallable(fns, fnName); };
 
-// ── Auth resolution promise ──────────────────────────────────────────────
-// firebase.js owns the ONLY onAuthStateChanged listener.
-// Resolves once with the Firebase user (or null).
-// 00-init-gate.js consumes this promise — no race, no missed events.
-console.log('[AUTH] Attaching onAuthStateChanged — setting _fbAuthReady promise');
-window._fbAuthReady = new Promise(function(resolve) {
-  var unsubscribe = onAuthStateChanged(auth, function(fbUser) {
-    unsubscribe(); // one-time — detach immediately after first event
-    console.log('[AUTH] onAuthStateChanged fired —',
-                fbUser ? 'uid: ' + fbUser.uid : 'null (guest)');
-    window._fbAuthUser = fbUser;
-    resolve(fbUser);
-  });
+// ── Auth state ───────────────────────────────────────────────────────────
+// Session restore is handled by window.addEventListener('load') in 05-auth.js
+// which reads LOCAL.get('session') and calls enterApp() directly.
+// This listener is kept only to handle the case where the load listener
+// doesn't have a session key but Firebase still has an active auth token.
+onAuthStateChanged(auth, async (fbUser) => {
+  if (window._appEntered) return; // app already running — skip
+  if (fbUser) {
+    // Only act if the load listener didn't already enter the app
+    setTimeout(async function() {
+      if (window._appEntered) return;
+      try {
+        const snap = await getDoc(doc(db, 'users', fbUser.uid));
+        if (snap.exists()) {
+          window.ME = snap.data();
+          if (window.ME.isBanned || window.ME.badgeStatus === 'suspended') {
+            try { await signOut(auth); } catch(e) {}
+            localStorage.clear();
+            var ls = document.getElementById('screen-loading');
+            if (ls) ls.style.display = 'none';
+            return;
+          }
+          if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
+          LOCAL.set('session', window.ME.uid);
+          var ls2 = document.getElementById('screen-loading');
+          if (ls2) ls2.style.display = 'none';
+          if (typeof enterApp === 'function') enterApp();
+        } else {
+          var ls3 = document.getElementById('screen-loading');
+          if (ls3) ls3.style.display = 'none';
+        }
+      } catch(e) {
+        var ls4 = document.getElementById('screen-loading');
+        if (ls4) ls4.style.display = 'none';
+      }
+    }, 800); // delay gives load listener time to run first
+  } else {
+    // Not signed in — hide loading if load listener hasn't already
+    setTimeout(function() {
+      if (window._appEntered) return;
+      var ls = document.getElementById('screen-loading');
+      if (ls) ls.style.display = 'none';
+    }, 800);
+  }
 });
 
-console.log('[INIT] Firebase initialized ✓');
+console.log('Firebase initialized ✓');
