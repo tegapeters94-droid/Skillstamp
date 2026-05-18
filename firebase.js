@@ -38,15 +38,17 @@ window.FB_CALL = function(fnName) { return httpsCallable(fns, fnName); };
 
 // ── Auth resolution promise ──────────────────────────────────────────────
 // firebase.js owns the ONLY onAuthStateChanged listener.
-// It resolves a promise with the auth result (user or null) so that
-// 00-init-gate.js can consume it without any timing/race issues.
-// The promise resolves exactly once — on the first auth state event.
+// Resolves once with the Firebase user (or null).
+// 00-init-gate.js consumes this promise — no race, no missed events.
+console.log('[AUTH] Attaching onAuthStateChanged — setting _fbAuthReady promise');
 window._fbAuthReady = new Promise(function(resolve) {
   var unsubscribe = onAuthStateChanged(auth, function(fbUser) {
-    unsubscribe(); // detach immediately — we only need the first event
-    window._fbAuthUser = fbUser; // also expose directly for convenience
+    unsubscribe(); // one-time — detach immediately after first event
+    console.log('[AUTH] onAuthStateChanged fired —',
+                fbUser ? 'uid: ' + fbUser.uid : 'null (guest)');
+    window._fbAuthUser = fbUser;
     resolve(fbUser);
   });
 });
 
-console.log('Firebase initialized ✓');
+console.log('[INIT] Firebase initialized ✓');
