@@ -11,17 +11,19 @@
 window._appEntered = false;
 
 function enterApp(){
-  // Idempotency: DOM wiring runs once. If already entered, just ensure
-  // the correct page is visible and return.
+  console.log('[INIT] enterApp() called');
+
+  // ── Idempotency guard ─────────────────────────────────────────────────
   if (window._appEntered) {
-    console.info('[enterApp] already entered — skipping duplicate call');
+    console.info('[INIT] enterApp() already ran — skipping');
     return;
   }
   window._appEntered = true;
+  console.log('[INIT] enterApp() running — wiring DOM');
 
   if (typeof onAppReady === 'function') { try { onAppReady(); } catch(e) {} }
 
-  // ── Show app, hide login/loading ─────────────────────────────────────
+  // ── Show app shell, hide login + loading ──────────────────────────────
   var ls = document.getElementById('screen-loading');
   if (ls) ls.style.display = 'none';
   var loginEl = document.getElementById('screen-login');
@@ -34,58 +36,25 @@ function enterApp(){
   if (typeof applyThemeBtn === 'function') applyThemeBtn();
   setTimeout(checkMaintenanceMode, 800);
 
-  // ── Avatar ───────────────────────────────────────────────────────────
+  // ── Avatar ────────────────────────────────────────────────────────────
   try {
     var av = document.getElementById('nav-av');
     if (av && window.ME) {
       if (ME.avatar) {
         av.innerHTML = '<img src="' + ME.avatar + '" style="width:100%;height:100%;object-fit:cover;">';
       } else {
-        av.textContent = initials(ME.name);
-        av.style.background = 'linear-gradient(135deg,' + ME.gradient + ',' + ME.gradient + '88)';
+        av.textContent = (typeof initials === 'function') ? initials(ME.name) : (ME.name||'?')[0];
+        av.style.background = 'linear-gradient(135deg,' + (ME.gradient||'#1a6b3c') + ',' + (ME.gradient||'#1a6b3c') + '88)';
       }
     }
   } catch(e) {}
 
-  // ── Start listeners ONCE ──────────────────────────────────────────────
-  // startRealtimeListeners already guards against duplicates internally,
-  // but we call it here only — callers (doLogin etc.) must NOT call it too.
+  // ── Start realtime listeners ONCE ─────────────────────────────────────
+  // startRealtimeListeners guards against duplicates internally.
+  // DO NOT call showPage() here — the init gate (_doEnter) controls routing.
   startRealtimeListeners();
   if (typeof updateUnreadBadge === 'function') updateUnreadBadge();
   if (typeof updateNotifBadge  === 'function') updateNotifBadge();
-
-  // ── Show home immediately with whatever CACHE we have ────────────────
-  // CACHE is pre-loaded by the caller (doLogin/session restore) before
-  // enterApp() is called, so this render will have real data.
-  showPage('home');
-
-  // ── Background refresh: top up any missing CACHE collections ─────────
-  // Runs async, re-renders only if data actually changed.
-  Promise.all([
-    fbGetAll('users').catch(function(){ return []; }),
-    fbGetAll('gigs').catch(function(){ return []; }),
-    fbGetAll('posts').catch(function(){ return []; }),
-    fbGetAll('endorsements').catch(function(){ return []; })
-  ]).then(function(results){
-    var changed = false;
-    if (results[0] && results[0].length && results[0].length !== (CACHE.users||[]).length)  { CACHE.users = results[0]; changed = true; }
-    if (results[1] && results[1].length && results[1].length !== (CACHE.gigs||[]).length)   { CACHE.gigs  = results[1]; changed = true; }
-    if (results[2] && results[2].length) { CACHE.posts = results[2].sort(function(a,b){ return (b.ts||0)-(a.ts||0); }); changed = true; }
-    if (results[3] && results[3].length && results[3].length !== (CACHE.endorsements||[]).length) { CACHE.endorsements = results[3]; changed = true; }
-    if (typeof updateHomeStats === 'function') updateHomeStats();
-    // Only re-render if something actually changed
-    if (changed) {
-      var activePage = document.querySelector('.page.active');
-      var activeId = activePage ? activePage.id : '';
-      if (activeId === 'page-home' || activeId === 'page-timeline') {
-        if (typeof renderRoleHome === 'function') renderRoleHome();
-      } else if (activeId === 'page-talent') {
-        if (typeof renderTalent === 'function') renderTalent();
-      } else if (activeId === 'page-gigs') {
-        if (typeof renderGigs === 'function') renderGigs();
-      }
-    }
-  }).catch(function(e){ console.warn('[enterApp] Background refresh failed', e); });
 
   // ── Deferred tasks ────────────────────────────────────────────────────
   setTimeout(function(){
@@ -97,6 +66,8 @@ function enterApp(){
       if (fresh && fresh.applications) ME.applications = fresh.applications;
     } catch(e) {}
   }, 2000);
+
+  console.log('[RENDER] App shell wired — waiting for _doEnter to route');
 }
 
 // Note: doLogout in 05-auth.js already resets window._appEntered and all guards.

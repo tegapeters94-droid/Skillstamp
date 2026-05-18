@@ -339,32 +339,48 @@ window.doSignup=async function(){
 function showAErr(id,msg){const el=document.getElementById(id);if(el){el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',4000);}}
 
 window.doLogout=async function(){
-  var bn=document.getElementById('bottom-nav');if(bn){bn.style.display='none';bn.classList.remove('app-visible');}
+  console.log('[AUTH] doLogout — signing out');
+  var bn=document.getElementById('bottom-nav');
+  if(bn){bn.style.display='none';bn.classList.remove('app-visible');}
+
   try { await window.FB_FNS.signOut(window.FB_AUTH); } catch(e){}
+
+  // Clean up all realtime listeners
   if (typeof unregisterAllListeners === 'function') unregisterAllListeners();
   else {
     if(typeof _unsubPosts!=='undefined'&&_unsubPosts){_unsubPosts();_unsubPosts=null;}
     if(typeof _unsubUsers!=='undefined'&&_unsubUsers){_unsubUsers();_unsubUsers=null;}
   }
   if (typeof stopNotifRealtimeListener === 'function') stopNotifRealtimeListener();
+
   // Reset ALL init gate flags so the next login starts clean
   window._appEntered           = false;
   window._appReady             = false;
   window._loginInProgress      = false;
   window._googleAuthInProgress = false;
-  // Reset auth promise so gate can consume a fresh onAuthStateChanged on next login
-  window._fbAuthReady = new Promise(function(resolve) {
-    var unsub = window.FB_FNS.onAuthStateChanged(window.FB_AUTH, function(u) {
-      unsub(); resolve(u);
-    });
-  });
-  ME=null; LOCAL.del('session'); activeConv=null;
+  window._spaReady             = false;
+
+  // DO NOT create a new onAuthStateChanged listener here.
+  // After logout, the next login is always a MANUAL action (doLogin/doSignup/Google).
+  // Those flows set _loginInProgress=true and call _gateEnter() themselves.
+  // _fbAuthReady is only needed for page-load session restore — not post-logout.
+  // Set it to a never-resolving promise so the gate stays out of the way.
+  window._fbAuthReady = new Promise(function() { /* resolved by next page load */ });
+
+  // Clear state
+  ME=null;
+  LOCAL.del('session');
+  if(typeof activeConv !== 'undefined') activeConv=null;
   CACHE.users=[]; CACHE.posts=[]; CACHE.gigs=[]; CACHE.endorsements=[];
+
+  // Show login screen directly — no gate needed
   var appEl=document.getElementById('screen-app');
   if(appEl){appEl.classList.remove('active'); appEl.style.display='none';}
   var loginEl=document.getElementById('screen-login');
   if(loginEl){loginEl.classList.add('active'); loginEl.style.display='';}
   if(window.showLsScreen) showLsScreen('start');
+
+  console.log('[AUTH] Signed out — login screen shown');
   toast('Signed out.');
 };
 
