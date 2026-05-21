@@ -1,4 +1,4 @@
-// SkillStamp — Gigs — render & post
+// Netlancer — Gigs — render & post
 
 // ══════════════════════════════════════════════
 //  GIGS
@@ -419,7 +419,7 @@ function _gwStep4(d) {
     + '<div id="gw-bp" style="' + (num ? '' : 'display:none') + '">'
     + '<div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px;">💰 Escrow Breakdown</div>'
     + '<div class="gw-brow"><span style="color:var(--td);">Contract Value</span><span id="gw-bp-t">$' + num.toLocaleString() + '</span></div>'
-    + '<div class="gw-brow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span id="gw-bp-f" style="color:#ef4444;">-$' + fee.toLocaleString() + '</span></div>'
+    + '<div class="gw-brow"><span style="color:var(--td);">Netlancer Fee (10%)</span><span id="gw-bp-f" style="color:#ef4444;">-$' + fee.toLocaleString() + '</span></div>'
     + '<div class="gw-brow total"><span>Freelancer Receives</span><span id="gw-bp-p" style="color:#059669;">$' + pay.toLocaleString() + '</span></div>'
     + '</div>'
     + '<div class="gw-tip">🔒 <div>Budget is <strong>locked in escrow</strong> when you post. Released only after you confirm delivery.</div></div>';
@@ -450,7 +450,7 @@ function _gwStep5(d) {
     + '<input type="checkbox" id="gw-escrow-cb"' + (d.escrowAgreed ? ' checked' : '') + '>'
     + '<label for="gw-escrow-cb">I agree to lock <strong>$' + num.toLocaleString() + '</strong> in escrow. Funds release only after I confirm delivery.</label>'
     + '</div>'
-    + '<div class="gw-tip" style="margin-top:12px;">🛡️ <div>Your money is <strong>protected</strong>. SkillStamp holds funds securely until you are satisfied.</div></div>';
+    + '<div class="gw-tip" style="margin-top:12px;">🛡️ <div>Your money is <strong>protected</strong>. Netlancer holds funds securely until you are satisfied.</div></div>';
 }
 
 // ─ Wire interactions ──────────────────────────────────────────
@@ -592,7 +592,7 @@ window.showGigDetail=function(gid){
   mh+='<div class="escrow">';
   mh+='<div style="font-size:11px;font-weight:600;margin-bottom:9px;">💰 Escrow Breakdown</div>';
   mh+='<div class="erow"><span style="color:var(--td);">Contract Value</span><span>'+g.pay+'</span></div>';
-  mh+='<div class="erow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-$'+fee+'</span></div>';
+  mh+='<div class="erow"><span style="color:var(--td);">Netlancer Fee (10%)</span><span style="color:var(--acc);">-$'+fee+'</span></div>';
   mh+='<div class="erow" style="border-top:1px solid var(--br);padding-top:6px;margin-top:4px;font-weight:700;"><span>Freelancer Receives</span><span style="color:var(--grn);">$'+payout+'</span></div>';
   mh+='</div>';
   // Action buttons — using ids, wired after render
@@ -681,7 +681,7 @@ function getProposalCredits(){return ME.proposalCredits||0;}
 window.purchaseProposalPack=async function(count,price){
   if(!ME.wallet||(ME.wallet.balance||0)<price){toast('Insufficient wallet balance. Top up first.','bad');closeModal();showPage('wallet');return;}
   ME.wallet.balance=(ME.wallet.balance||0)-price;
-  ME.wallet.transactions.unshift({id:'pp_'+Date.now(),type:'out',amount:price,from:'SkillStamp',desc:count+' Proposal Credits',ts:Date.now()});
+  ME.wallet.transactions.unshift({id:'pp_'+Date.now(),type:'out',amount:price,from:'Netlancer',desc:count+' Proposal Credits',ts:Date.now()});
   ME.proposalCredits=(ME.proposalCredits||0)+count;
   await saveUser(ME);
   closeModal();toast('✓ '+count+' proposal credits added!');

@@ -1,4 +1,4 @@
-// SkillStamp — Shareable Badge
+// Netlancer — Shareable Badge
 
 // ═══════════════════════════════════════════════════════
 // SHAREABLE BADGE
@@ -8,7 +8,7 @@ function openShareBadgeV6(){
   var myEndr=0;for(var i=0;i<endorse.length;i++) if(endorse[i].toUid===ME.uid) myEndr++;
   var url='https://tegapeters94-droid.github.io/Skill-stamp/?id='+ME.skillId;
   setModal('<button class="mclose" onclick="closeModal()">✕</button>'
-    +'<h3>🏅 Your SkillStamp Badge</h3>'
+    +'<h3>🏅 Your Netlancer Badge</h3>'
     +'<p style="font-size:11px;color:var(--td);">Share on LinkedIn, Twitter, or attach to your CV.</p>'
     +'<div class="badge-card">'
     +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:18px;margin-bottom:4px;">Skill<span style="color:var(--gld);">Stamp</span></div>'

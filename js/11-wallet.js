@@ -1,4 +1,4 @@
-// SkillStamp — Wallet
+// Netlancer — Wallet
 
 // ══════════════════════════════════════════════
 //  WALLET
@@ -40,7 +40,7 @@ function _doRenderWallet(){
   if(!w.transactions||!w.transactions.length){txList.innerHTML='<div class="empty" style="padding:20px;">No transactions yet. Apply to gigs to start earning!</div>';return;}
   txList.innerHTML=w.transactions.map(tx=>`<div class="tx-row">
     <div class="tx-icon" style="background:${tx.type==='in'?'rgba(74,222,128,.12)':'rgba(255,107,53,.12)'};">${tx.type==='in'?'📥':'📤'}</div>
-    <div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:12px;">${tx.desc}</div><div style="font-size:10px;color:var(--td);">${tx.from||'SkillStamp'} · ${timeAgo(tx.ts)}</div></div>
+    <div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:12px;">${tx.desc}</div><div style="font-size:10px;color:var(--td);">${tx.from||'Netlancer'} · ${timeAgo(tx.ts)}</div></div>
     <div class="tx-amount ${tx.type==='in'?'tx-in':'tx-out'}">${tx.type==='in'?'+':'-'}$${tx.amount.toLocaleString()}</div>
   </div>`).join('');
   document.getElementById('escrow-list').innerHTML='<div style="font-size:11px;color:var(--td);padding:12px;">No active escrow contracts. Apply to gigs to create one.</div>';
@@ -56,7 +56,7 @@ window.openReceive=function(){
     </div>
     <div id="receive-qr" style="display:flex;justify-content:center;margin-bottom:16px;"><div style="background:white;padding:12px;border-radius:8px;" id="rqr"></div></div>
     <button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${ME.skillId}').then(()=>toast('Wallet address copied! 📋'))">Copy Wallet Address</button>`);
-  setTimeout(()=>{try{new QRCode(document.getElementById('rqr'),{text:`SkillStamp:${ME.skillId}`,width:150,height:150,colorDark:'#000',colorLight:'#fff'});}catch(e){}},200);
+  setTimeout(()=>{try{new QRCode(document.getElementById('rqr'),{text:`Netlancer:${ME.skillId}`,width:150,height:150,colorDark:'#000',colorLight:'#fff'});}catch(e){}},200);
 };
 
 window.openSend=function(){
@@ -64,7 +64,7 @@ window.openSend=function(){
   var opts='';
   users.forEach(function(u){ opts+='<option value="'+u.uid+'">'+u.name+' — '+u.skillId+'</option>'; });
   setModal('<button class="mclose" onclick="closeModal()">✕</button>'
-    +'<h3>📤 Send Payment</h3><p>Send funds to another SkillStamp member.</p>'
+    +'<h3>📤 Send Payment</h3><p>Send funds to another Netlancer member.</p>'
     +'<div class="fg"><label class="fl">Recipient</label>'
     +'<select class="fi" id="send-to">'+opts+'</select></div>'
     +'<div class="fg"><label class="fl">Amount ($)</label><input class="fi" id="send-amt" type="number" placeholder="500" min="1"></div>'
@@ -121,7 +121,7 @@ window.processWithdraw=function(){
 window.openTopUp=function(){
   var html='<button class="mclose" onclick="closeModal()">✕</button>';
   html+='<h3>➕ Top Up Wallet</h3>';
-  html+='<p>Add funds to your SkillStamp wallet for escrow payments.</p>';
+  html+='<p>Add funds to your Netlancer wallet for escrow payments.</p>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">';
   [10,20,30,40,50].forEach(function(a){
     html+='<div style="padding:14px;background:var(--s2);border:1px solid var(--br);border-radius:var(--r);text-align:center;cursor:pointer;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;" onclick="setTopUpAmt('+a+')">$'+a+'</div>';

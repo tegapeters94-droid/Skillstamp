@@ -1,4 +1,4 @@
-// SkillStamp — App Shell — enterApp, showPage, Portfolio, Onboarding, Gig Tracker, Workspace
+// Netlancer — App Shell — enterApp, showPage, Portfolio, Onboarding, Gig Tracker, Workspace
 
 // ══════════════════════════════════════════════
 //  APP SHELL
@@ -502,7 +502,7 @@ function _buildOnboarding() {
     {
       tag: 'The Platform',
       title: 'Welcome to the\nFuture of Work.',
-      sub: 'SkillStamp connects Africa\'s verified digital talent with global opportunities through a high-trust ecosystem.',
+      sub: 'Netlancer connects Africa\'s verified digital talent with global opportunities through a high-trust ecosystem.',
       icon: '🌐',
       src: 'https://assets10.lottiefiles.com/packages/lf20_uwWgICKCxj.json'
     },
@@ -1298,7 +1298,7 @@ window.openDirectProposal = function(uid) {
     avEl +
     '<div style="flex:1;min-width:0;">' +
     '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--tx);margin-bottom:3px;">' + u.name + '</div>' +
-    '<div style="font-size:10px;color:var(--td);margin-bottom:5px;">' + (u.title || 'SkillStamp Freelancer') + '</div>' +
+    '<div style="font-size:10px;color:var(--td);margin-bottom:5px;">' + (u.title || 'Netlancer Freelancer') + '</div>' +
     verifBadge +
     '</div>' +
     (u.score > 0 ? '<div style="text-align:center;flex-shrink:0;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;color:var(--gld);">' + u.score.toFixed(1) + '</div><div style="font-size:8px;color:var(--td);">Rating</div></div>' : '') +
@@ -1635,7 +1635,7 @@ window.adminVerifDecision = async function(svId, uid, approved) {
           });
         }
       } catch(e) {}
-      pushNotif(uid, 'verification_approved', '&#x2B50; Verification Approved!', 'Congratulations! Your work has been verified by SkillStamp. Your verified badge is now live.', {type:'verification_approved'});
+      pushNotif(uid, 'verification_approved', '&#x2B50; Verification Approved!', 'Congratulations! Your work has been verified by Netlancer. Your verified badge is now live.', {type:'verification_approved'});
       toast(u.name + ' approved ✅');
     } else {
       u.verificationStatus = 'rejected';

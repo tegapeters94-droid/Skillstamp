@@ -1,4 +1,4 @@
-// SkillStamp — Training Centers
+// Netlancer — Training Centers
 
 // ═══════════════════════════════════════════════════════
 // TRAINING CENTERS
@@ -41,7 +41,7 @@ function renderCentersV6(){
     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">'
     +'<span style="font-size:30px;">🏫</span>'
     +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:20px;">Training Centers</div>'
-    +'<div style="font-size:10px;color:var(--td);">Find a SkillStamp-certified center near you</div></div></div>'
+    +'<div style="font-size:10px;color:var(--td);">Find a Netlancer-certified center near you</div></div></div>'
     +'<input class="fi" placeholder="Search city, country or skill..." style="margin-bottom:10px;" oninput="searchCentersV6(this.value)">'
     +'<div class="cats">'+catH+'</div></div>'
     +'<div style="padding:0 16px 100px;" id="centers-grid">'+cardsH+'</div>';

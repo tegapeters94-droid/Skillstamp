@@ -1,4 +1,4 @@
-// SkillStamp — Messages
+// Netlancer — Messages
 // Chat is accessed only via Gig Workspace. Opens as a full-screen modal.
 
 // ═══════════════════════════════════════════════════════
@@ -58,8 +58,8 @@ var CONTACT_PATTERNS = [
   // "message me outside" / "chat outside" / "connect privately"
   { re: /\b(?:message|talk|chat|speak|communicate|connect)\s+(?:me\s+)?(?:outside|off(?:\s*platform)?|privately|directly)\b/i, label: 'off-platform request' },
 
-  // "outside SkillStamp" / "off the platform" / "leave the app"
-  { re: /\b(?:outside|off|away\s+from|leave)\s+(?:skillstamp|this\s+platform|this\s+app|the\s+platform|the\s+app)\b/i, label: 'off-platform request' },
+  // "outside Netlancer" / "off the platform" / "leave the app"
+  { re: /\b(?:outside|off|away\s+from|leave)\s+(?:netlancer|this\s+platform|this\s+app|the\s+platform|the\s+app)\b/i, label: 'off-platform request' },
 
   // ═══════════════════════════════════════════════════════
   //  GROUP 5 — USERNAME PATTERNS
@@ -118,7 +118,7 @@ function showContactWarning(label, originalText, maskedText, onSendAnyway, onCan
     + '<div style="flex:1;">'
     + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:#9a3412;margin-bottom:4px;">Off-Platform Contact Detected</div>'
     + '<div style="font-size:11px;color:#7c2d12;line-height:1.55;margin-bottom:10px;">'
-    + 'Sharing a <strong>' + label + '</strong> or moving work off SkillStamp violates our '
+    + 'Sharing a <strong>' + label + '</strong> or moving work off Netlancer violates our '
     + '<span onclick="showTos()" style="color:#ea580c;cursor:pointer;text-decoration:underline;">Terms of Service</span> '
     + 'and <strong>voids your Escrow protection</strong>.'
     + '</div>'
@@ -151,7 +151,7 @@ function _buildFlaggedBubble(msg) {
     + (!isMe && msg._flagged
       ? '<div style="display:flex;align-items:flex-start;gap:6px;background:#fff1f2;border:1px solid #fecdd3;border-radius:0 0 8px 8px;padding:7px 10px;margin-top:-2px;">'
         + '<span style="font-size:13px;flex-shrink:0;">🚩</span>'
-        + '<div style="font-size:10px;color:#9f1239;line-height:1.4;"><strong>Safety Alert:</strong> This user is attempting to move communication off-platform. Your payments are only protected if work is kept on SkillStamp.</div>'
+        + '<div style="font-size:10px;color:#9f1239;line-height:1.4;"><strong>Safety Alert:</strong> This user is attempting to move communication off-platform. Your payments are only protected if work is kept on Netlancer.</div>'
         + '</div>'
       : '')
     + '</div>'
@@ -270,7 +270,7 @@ window.openMsg = async function(uid) {
       + avHTML
       + '<div style="flex:1;min-width:0;">'
       + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">' + other.name + '</div>'
-      + '<div style="font-size:10px;color:var(--td);">' + (other.title || other.role || 'SkillStamp Member') + '</div>'
+      + '<div style="font-size:10px;color:var(--td);">' + (other.title || other.role || 'Netlancer Member') + '</div>'
       + '</div>'
       + '</div>'
       // Feed

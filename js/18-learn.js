@@ -1,4 +1,4 @@
-// SkillStamp — SkillStamp Learn
+// Netlancer — Netlancer Learn
 
 // ═══════════════════════════════════════════════════════
 // V6 DATA
@@ -92,7 +92,7 @@ function renderLearnV6(){
   return '<div class="learn-hero">'
     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">'
     +'<span style="font-size:32px;">🎓</span>'
-    +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:22px;letter-spacing:-.5px;">SkillStamp <span style="color:var(--blu);">Learn</span></div>'
+    +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:22px;letter-spacing:-.5px;">Netlancer <span style="color:var(--blu);">Learn</span></div>'
     +'<div style="font-size:11px;color:var(--td);margin-top:2px;">Master skills. Get verified. Get hired.</div></div></div>'
     +'<div style="display:flex;gap:18px;flex-wrap:wrap;">'
     +'<div><span style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:20px;color:var(--grn);">'+COURSES.length+'</span><div style="font-size:9px;color:var(--td);">Courses</div></div>'
