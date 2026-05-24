@@ -271,28 +271,6 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    //  BUG REPORTS — any signed-in non-banned user can create
-    //  Admin can read, update (mark resolved), delete
-    // ═══════════════════════════════════════════════════════════════════════
-    match /bug_reports/{reportId} {
-      allow create: if isAuth() && isNotBanned()
-                    && request.resource.data.uid == request.auth.uid
-                    && request.resource.data.keys().hasAll(['uid','name','desc','ts']);
-      allow read, update, delete: if isAdmin();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  FEEDBACK — any signed-in non-banned user can create
-    //  Admin can read, update (mark resolved), delete
-    // ═══════════════════════════════════════════════════════════════════════
-    match /feedback/{feedbackId} {
-      allow create: if isAuth() && isNotBanned()
-                    && request.resource.data.uid == request.auth.uid
-                    && request.resource.data.keys().hasAll(['uid','name','text','ts']);
-      allow read, update, delete: if isAdmin();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
     //  DEFAULT DENY — everything else is blocked
     // ═══════════════════════════════════════════════════════════════════════
     match /{document=**} {
