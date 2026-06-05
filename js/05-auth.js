@@ -1,4 +1,4 @@
-// Netlancer — Auth — Login, Signup, Logout
+// SkillStamp — Auth — Login, Signup, Logout
 
 // ══════════════════════════════════════════════
 //  AUTH
@@ -137,12 +137,12 @@ window.showBannedScreen=function(){
   var html='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:32px;text-align:center;">';
   html+='<div style="font-size:52px;margin-bottom:16px;">🚫</div>';
   html+='<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:20px;margin-bottom:8px;color:var(--tx);">Account Suspended</div>';
-  html+='<div style="font-size:13px;color:var(--td);line-height:1.7;margin-bottom:24px;max-width:320px;">Your Netlancer account has been suspended due to a violation of our community guidelines.</div>';
+  html+='<div style="font-size:13px;color:var(--td);line-height:1.7;margin-bottom:24px;max-width:320px;">Your SkillStamp account has been suspended due to a violation of our community guidelines.</div>';
   html+='<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:18px 20px;margin-bottom:24px;width:100%;max-width:360px;">';
   html+='<div style="font-size:11px;font-weight:700;color:#ef4444;margin-bottom:6px;">To appeal this decision:</div>';
   html+='<div style="font-size:11px;color:var(--td);margin-bottom:14px;">Email us with your SkillID and the reason for your appeal.</div>';
   var subject='Account%20Appeal%20Request';
-  var body='Hi%20Netlancer%20Team%2C%0A%0AI%20would%20like%20to%20appeal%20my%20account%20suspension.%0A%0AEmail%3A%20%0ASkillID%3A%20%0AReason%3A%20';
+  var body='Hi%20SkillStamp%20Team%2C%0A%0AI%20would%20like%20to%20appeal%20my%20account%20suspension.%0A%0AEmail%3A%20%0ASkillID%3A%20%0AReason%3A%20';
   html+='<a href="mailto:tegapeters94@gmail.com?subject='+subject+'&body='+body+'" style="display:block;background:var(--gld);color:#000;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:12px;padding:13px 20px;border-radius:8px;text-decoration:none;">📧 Send Appeal Email</a>';
   html+='</div>';
   html+='<div style="font-size:10px;color:var(--td);">Appeals are reviewed within 48 hours.</div>';
@@ -254,7 +254,7 @@ window.doLogin=async function(){
     var hasWelcome=(ME.wallet.transactions||[]).find(function(t){return t.id==='t_welcome';});
     if(!hasWelcome){
       ME.wallet.balance=(ME.wallet.balance||0)+1000;
-      ME.wallet.transactions.unshift({id:'t_welcome',type:'in',amount:1000,from:'Netlancer',desc:'Demo credit — not withdrawable (for testing only)',ts:Date.now()});
+      ME.wallet.transactions.unshift({id:'t_welcome',type:'in',amount:1000,from:'SkillStamp',desc:'Demo credit — not withdrawable (for testing only)',ts:Date.now()});
       saveUser(ME);
     }
 
@@ -327,7 +327,7 @@ window.doSignup=async function(){
     if(save) LOCAL.set('saved_creds',{email,pass}); else LOCAL.del('saved_creds');
     LOCAL.set('session', uid);
     ME = user;
-    toast('Welcome to Netlancer, '+fn+'! 🎉');
+    toast('Welcome to SkillStamp, '+fn+'! 🎉');
     ME._isNew=true;
     enterApp();
     showPage('home');
@@ -724,7 +724,7 @@ function _showGoogleRolePicker(fbUser, firstName) {
           : '<div style="width:48px;height:48px;border-radius:50%;background:#1a6b3c;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#fff;flex-shrink:0;">'+firstName[0].toUpperCase()+'</div>',
         '<div>',
           '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:#0d1109;">Hi, '+firstName+'! 👋</div>',
-          '<div style="font-size:11px;color:#7a8a74;margin-top:2px;">How will you use Netlancer?</div>',
+          '<div style="font-size:11px;color:#7a8a74;margin-top:2px;">How will you use SkillStamp?</div>',
         '</div>',
       '</div>',
 
@@ -865,7 +865,7 @@ window.grConfirm = async function() {
     window._grFbUser = null;
     window._grSelectedRole = null;
 
-    toast('Welcome to Netlancer, ' + firstName + '! 🎉');
+    toast('Welcome to SkillStamp, ' + firstName + '! 🎉');
     try { await _loadCacheAndEnter(true); } catch(e) { console.warn('cache enter', e); }
 
   } catch(err) {

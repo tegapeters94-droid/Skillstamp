@@ -1,4 +1,4 @@
-// Netlancer — DB Layer — Firebase Firestore
+// SkillStamp — DB Layer — Firebase Firestore
 
 // ══════════════════════════════════════════════
 //  CONSTANTS & HELPERS
@@ -23,14 +23,14 @@ const FLAGS={Nigeria:'🇳🇬',Ghana:'🇬🇭',Kenya:'🇰🇪','South Africa'
 const GIG_ICONS=['🐍','🎨','☁️','📱','📊','🔧','🤖','⚙️','🌐','📡','🎯','💡'];
 const GIG_COLS=['rgba(74,222,128,.08)','rgba(96,165,250,.08)','rgba(232,197,71,.08)','rgba(255,107,53,.08)'];
 const POST_TEMPLATES=[
-  function(u){return 'Just completed a major '+pick(SKILLS_BY_CAT[u.category])+' project for a fintech client in '+u.country+'! 🚀 The platform handles 50K+ daily transactions. Proud of this work. #'+u.category+' #Netlancer #AfricanTech';},
+  function(u){return 'Just completed a major '+pick(SKILLS_BY_CAT[u.category])+' project for a fintech client in '+u.country+'! 🚀 The platform handles 50K+ daily transactions. Proud of this work. #'+u.category+' #SkillStamp #AfricanTech';},
   function(u){return 'Looking for a '+pick(SKILLS_BY_CAT[u.category])+' engineer for a 3-month contract. Remote-friendly. Budget: $'+(r(2,8)*500)+'. Must have SkillID verification. DM me! 💼 #Hiring';},
   function(u){return '5 things I learned after 3 years of '+pick(SKILLS_BY_CAT[u.category])+' in the African tech ecosystem:\n\n1️⃣ Community > Competition\n2️⃣ Documentation saves projects\n3️⃣ Client communication is a skill\n4️⃣ Build in public\n5️⃣ Always be learning';},
-  function(u){return 'Just got verified on Netlancer! My SkillID is now live. '+u.category+' professional with '+r(2,8)+' years experience. Let us connect! ✨ #Netlancer #'+u.country;},
+  function(u){return 'Just got verified on SkillStamp! My SkillID is now live. '+u.category+' professional with '+r(2,8)+' years experience. Let us connect! ✨ #SkillStamp #'+u.country;},
   function(u){return 'Hot take: African developers are some of the most resourceful engineers in the world. We build with constraints that make us 10x better problem solvers. 🌍 Agree? #AfricanTech';},
   function(u){return 'Passed my '+pick(SKILLS_BY_CAT[u.category])+' certification today! 🎓 Months of late nights finally paid off. Reputation score up by +10. Next goal: expert badge! #LevelUp';},
   function(u){return 'PSA for employers: Stop offering African tech talent rates 3x lower than global peers. Our SkillIDs prove we deliver the same quality. 💪 #PayEquity';},
-  function(u){return 'Just endorsed 3 amazing '+u.category+' professionals on Netlancer. The quality of talent here is unreal. 🤝 #Community #Netlancer';},
+  function(u){return 'Just endorsed 3 amazing '+u.category+' professionals on SkillStamp. The quality of talent here is unreal. 🤝 #Community #SkillStamp';},
   function(u){return 'My journey: from learning '+pick(SKILLS_BY_CAT[u.category])+' to landing a $'+(r(3,12)*500)+'/month remote contract. Keep building. 🛤️ #'+u.country;},
   function(u){return 'Working on an open source '+pick(SKILLS_BY_CAT[u.category])+' project solving '+pick(['fintech','health','education','logistics'])+' challenges in Africa. Who wants to collaborate? 🔧';}
 ];
@@ -147,10 +147,10 @@ function startRealtimeListeners() {
         if(talentPage && talentPage.classList.contains('active') && typeof renderTalent === 'function') renderTalent();
         if(homePage   && homePage.classList.contains('active')   && typeof renderRoleHome === 'function') renderRoleHome();
       }, 300);
-    }, function(e){ console.warn('[Netlancer] User listener error', e); });
+    }, function(e){ console.warn('[SkillStamp] User listener error', e); });
     if (typeof registerListener === 'function') registerListener('users', userUnsub);
     else { if (_unsubUsers) _unsubUsers(); _unsubUsers = userUnsub; }
-  } catch(e) { console.warn('[Netlancer] startRealtimeListeners users failed', e); }
+  } catch(e) { console.warn('[SkillStamp] startRealtimeListeners users failed', e); }
 }
 
 function r(min,max){return Math.floor(Math.random()*(max-min+1))+min;}

@@ -1,4 +1,4 @@
-// Netlancer — Admin Portal (Full Suite)
+// SkillStamp — Admin Portal (Full Suite)
 
 // ══════════════════════════════════════════════
 //  LEADERBOARD
@@ -512,7 +512,7 @@ window.adminExportCSV=function(){
   users.forEach(function(u){
     rows.push([u.name,u.email,u.role,u.country||'',u.category||'',u.badgeStatus,u.skillId,u.repPoints||0,(u.score||0).toFixed(1),u.gigsCount||0,new Date(u.created||Date.now()).toLocaleDateString()]);
   });
-  downloadCSV('netlancer_users.csv',rows);
+  downloadCSV('skillstamp_users.csv',rows);
   toast('⬇ Downloading users CSV…');
 };
 
@@ -521,7 +521,7 @@ window.adminExportPostsCSV=function(){
   (CACHE.posts||[]).forEach(function(p){
     rows.push([p.userName,(p.content||'').replace(/,/g,' '),p.type||'general',p.likes||0,(p.comments||[]).length,new Date(p.ts||Date.now()).toLocaleString()]);
   });
-  downloadCSV('netlancer_posts.csv',rows);
+  downloadCSV('skillstamp_posts.csv',rows);
   toast('⬇ Downloading posts CSV…');
 };
 
@@ -530,7 +530,7 @@ window.adminExportGigsCSV=function(){
   (CACHE.gigs||[]).forEach(function(g){
     rows.push([g.title,g.pay,g.category||'',g.type||'',g.posterName,(g.applicants||[]).length,new Date(g.created||Date.now()).toLocaleString()]);
   });
-  downloadCSV('netlancer_gigs.csv',rows);
+  downloadCSV('skillstamp_gigs.csv',rows);
   toast('⬇ Downloading gigs CSV…');
 };
 
@@ -650,7 +650,7 @@ window.adminExportCSV=function(){
   var blob=new Blob([csv],{type:'text/csv'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='netlancer_users_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.download='skillstamp_users_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
   toast('CSV exported — '+users.length+' users 📥');
 };
@@ -741,7 +741,7 @@ function buildAdminHTML(){
 
   var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">'
     +'<span style="font-size:24px;">⚙️</span>'
-    +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;color:var(--acc);">Netlancer Admin</div>'
+    +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;color:var(--acc);">SkillStamp Admin</div>'
     +'<div style="font-size:10px;color:var(--td);">Signed in as '+ME.name+' · Admin Portal</div></div>'
     +'<button onclick="adminExportCSV()" style="margin-left:auto;background:var(--s);border:1px solid var(--br);border-radius:6px;padding:7px 12px;font-size:11px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;color:var(--fg);cursor:pointer;">⬇ Export CSV</button>'
     +'</div>';
@@ -1025,7 +1025,7 @@ function buildAdminHTML(){
   h+='<div style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:14px;">'
     +'<div style="font-size:11px;color:var(--td);margin-bottom:10px;">This appears as a banner to ALL users at the top of the app.</div>'
     +(currentAnn?'<div style="background:rgba(232,197,32,.1);border:1px solid rgba(232,197,32,.3);border-radius:6px;padding:9px;font-size:12px;margin-bottom:10px;">📢 Current: '+currentAnn+'</div>':'')
-    +'<textarea class="fi" id="ann-inp" placeholder="Netlancer is now live in Ghana 🇬🇭" rows="3" style="width:100%;resize:vertical;margin-bottom:8px;">'+currentAnn+'</textarea>'
+    +'<textarea class="fi" id="ann-inp" placeholder="SkillStamp is now live in Ghana 🇬🇭" rows="3" style="width:100%;resize:vertical;margin-bottom:8px;">'+currentAnn+'</textarea>'
     +'<div style="display:flex;gap:7px;">'
     +'<button class="hbtn" onclick="postAnnV6()" style="flex:1;padding:10px;font-size:12px;">📢 Broadcast to All Users</button>'
     +(currentAnn?'<button class="hbtn2" onclick="clearAnnV6()" style="padding:10px 14px;font-size:12px;">✕ Clear</button>':'')

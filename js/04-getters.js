@@ -1,4 +1,4 @@
-// Netlancer — Getters, State Vars, Theme, Notifications
+// SkillStamp — Getters, State Vars, Theme, Notifications
 
 // ══════════════════════════════════════════════
 //  GETTERS
@@ -53,7 +53,7 @@ async function checkMaintenanceMode(){
         +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:18px;color:#f0ede6;margin-bottom:10px;">Under Maintenance</div>'
         +'<div style="font-size:13px;color:#6e6e66;line-height:1.7;max-width:300px;margin-bottom:16px;">'+(meta.message||'We are making improvements. We will be back shortly.')+'</div>'
         +(meta.returnTime?'<div style="font-size:11px;color:#1a6b3c;">Expected back: '+meta.returnTime+'</div>':'')
-        +'<div style="font-size:10px;color:#6e6e66;margin-top:20px;">— The Netlancer Team</div>';
+        +'<div style="font-size:10px;color:#6e6e66;margin-top:20px;">— The SkillStamp Team</div>';
       document.body.appendChild(div);
       return true;
     }

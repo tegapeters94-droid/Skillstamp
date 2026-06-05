@@ -1,11 +1,11 @@
-// Netlancer — AI Skill Validation
+// SkillStamp — AI Skill Validation
 
 // ══════════════════════════════════════════════
 //  AI SKILL VALIDATION
 // ══════════════════════════════════════════════
 window.openAIValidate=function(){
   setModal(`<button class="mclose" onclick="closeModal()">✕</button>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="font-size:24px;">🤖</div><div><h3>AI Skill Validation</h3><p style="margin:0;">Netlancer Neural Engine v2.1</p></div></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="font-size:24px;">🤖</div><div><h3>AI Skill Validation</h3><p style="margin:0;">SkillStamp Neural Engine v2.1</p></div></div>
     <div class="fg"><label class="fl">Skill to Validate</label><input class="fi" id="ai-skill" placeholder="e.g. Python, Figma, Solidity…"></div>
     <div class="fg"><label class="fl">Experience Level</label>
       <select class="fi" id="ai-exp"><option value="1">Beginner (0-1 yrs)</option><option value="2">Intermediate (1-3 yrs)</option><option value="3" selected>Advanced (3-5 yrs)</option><option value="4">Expert (5-10 yrs)</option><option value="5">Master (10+ yrs)</option></select>

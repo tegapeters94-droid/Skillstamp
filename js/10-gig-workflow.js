@@ -1,4 +1,4 @@
-// Netlancer — Gig Workflow — Hire, Complete, Dispute, Rate
+// SkillStamp — Gig Workflow — Hire, Complete, Dispute, Rate
 
 // ══════════════════════════════════════════════
 //  GIG WORKFLOW: HIRE / COMPLETE / DISPUTE / RATE
@@ -125,7 +125,7 @@ window.openCompleteGig=function(gid){
   mh+='<p>Confirm you are satisfied with the work delivered by '+freelancer.name+'.</p>';
   mh+='<div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:14px;margin-bottom:14px;">';
   mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">Escrow Amount</span><span>$'+payNum.toLocaleString()+'</span></div>';
-  mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">Netlancer Fee (10%)</span><span style="color:var(--acc);">-$'+fee.toLocaleString()+'</span></div>';
+  mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-$'+fee.toLocaleString()+'</span></div>';
   mh+='<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;border-top:1px solid var(--br);margin-top:6px;padding-top:8px;"><span>'+freelancer.name+' Receives</span><span style="color:var(--grn);">$'+payout.toLocaleString()+'</span></div>';
   mh+='</div>';
   mh+='<button class="btn" id="comp-confirm-btn" style="width:100%;">Release Payment →</button>';
@@ -174,7 +174,7 @@ window.confirmComplete=async function(gid){
       +'The gig is now marked complete.</div>'
       +'<div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:16px;font-size:11px;">'
       +'<div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--td);">Escrow Released</span><span>$'+payNum.toLocaleString()+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--td);">Netlancer Fee (10%)</span><span style="color:var(--acc);">-$'+fee.toLocaleString()+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-$'+fee.toLocaleString()+'</span></div>'
       +'<div style="display:flex;justify-content:space-between;padding:6px 0 3px;border-top:1px solid var(--br);font-weight:700;"><span>'+freelancer.name+' Received</span><span style="color:var(--grn);">$'+payout.toLocaleString()+'</span></div>'
       +'</div>'
       +'<button class="btn" onclick="closeModal();" style="width:100%;">Done</button>'

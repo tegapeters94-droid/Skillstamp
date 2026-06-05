@@ -1,4 +1,4 @@
-// Netlancer — Talent Page (Redesigned v3)
+// SkillStamp — Talent Page (Redesigned v3)
 
 window.filterCat = function(cat, el) {
   activeCat = cat;
@@ -150,7 +150,7 @@ function talentCard(u) {
     +       youBadge
     +     '</div>'
     // Title
-    +     '<div style="font-size:10px;color:var(--td);margin-bottom:6px;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+(u.title||'Netlancer Freelancer')+'</div>'
+    +     '<div style="font-size:10px;color:var(--td);margin-bottom:6px;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+(u.title||'SkillStamp Freelancer')+'</div>'
     // Country + category
     +     '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
     +       '<span style="font-size:10px;color:var(--td);">'+flag(u.country)+'&nbsp;'+u.country+'</span>'

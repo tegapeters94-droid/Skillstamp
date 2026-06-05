@@ -1,4 +1,4 @@
-// Netlancer — Init Gate v3 (00-init-gate.js)
+// SkillStamp — Init Gate v3 (00-init-gate.js)
 // ─────────────────────────────────────────────────────────────────────────
 // THE SINGLE AUTHORITY for startup sequencing.
 //

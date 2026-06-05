@@ -1,4 +1,4 @@
-// Netlancer — Home Dashboard (2026 Premium Redesign)
+// SkillStamp — Home Dashboard (2026 Premium Redesign)
 // Glassmorphism · Squircle avatars · Gamified progress · Dock nav
 // Logic preserved 100% — only UI/CSS changed.
 
@@ -318,7 +318,7 @@ function cHero() {
   html += '<div style="margin-bottom:18px;">';
   html += '<div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:4px;letter-spacing:.02em;">'+greetingWord()+'</div>';
   html += '<div style="'+D.font+';font-weight:800;font-size:22px;color:#fff;margin-bottom:5px;letter-spacing:-.03em;">'+firstName+' 👋</div>';
-  html += '<div style="font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.03em;text-transform:uppercase;">Client &nbsp;·&nbsp; Netlancer</div>';
+  html += '<div style="font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.03em;text-transform:uppercase;">Client &nbsp;·&nbsp; SkillStamp</div>';
   html += '</div>';
 
   // Glassmorphism stat cards with semi-transparent border

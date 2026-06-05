@@ -1,4 +1,4 @@
-// Netlancer — Profiles, Verification, QR
+// SkillStamp — Profiles, Verification, QR
 
 // ══════════════════════════════════════════════
 //  PROFILES
@@ -206,7 +206,7 @@ function buildProfile(u,isOwn){
     if(!alreadyVerified&&!pendingVerif){
       verifCta='<div class="prf-verif-banner" onclick="openSubmitSkill()">'
         +'<div class="prf-verif-icon">'+icon('bolt',18,'var(--acc)')+'</div>'
-        +'<div><div style="font-weight:700;font-size:12px;margin-bottom:2px;">Get Verified on Netlancer</div>'
+        +'<div><div style="font-weight:700;font-size:12px;margin-bottom:2px;">Get Verified on SkillStamp</div>'
         +'<div style="font-size:10px;color:var(--td);">Stand out to clients · Unlock SkillID · Earn more</div></div>'
         +'<span style="color:var(--gld);font-size:14px;margin-left:auto;">›</span>'
         +'</div>';
@@ -234,7 +234,7 @@ function buildProfile(u,isOwn){
         +'</span>';
     }).join('');
     var verNote=u.verifiedSkills&&u.verifiedSkills.length
-      ?'<div class="prf-skill-note">'+icon('check',10,'var(--gld)')+' = Verified by Netlancer admin</div>'
+      ?'<div class="prf-skill-note">'+icon('check',10,'var(--gld)')+' = Verified by SkillStamp admin</div>'
       :'';
     skillsSection='<div class="prf-card">'
       +'<div class="prf-card-title">'+icon('bolt',14,'currentColor')+' Skills</div>'
@@ -334,7 +334,7 @@ function buildProfile(u,isOwn){
       +'<span onclick="showTos()" style="cursor:pointer;color:var(--gld);text-decoration:underline;">Terms</span>'
       +' · <span onclick="showPrivacy()" style="cursor:pointer;color:var(--gld);text-decoration:underline;">Privacy</span>'
       +' · <span onclick="openChangePassword()" style="cursor:pointer;color:var(--td);">'+icon('key',11,'currentColor')+' Change Password</span>'
-      +'<div style="font-size:9px;margin-top:6px;color:var(--td);">© 2025 Netlancer · Tega Technologies · NDPA 2023</div>'
+      +'<div style="font-size:9px;margin-top:6px;color:var(--td);">© 2025 SkillStamp · Tega Technologies · NDPA 2023</div>'
       +'</div>'
     :'';
 
@@ -827,7 +827,7 @@ window.showQR=function(){
   setTimeout(function(){
     try{
       new QRCode(document.getElementById('qr-box'),{
-        text:'Netlancer|ID:'+ME.skillId+'|Name:'+ME.name+'|Cat:'+ME.category,
+        text:'SkillStamp|ID:'+ME.skillId+'|Name:'+ME.name+'|Cat:'+ME.category,
         width:170,height:170,colorDark:'#000',colorLight:'#fff'
       });
     }catch(e){

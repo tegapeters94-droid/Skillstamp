@@ -1,4 +1,4 @@
-// Netlancer — Endorsements
+// SkillStamp — Endorsements
 
 // ══════════════════════════════════════════════
 //  ENDORSEMENTS
@@ -64,7 +64,7 @@ window.openEndorse = function(uid) {
   mh += '<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,' + grad + ',' + grad + '88);display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;color:#000;overflow:hidden;flex-shrink:0;">' + avHtml + '</div>';
   mh += '<div>';
   mh += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;color:var(--tx);margin-bottom:2px;">Endorse ' + firstName + '</div>';
-  mh += '<div style="font-size:11px;color:var(--td);">' + (u.title || u.category || 'Netlancer Freelancer') + '</div>';
+  mh += '<div style="font-size:11px;color:var(--td);">' + (u.title || u.category || 'SkillStamp Freelancer') + '</div>';
   mh += '</div></div>';
 
   // Mutual benefit card
