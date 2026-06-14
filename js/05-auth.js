@@ -56,32 +56,48 @@ if('serviceWorker' in navigator){
 
 window.addEventListener('load',()=>{
   generateUsers();
+  // Never read saved passwords - Firebase handles session persistence
   LOCAL.del('saved_creds');
-  // Load real user count
+  // Load real user count — wait for Firebase to be ready first
   setTimeout(function(){
     try{
-      var db=window.FB_DB; var fns=window.FB_FNS;
-      if(!db||!fns){ var el=document.getElementById('login-user-count'); if(el) el.textContent='Growing'; return; }
+      var db=window.FB_DB;
+      var fns=window.FB_FNS;
+      if(!db||!fns){
+        var el=document.getElementById('login-user-count');
+        if(el) el.textContent='Growing';
+        return;
+      }
       fns.getDocs(fns.collection(db,'users')).then(function(snap){
         var el=document.getElementById('login-user-count');
         if(el) el.textContent=(snap.size||0).toLocaleString()+'+';
-      }).catch(function(){ var el=document.getElementById('login-user-count'); if(el) el.textContent='Growing'; });
-    }catch(e){ var el=document.getElementById('login-user-count'); if(el) el.textContent='Growing'; }
+      }).catch(function(){
+        var el=document.getElementById('login-user-count');
+        if(el) el.textContent='Growing';
+      });
+    }catch(e){
+      var el=document.getElementById('login-user-count');
+      if(el) el.textContent='Growing';
+    }
   }, 1500);
 
   const sid=LOCAL.get('session');
   if(sid){
+    // Keep loading screen visible (it already shows by default)
     fbGet('users', sid).then(async function(u){
       if(u){
         ME=u;
+        // Normalize ME to ensure all fields have safe defaults
         if (typeof normalizeUser === 'function') ME = normalizeUser(ME);
         if(ME.isBanned||ME.badgeStatus==='suspended'){
           LOCAL.del('session');
+          // Hide loading screen and show login
           var lsEl=document.getElementById('screen-loading');
           if(lsEl) lsEl.style.display='none';
           return;
         }
         try {
+          // Load ALL cache data before entering the app so pages never render empty
           var results = await Promise.all([
             fbGetAll('users').catch(function(){ return []; }),
             fbGetAll('gigs').catch(function(){ return []; }),
@@ -90,10 +106,16 @@ window.addEventListener('load',()=>{
           if(results[0]&&results[0].length) CACHE.users=results[0];
           if(results[1]&&results[1].length) CACHE.gigs=results[1];
           if(results[2]&&results[2].length) CACHE.endorsements=results[2];
+          // Load avatar in background (non-blocking)
           fbGet('avatars', ME.uid).then(function(av){
-            if(av&&av.data&&!ME.avatar){ ME.avatar=av.data; }
+            if(av&&av.data&&!ME.avatar){
+              ME.avatar=av.data;
+            }
           }).catch(function(){});
-        } catch(e) { console.warn('Cache preload failed', e); }
+        } catch(e) {
+          console.warn('Cache preload failed, continuing anyway', e);
+        }
+        // enterApp() hides screen-loading, shows screen-app, and calls showPage('home')
         enterApp();
       } else {
         LOCAL.del('session');
@@ -107,6 +129,7 @@ window.addEventListener('load',()=>{
     });
     return;
   }
+  // No session — hide loading screen and show login
   var lsNoSess=document.getElementById('screen-loading');
   if(lsNoSess) lsNoSess.style.display='none';
 });
@@ -217,30 +240,24 @@ window.doLogin=async function(){
 
   try {
     const cred = await window.FB_FNS.signInWithEmailAndPassword(window.FB_AUTH, email, pass);
-
-    // Load user profile + CACHE before entering app so role is known at render time
     const snap = await fbGet('users', cred.user.uid);
-    if(!snap){showAErr('li-err','Account not found. Please sign up.'); return;}
+    if(!snap){showAErr('li-err','Account not found. Please sign up.');return;}
     ME = snap;
+    // Normalize ME to ensure all fields have safe defaults
     if (typeof normalizeUser === 'function') ME = normalizeUser(ME);
-
+    // Check if banned BEFORE letting them in
     if(ME.isBanned||ME.badgeStatus==='suspended'){
       await window.FB_FNS.signOut(window.FB_AUTH);
       showBannedScreen();
       return;
     }
-
     if(save) LOCAL.set('saved_creds',{email,pass}); else LOCAL.del('saved_creds');
     LOCAL.set('session', ME.uid);
-
-    // Pre-load all CACHE collections BEFORE enterApp so renderRoleHome has real data
-    await Promise.all([
-      fbGetAll('users').then(function(r){ if(r&&r.length) CACHE.users=r; }).catch(function(){}),
-      fbGetAll('gigs').then(function(r){ if(r&&r.length) CACHE.gigs=r; }).catch(function(){}),
-      fbGetAll('endorsements').then(function(r){ if(r&&r.length) CACHE.endorsements=r; }).catch(function(){})
-    ]);
-
-    // Load avatar in background
+    startRealtimeListeners();
+    if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
+    await loadGigsToCache();
+    await loadEndorsementsToCache();
+    // Load avatar from dedicated collection (more reliable than user doc)
     fbGet('avatars', ME.uid).then(function(av){
       if(av&&av.data&&!ME.avatar){
         ME.avatar=av.data;
@@ -248,7 +265,8 @@ window.doLogin=async function(){
         if(navAv){navAv.innerHTML='<img src="'+av.data+'" style="width:100%;height:100%;object-fit:cover;">';navAv.style.background='';}
       }
     }).catch(function(){});
-
+    toast('Welcome back, '+ME.name.split(' ')[0]+'! 👋');
+    setTimeout(function(){if(!LOCAL.get('ob_done_'+ME.uid)) showOnboarding(); else checkProfileComplete();},1200);
     // Seed test wallet if empty
     if(!ME.wallet) ME.wallet={balance:0,pending:0,earned:0,transactions:[]};
     var hasWelcome=(ME.wallet.transactions||[]).find(function(t){return t.id==='t_welcome';});
@@ -257,13 +275,10 @@ window.doLogin=async function(){
       ME.wallet.transactions.unshift({id:'t_welcome',type:'in',amount:1000,from:'SkillStamp',desc:'Demo credit — not withdrawable (for testing only)',ts:Date.now()});
       saveUser(ME);
     }
-
-    toast('Welcome back, '+ME.name.split(' ')[0]+'! 👋');
     enterApp();
+    // Force admin tab visible if isAdmin
+    // Admin access via admin.html only
     showPage('home');
-    setTimeout(function(){if(!LOCAL.get('ob_done_'+ME.uid)) showOnboarding(); else checkProfileComplete();},1200);
-    setTimeout(function(){if (typeof startNotifRealtimeListener === 'function') startNotifRealtimeListener();},1500);
-
   } catch(e) {
     const msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password'||e.code==='auth/invalid-credential'
       ? 'Invalid email or password.' : 'Login failed. Try again.';
@@ -327,12 +342,17 @@ window.doSignup=async function(){
     if(save) LOCAL.set('saved_creds',{email,pass}); else LOCAL.del('saved_creds');
     LOCAL.set('session', uid);
     ME = user;
+    startRealtimeListeners();
+    if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
+    await loadGigsToCache();
+    await loadEndorsementsToCache();
     toast('Welcome to SkillStamp, '+fn+'! 🎉');
     ME._isNew=true;
     enterApp();
     showPage('home');
     setTimeout(function(){if(!LOCAL.get('ob_done_'+ME.uid)) showOnboarding();},800);
-    setTimeout(function(){if (typeof startNotifRealtimeListener === 'function') startNotifRealtimeListener();},1500);
+    enterApp();
+    showPage('home');
   } catch(e) {
     const msg = e.code==='auth/email-already-in-use'
       ? 'Email already registered. Please sign in.'
@@ -349,21 +369,19 @@ function showAErr(id,msg){const el=document.getElementById(id);if(el){el.textCon
 window.doLogout=async function(){
   var bn=document.getElementById('bottom-nav');if(bn){bn.style.display='none';bn.classList.remove('app-visible');}
   try { await window.FB_FNS.signOut(window.FB_AUTH); } catch(e){}
+  // Use central listener registry for clean shutdown
   if (typeof unregisterAllListeners === 'function') unregisterAllListeners();
   else {
-    if(typeof _unsubPosts!=='undefined'&&_unsubPosts){_unsubPosts();_unsubPosts=null;}
-    if(typeof _unsubUsers!=='undefined'&&_unsubUsers){_unsubUsers();_unsubUsers=null;}
+    if(_unsubPosts){_unsubPosts();_unsubPosts=null;}
+    if(_unsubUsers){_unsubUsers();_unsubUsers=null;}
   }
   if (typeof stopNotifRealtimeListener === 'function') stopNotifRealtimeListener();
-  window._appEntered = false;
-  window._appReady   = false;
-  window._spaReady   = false;
   ME=null; LOCAL.del('session'); activeConv=null;
   CACHE.users=[]; CACHE.posts=[]; CACHE.gigs=[]; CACHE.endorsements=[];
   var appEl=document.getElementById('screen-app');
-  if(appEl){appEl.classList.remove('active'); appEl.style.display='none';}
+  appEl.classList.remove('active'); appEl.style.display='none';
   var loginEl=document.getElementById('screen-login');
-  if(loginEl){loginEl.classList.add('active'); loginEl.style.display='';}
+  loginEl.classList.add('active'); loginEl.style.display='';
   if(window.showLsScreen) showLsScreen('start');
   toast('Signed out.');
 };
@@ -387,11 +405,7 @@ window.doGoogleAuth = async function() {
 
   var re_enable = function() {
     btns.forEach(function(b){ b.disabled = false; b.style.opacity = ''; });
-    window._googleAuthInProgress = false;
   };
-
-  // Block onAuthStateChanged from racing with our flow
-  window._googleAuthInProgress = true;
 
   try {
     var provider = new window.FB_FNS.GoogleAuthProvider();
@@ -407,7 +421,7 @@ window.doGoogleAuth = async function() {
     );
 
     if (snap.exists()) {
-      // ── Returning user — log in ───────────────────────────────
+      // ── Returning user — just log in ──────────────────────────
       var existingUser = snap.data();
       if (existingUser.isBanned || existingUser.badgeStatus === 'suspended') {
         try { await window.FB_FNS.signOut(window.FB_AUTH); } catch(e) {}
@@ -418,13 +432,16 @@ window.doGoogleAuth = async function() {
       window.ME = existingUser;
       if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
       toast('Welcome back, ' + (window.ME.name||'').split(' ')[0] + '! 👋');
-      await _loadCacheAndEnter(false); // false = returning user
+      // enterApp() is triggered by onAuthStateChanged in firebase.js automatically
+      // but we help it along here for responsiveness
+      try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache load', e); }
 
     } else {
       // ── New user — show role picker FIRST, then create profile ──
       var displayName = fbUser.displayName || '';
       var firstName   = (displayName.split(' ')[0]) || 'there';
-      re_enable(); // re-enable buttons; guard stays on until grConfirm completes
+      re_enable();
+      // Show role picker modal
       _showGoogleRolePicker(fbUser, firstName);
     }
 
@@ -432,6 +449,7 @@ window.doGoogleAuth = async function() {
     re_enable();
     console.warn('doGoogleAuth error:', err);
     if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+      // User dismissed popup — silent, no error toast
       return;
     }
     if (err.code === 'auth/popup-blocked') {
@@ -442,57 +460,29 @@ window.doGoogleAuth = async function() {
   }
 };
 
-// Shared helper: fully load CACHE and enter app — used by Google auth flow.
-// isNew = true triggers onboarding for brand-new Google sign-ups.
-async function _loadCacheAndEnter(isNew) {
-  // Both guards: block onAuthStateChanged from racing with us
-  window._googleAuthInProgress = true;
-  window._loginInProgress = true;
-
-  // Pre-load CACHE before enterApp so role-based rendering has real data
+// Shared helper: load CACHE and call enterApp()
+async function _loadCacheAndEnter() {
   try {
     var results = await Promise.all([
       window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'users')),
       window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'gigs')),
-      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'endorsements')),
+      window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'posts')),
     ]);
     window.CACHE = window.CACHE || {};
-    CACHE.users        = results[0].docs.map(function(d){ return d.data(); });
-    CACHE.gigs         = results[1].docs.map(function(d){ return d.data(); });
-    CACHE.endorsements = results[2].docs.map(function(d){ return d.data(); });
-  } catch(e) { console.warn('[GoogleAuth] Cache preload failed', e); }
-
-  // Persist session
-  if (window.ME && window.ME.uid) {
-    LOCAL.set('session', window.ME.uid);
-  }
-
-  // Load avatar in background
-  if (window.ME && window.ME.uid) {
-    fbGet('avatars', window.ME.uid).then(function(av) {
-      if (av && av.data && !window.ME.avatar) {
-        window.ME.avatar = av.data;
-      }
-    }).catch(function(){});
-  }
-
+    CACHE.users = results[0].docs.map(function(d){ return d.data(); });
+    CACHE.gigs  = results[1].docs.map(function(d){ return d.data(); });
+    CACHE.posts = results[2].docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+  } catch(e) { console.warn('_loadCacheAndEnter preload failed', e); }
   var ls = document.getElementById('screen-loading');
   if (ls) ls.style.display = 'none';
-
   if (typeof enterApp === 'function') enterApp();
-
-  setTimeout(function() {
+  // Small delay so enterApp's DOM operations complete before rendering home
+  setTimeout(function(){
     if (typeof showPage === 'function') showPage('home');
-    window._googleAuthInProgress = false;
-    setTimeout(function() {
-      if (!window.ME) return;
-      if (isNew) {
-        if (typeof showOnboarding === 'function' && !LOCAL.get('ob_done_' + window.ME.uid)) showOnboarding();
-      } else {
-        if (typeof checkProfileComplete === 'function') checkProfileComplete();
-      }
-      if (typeof startNotifRealtimeListener === 'function') startNotifRealtimeListener();
-    }, 400);
+    // Force re-render in case ME was not ready on first enterApp
+    setTimeout(function(){
+      if (typeof renderRoleHome === 'function' && window.ME) renderRoleHome();
+    }, 300);
   }, 150);
 }
 
@@ -866,7 +856,7 @@ window.grConfirm = async function() {
     window._grSelectedRole = null;
 
     toast('Welcome to SkillStamp, ' + firstName + '! 🎉');
-    try { await _loadCacheAndEnter(true); } catch(e) { console.warn('cache enter', e); }
+    try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache enter', e); }
 
   } catch(err) {
     console.error('grConfirm error:', err);

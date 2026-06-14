@@ -117,12 +117,7 @@ let _unsubUsers = null;
 
 // Start real-time listeners once app loads
 function startRealtimeListeners() {
-  // Guard: clean up any existing listeners before starting new ones.
-  // This prevents stacked duplicate onSnapshot calls when startRealtimeListeners
-  // is called multiple times during login/session restore.
-  if (typeof unregisterAllListeners === 'function') unregisterAllListeners();
-
-  // Live posts feed
+  // Live posts feed — use registry to prevent duplication
   var postUnsub = fbListen('posts', function(posts) {
     CACHE.posts = posts;
     if(typeof updateHomeStats === 'function') updateHomeStats();
@@ -130,23 +125,16 @@ function startRealtimeListeners() {
   if (typeof registerListener === 'function') registerListener('posts', postUnsub);
   else { if (_unsubPosts) _unsubPosts(); _unsubPosts = postUnsub; }
 
-  // Live users feed — debounced to prevent role-flicker on rapid snapshots
-  var _userRenderTimer = null;
+  // Live users feed
   try {
     var uq = window.FB_FNS.query(window.FB_FNS.collection(window.FB_DB, 'users'));
     var userUnsub = window.FB_FNS.onSnapshot(uq, function(snap) {
       CACHE.users = snap.docs.map(function(d){ return d.data(); });
+      var talentPage = document.getElementById('page-talent');
+      var homePage   = document.getElementById('page-home');
+      if(talentPage && talentPage.classList.contains('active') && typeof renderTalent === 'function') renderTalent();
+      if(homePage   && homePage.classList.contains('active')   && typeof renderRoleHome === 'function') renderRoleHome();
       if(typeof updateHomeStats === 'function') updateHomeStats();
-      // Debounce: wait 300ms before re-rendering so rapid snapshots don't flicker
-      clearTimeout(_userRenderTimer);
-      _userRenderTimer = setTimeout(function() {
-        // Only re-render once ME.role is confirmed — prevents role flicker
-        if (!window.ME || !window.ME.role) return;
-        var talentPage = document.getElementById('page-talent');
-        var homePage   = document.getElementById('page-home');
-        if(talentPage && talentPage.classList.contains('active') && typeof renderTalent === 'function') renderTalent();
-        if(homePage   && homePage.classList.contains('active')   && typeof renderRoleHome === 'function') renderRoleHome();
-      }, 300);
     }, function(e){ console.warn('[SkillStamp] User listener error', e); });
     if (typeof registerListener === 'function') registerListener('users', userUnsub);
     else { if (_unsubUsers) _unsubUsers(); _unsubUsers = userUnsub; }

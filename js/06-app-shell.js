@@ -3,76 +3,61 @@
 // ══════════════════════════════════════════════
 //  APP SHELL
 // ══════════════════════════════════════════════
-// ── enterApp idempotency guard ────────────────────────────────────────────
-// Prevents the multiple-refresh bug: doLogin, onAuthStateChanged, and
-// _loadCacheAndEnter all call enterApp(). This guard ensures the DOM setup
-// and showPage('home') run exactly ONCE per login session.
-// Uses window._appEntered so doLogout (in 05-auth.js) can reset it.
-window._appEntered = false;
-
 function enterApp(){
-  console.log('[INIT] enterApp() called');
-
-  // ── Idempotency guard ─────────────────────────────────────────────────
-  if (window._appEntered) {
-    console.info('[INIT] enterApp() already ran — skipping');
-    return;
-  }
-  window._appEntered = true;
-  console.log('[INIT] enterApp() running — wiring DOM');
-
+  // Stability: normalize ME + validate cache before any rendering
   if (typeof onAppReady === 'function') { try { onAppReady(); } catch(e) {} }
-
-  // ── Show app shell, hide login + loading ──────────────────────────────
-  var ls = document.getElementById('screen-loading');
-  if (ls) ls.style.display = 'none';
-  var loginEl = document.getElementById('screen-login');
-  if (loginEl) { loginEl.classList.remove('active'); loginEl.style.display = 'none'; }
-  var appEl = document.getElementById('screen-app');
-  if (appEl) { appEl.classList.add('active'); appEl.style.display = 'block'; }
-  var bn = document.getElementById('bottom-nav');
-  if (bn) { bn.style.display = ''; bn.classList.add('app-visible'); }
-
-  if (typeof applyThemeBtn === 'function') applyThemeBtn();
-  setTimeout(checkMaintenanceMode, 800);
-
-  // ── Avatar ────────────────────────────────────────────────────────────
-  try {
-    var av = document.getElementById('nav-av');
-    if (av && window.ME) {
-      if (ME.avatar) {
-        av.innerHTML = '<img src="' + ME.avatar + '" style="width:100%;height:100%;object-fit:cover;">';
-      } else {
-        av.textContent = (typeof initials === 'function') ? initials(ME.name) : (ME.name||'?')[0];
-        av.style.background = 'linear-gradient(135deg,' + (ME.gradient||'#1a6b3c') + ',' + (ME.gradient||'#1a6b3c') + '88)';
-      }
-    }
-  } catch(e) {}
-
-  // ── Start realtime listeners ONCE ─────────────────────────────────────
-  startRealtimeListeners();
-  if (typeof updateUnreadBadge === 'function') updateUnreadBadge();
-  if (typeof updateNotifBadge  === 'function') updateNotifBadge();
-
-  // ── Show home page ────────────────────────────────────────────────────
-  showPage('home');
-
-  // ── Deferred tasks ────────────────────────────────────────────────────
-  setTimeout(function(){
-    if (typeof loadFirebaseNotifs === 'function') loadFirebaseNotifs();
-  }, 1200);
+  var ls=document.getElementById('screen-loading');if(ls)ls.style.display='none';
+  var loginEl=document.getElementById('screen-login');
+  loginEl.classList.remove('active');
+  loginEl.style.display='none';
+  var appEl=document.getElementById('screen-app');
+  appEl.classList.add('active');
+  appEl.style.display='block';
+  var bn=document.getElementById('bottom-nav');if(bn){bn.style.display='';bn.classList.add('app-visible');}
+  if(typeof applyThemeBtn==='function') applyThemeBtn();
+  setTimeout(checkMaintenanceMode,800);
+  // Sync applications from Firebase in case they were updated by clients
   setTimeout(async function(){
-    try {
-      var fresh = await fbGet('users', ME.uid);
-      if (fresh && fresh.applications) ME.applications = fresh.applications;
-    } catch(e) {}
-  }, 2000);
-
-  console.log('[RENDER] App shell wired — waiting for _doEnter to route');
+    var fresh=await fbGet('users',ME.uid);
+    if(fresh&&fresh.applications) ME.applications=fresh.applications;
+  },2000);
+  const av=document.getElementById('nav-av');
+  if(ME.avatar){av.innerHTML=`<img src="${ME.avatar}" style="width:100%;height:100%;object-fit:cover;">`;}
+  else{av.textContent=initials(ME.name);av.style.background=`linear-gradient(135deg,${ME.gradient},${ME.gradient}88)`;}
+  // Admin tab permanently hidden — use admin.html portal instead
+  updateHomeStats();
+  startRealtimeListeners();
+  updateUnreadBadge();
+  updateNotifBadge();
+  // Load all data immediately in parallel — don't wait for onSnapshot
+  Promise.all([
+    fbGetAll('users'),
+    fbGetAll('gigs'),
+    fbGetAll('posts'),
+    fbGetAll('endorsements')
+  ]).then(function(results){
+    if(results[0]&&results[0].length) CACHE.users=results[0];
+    if(results[1]&&results[1].length) CACHE.gigs=results[1];
+    if(results[2]&&results[2].length) CACHE.posts=results[2].sort(function(a,b){return (b.ts||0)-(a.ts||0);});
+    if(results[3]&&results[3].length) CACHE.endorsements=results[3];
+    updateHomeStats();
+    // Re-render the active page with fresh data
+    var activePage=document.querySelector('.page.active');
+    var activeId=activePage?activePage.id:'';
+    if(activeId==='page-home'||activeId==='page-timeline') renderRoleHome();
+    else if(activeId==='page-talent') renderTalent();
+    else if(activeId==='page-gigs') {
+      var gigsSection=document.querySelector('#page-gigs .section');
+      if(gigsSection) gigsSection.style.display='';
+      renderGigs();
+    }
+    else if(activeId==='page-wallet') renderWallet();
+  }).catch(function(e){ console.warn('Initial data load failed, retrying...', e); });
+  showPage('home'); // triggers renderRoleHome
+  // Load Firebase notifications (verification results, ban notices etc)
+  setTimeout(loadFirebaseNotifs, 1200);
+  // AI simulation disabled
 }
-
-// Note: doLogout in 05-auth.js already resets window._appEntered and all guards.
-// No additional patch needed here.
 
 
 // ── PROFILE COMPLETION CHECK ────────────────────────────────

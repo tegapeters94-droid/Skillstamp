@@ -43,24 +43,15 @@ global.trackEvent = function (type, payload) {
   // Strip binary data from metadata
   if (event.metadata.dataUrl) delete event.metadata.dataUrl;
 
-  // ── Write path ────────────────────────────────────────────────────────
-  // If the backend bridge is loaded, the bridge's patched trackEvent handles
-  // the Firestore write via Cloud Function. This direct addDoc is the fallback
-  // used ONLY when the bridge is not yet active (e.g. very early page load).
-  if (!window._BRIDGE_MESSAGE_GUARD) {
-    try {
-      if (window.FB_FNS && window.FB_DB) {
-        window.FB_FNS.addDoc(
-          window.FB_FNS.collection(window.FB_DB, ANALYTICS_COLLECTION),
-          event
-        ).catch(function () {});
-      }
-    } catch (e) {}
-  }
-  // (When bridge IS active, 37-backend-bridge.js overrides global.trackEvent
-  //  entirely after DOMContentLoaded, so this function body is replaced.)
+  // Write to Firestore (best-effort, never blocks UI)
+  try {
+    window.FB_FNS.addDoc(
+      window.FB_FNS.collection(window.FB_DB, ANALYTICS_COLLECTION),
+      event
+    ).catch(function () {});  // silent failure
+  } catch (e) {}
 
-  // Buffer locally for in-session analytics (always runs)
+  // Also buffer locally for in-session analytics
   _localBuffer.push(event);
   if (_localBuffer.length > MAX_LOCAL_EVENTS) _localBuffer.shift();
 
