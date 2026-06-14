@@ -5,7 +5,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, query, orderBy, onSnapshot, serverTimestamp, where, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBFYNYLGyHMpMwicgvDX1THQUoVsA7ewD4",
@@ -20,7 +19,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const fns = getFunctions(app, 'us-central1');
 
 // ── Expose Firebase to the rest of the app ──────────────
 window.FB_AUTH = auth;
@@ -32,53 +30,66 @@ window.FB_FNS = {
   addDoc, updateDoc, deleteDoc, collection, query, orderBy, onSnapshot,
   serverTimestamp, where, limit
 };
-// FB_CALL: factory for calling Cloud Functions from the backend bridge
-// Usage: window.FB_CALL('functionName')({ ...data }) → Promise
-window.FB_CALL = function(fnName) { return httpsCallable(fns, fnName); };
 
-// ── Auth state ───────────────────────────────────────────────────────────
-// Session restore is handled by window.addEventListener('load') in 05-auth.js
-// which reads LOCAL.get('session') and calls enterApp() directly.
-// This listener is kept only to handle the case where the load listener
-// doesn't have a session key but Firebase still has an active auth token.
+// ── Auth state listener ─────────────────────────────────
 onAuthStateChanged(auth, async (fbUser) => {
-  if (window._appEntered) return; // app already running — skip
   if (fbUser) {
-    // Only act if the load listener didn't already enter the app
-    setTimeout(async function() {
-      if (window._appEntered) return;
-      try {
-        const snap = await getDoc(doc(db, 'users', fbUser.uid));
-        if (snap.exists()) {
-          window.ME = snap.data();
-          if (window.ME.isBanned || window.ME.badgeStatus === 'suspended') {
-            try { await signOut(auth); } catch(e) {}
-            localStorage.clear();
-            var ls = document.getElementById('screen-loading');
-            if (ls) ls.style.display = 'none';
-            return;
-          }
-          if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
-          LOCAL.set('session', window.ME.uid);
-          var ls2 = document.getElementById('screen-loading');
-          if (ls2) ls2.style.display = 'none';
-          if (typeof enterApp === 'function') enterApp();
-        } else {
-          var ls3 = document.getElementById('screen-loading');
-          if (ls3) ls3.style.display = 'none';
+    try {
+      const snap = await getDoc(doc(db, 'users', fbUser.uid));
+      if (snap.exists()) {
+        window.ME = snap.data();
+        // Block banned users even on session restore
+        if(window.ME && (window.ME.isBanned || window.ME.badgeStatus==='suspended')){
+          try{ await signOut(auth); }catch(e){}
+          localStorage.clear();
+          document.getElementById('screen-login').classList.add('active'); if(window.showLsScreen) showLsScreen('start');
+          document.getElementById('screen-app').classList.remove('active');
+          setTimeout(function(){ if(window.showBannedScreen) window.showBannedScreen(); },400);
+          return;
         }
-      } catch(e) {
-        var ls4 = document.getElementById('screen-loading');
-        if (ls4) ls4.style.display = 'none';
+        // Admin access via admin.html only — tab permanently hidden
+        // Restore session — load all data first then enter app
+        if (!document.getElementById('screen-app').classList.contains('active')) {
+          // Load data in parallel before showing app
+          try {
+            const [users, gigs, posts] = await Promise.all([
+              window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB,'users')),
+              window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB,'gigs')),
+              window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB,'posts'))
+            ]);
+            CACHE.users = users.docs.map(d=>d.data());
+            CACHE.gigs = gigs.docs.map(d=>d.data());
+            CACHE.posts = posts.docs.map(d=>d.data()).sort((a,b)=>(b.ts||0)-(a.ts||0));
+          } catch(loadErr){ console.warn('Preload failed, continuing anyway', loadErr); }
+          var loadScreen=document.getElementById('screen-loading');
+          if(loadScreen) loadScreen.style.display='none';
+          enterApp();
+          var savedPage=localStorage.getItem('ss_last_page')||sessionStorage.getItem('ss_page')||'home';
+          var validPages=['home','talent','gigs','myprofile','wallet'];
+          var pageToRestore=validPages.indexOf(savedPage)>=0?savedPage:'home';
+          // Small delay ensures renderXxx functions have data ready
+          setTimeout(function(){showPage(pageToRestore);},100);
+          // Load avatar fresh from avatars collection
+          fbGet('avatars', window.ME.uid).then(function(av){
+            if(av&&av.data){
+              window.ME.avatar=av.data;
+              var navAv=document.getElementById('nav-av');
+              if(navAv){navAv.innerHTML='<img src="'+av.data+'" style="width:100%;height:100%;object-fit:cover;">';navAv.style.background='';}
+            }
+          }).catch(function(){});
+        } else {
+          // Already in app - refresh admin tab visibility
+          if (adminTab && window.ME && window.ME.isAdmin) adminTab.style.display = '';
+        }
       }
-    }, 800); // delay gives load listener time to run first
+    } catch(e) {
+      console.warn('Session restore failed', e);
+      document.getElementById('screen-loading').style.display='none';
+      document.getElementById('screen-login').classList.add('active'); if(window.showLsScreen) showLsScreen('start');
+    }
   } else {
-    // Not signed in — hide loading if load listener hasn't already
-    setTimeout(function() {
-      if (window._appEntered) return;
-      var ls = document.getElementById('screen-loading');
-      if (ls) ls.style.display = 'none';
-    }, 800);
+    document.getElementById('screen-loading').style.display='none';
+    document.getElementById('screen-login').classList.add('active'); if(window.showLsScreen) showLsScreen('start');
   }
 });
 
