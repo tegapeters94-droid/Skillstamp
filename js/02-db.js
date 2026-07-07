@@ -114,6 +114,7 @@ async function loadEndorsementsToCache(){
 }
 let _unsubPosts = null;
 let _unsubUsers = null;
+let _unsubGigs = null;
 
 // Start real-time listeners once app loads
 function startRealtimeListeners() {
@@ -139,6 +140,20 @@ function startRealtimeListeners() {
     if (typeof registerListener === 'function') registerListener('users', userUnsub);
     else { if (_unsubUsers) _unsubUsers(); _unsubUsers = userUnsub; }
   } catch(e) { console.warn('[SkillStamp] startRealtimeListeners users failed', e); }
+
+  // Live gigs feed — keeps `applicants`/`proposals` in sync in real time so a
+  // client sees new applications without having to leave and re-enter the
+  // Gigs page. No limit/orderBy, matching the previous fbGetAll('gigs') load.
+  try {
+    var gq = window.FB_FNS.query(window.FB_FNS.collection(window.FB_DB, 'gigs'));
+    var gigUnsub = window.FB_FNS.onSnapshot(gq, function(snap) {
+      CACHE.gigs = snap.docs.map(function(d){ return d.data(); });
+      var gigsPage = document.getElementById('page-gigs');
+      if (gigsPage && gigsPage.classList.contains('active') && typeof renderGigs === 'function') renderGigs();
+    }, function(e){ console.warn('[SkillStamp] Gigs listener error', e); });
+    if (typeof registerListener === 'function') registerListener('gigs', gigUnsub);
+    else { if (_unsubGigs) _unsubGigs(); _unsubGigs = gigUnsub; }
+  } catch(e) { console.warn('[SkillStamp] startRealtimeListeners gigs failed', e); }
 }
 
 function r(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
