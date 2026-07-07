@@ -124,6 +124,25 @@ service cloud.firestore {
                          'applicants', 'proposals', 'referenceImages',
                        ]);
 
+      // Allow any non-banned freelancer (who is not the poster) to APPLY to an
+      // open gig — this adds their own uid to `applicants` and their own entry
+      // to `proposals`. They may only touch these two fields, may only append
+      // (never remove/reorder) applicants, may only add themselves once, and
+      // may only write/modify their own key inside `proposals` — never another
+      // applicant's data.
+      allow update: if isAuth() && isNotBanned() &&
+                       resource.data.status == 'open' &&
+                       resource.data.posterUid != request.auth.uid &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['applicants', 'proposals']) &&
+                       // Exactly one new applicant appended, and it must be the caller
+                       request.resource.data.applicants.size() == resource.data.applicants.size() + 1 &&
+                       request.resource.data.applicants.hasAll(resource.data.applicants) &&
+                       !resource.data.applicants.hasAny([request.auth.uid]) &&
+                       request.resource.data.applicants[request.resource.data.applicants.size() - 1] == request.auth.uid &&
+                       // proposals map: only the caller's own key may change
+                       (!('proposals' in resource.data) ||
+                         request.resource.data.proposals.diff(resource.data.proposals).affectedKeys().hasOnly([request.auth.uid]));
+
       allow delete: if isAuth() &&
                        resource.data.posterUid == request.auth.uid &&
                        resource.data.status == 'open';
