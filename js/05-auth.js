@@ -328,6 +328,28 @@ window.doSignup=async function(){
   try {
     const cred = await window.FB_FNS.createUserWithEmailAndPassword(window.FB_AUTH, email, pass);
     const uid = cred.user.uid;
+
+    // Guard: block if this email already belongs to a DIFFERENT account —
+    // e.g. someone who originally signed up via "Continue with Google".
+    // Runs post-auth (not pre-auth) since our rules require request.auth
+    // to be set before the `users` collection can be queried.
+    try {
+      var dupQ = window.FB_FNS.query(
+        window.FB_FNS.collection(window.FB_DB, 'users'),
+        window.FB_FNS.where('email', '==', email),
+        window.FB_FNS.limit(5)
+      );
+      var dupSnap = await window.FB_FNS.getDocs(dupQ);
+      var dupOther = dupSnap.docs.find(function(d){ return d.id !== uid; });
+      if (dupOther) {
+        try { await cred.user.delete(); } catch(delErr) { console.warn('Cleanup of duplicate signup failed', delErr); }
+        showAErr('ri-err', 'This email already has a SkillStamp account. Try "Continue with Google" if that\'s how you signed up, or sign in normally.');
+        if(btn){btn.textContent='Create Account & Get SkillID →';btn.disabled=false;}
+        window._signupFired=false;
+        return;
+      }
+    } catch(dupErr) { console.warn('Duplicate email check failed, continuing', dupErr); }
+
     const name=fn+' '+ln;
     const user={
       uid,email,name,role:signupRole,country,category,
@@ -447,6 +469,26 @@ window.doGoogleAuth = async function() {
       try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache load', e); }
 
     } else {
+      // ── New user — but first check this email isn't already used by a
+      // DIFFERENT account (e.g. an existing email/password signup) before
+      // creating a duplicate identity ──
+      try {
+        var gDupQ = window.FB_FNS.query(
+          window.FB_FNS.collection(window.FB_DB, 'users'),
+          window.FB_FNS.where('email', '==', (fbUser.email||'').toLowerCase()),
+          window.FB_FNS.limit(5)
+        );
+        var gDupSnap = await window.FB_FNS.getDocs(gDupQ);
+        var gDupOther = gDupSnap.docs.find(function(d){ return d.id !== fbUser.uid; });
+        if (gDupOther) {
+          try { await fbUser.delete(); } catch(delErr) { console.warn('Cleanup of duplicate Google signup failed', delErr); }
+          try { await window.FB_FNS.signOut(window.FB_AUTH); } catch(e) {}
+          re_enable();
+          toast('This email already has a SkillStamp account. Please sign in with your email and password instead.', 'bad');
+          return;
+        }
+      } catch(gDupErr) { console.warn('Duplicate email check (Google) failed, continuing', gDupErr); }
+
       // ── New user — show role picker FIRST, then create profile ──
       var displayName = fbUser.displayName || '';
       var firstName   = (displayName.split(' ')[0]) || 'there';
