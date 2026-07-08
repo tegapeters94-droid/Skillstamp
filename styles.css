@@ -2751,3 +2751,47 @@ input, textarea, select {
 }
 
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DESKTOP LAYOUT
+   Everything above this point is effectively mobile-first, single-column
+   card-stack design. At real desktop widths (≥961px) that same layout was
+   just stretching edge-to-edge instead of behaving like a desktop product.
+   This block contains + centers primary content and turns single-column
+   stacks into responsive multi-column grids, without changing anything
+   about the mobile layout below 960px.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media(min-width:961px){
+
+  /* Contain + center primary page content instead of edge-to-edge stretch */
+  #page-home, #page-wallet, #page-gigs, .talent-page-wrap, .ss-body {
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #page-home > *, #page-wallet .section { padding-left: 4px; padding-right: 4px; }
+
+  /* Quick Start — 4 across instead of a stretched-out 2x2 */
+  .qs-grid { grid-template-columns: repeat(4, 1fr) !important; }
+
+  /* Top Verified Talent — responsive card grid instead of one stretched column */
+  .tvt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+  .tvt-grid > *:first-child { grid-column: 1 / -1; }
+  .tvt-card { margin-bottom: 0 !important; }
+
+  /* Talent directory grid — let more columns fit before falling back to 2 */
+  .tgrid { grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 20px; }
+
+  /* Gig tabs — compact, left-aligned like real desktop tabs instead of two
+     halves stretched edge-to-edge like a mobile tab bar */
+  #gig-tabs-bar, #client-gig-tabs-bar { justify-content: flex-start !important; }
+  .gig-icontab { flex: 0 0 auto !important; padding-left: 30px; padding-right: 30px; }
+
+  /* Settings — comfortable reading width, centered, not full-bleed rows */
+  .ss-body { padding: 0 4px; }
+}
