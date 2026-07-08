@@ -12,6 +12,9 @@ window.openSettings = function() {
   html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:16px;color:var(--tx);">Settings</div>';
   html += '</div>';
 
+  // Content wrapper — constrained/centered on desktop via .ss-body (see styles.css)
+  html += '<div class="ss-body">';
+
   // ── Profile summary card ──────────────────────────────────
   if (ME) {
     var av = ME.avatar
@@ -185,6 +188,7 @@ window.openSettings = function() {
   html += '<div style="font-size:9px;color:var(--td);margin-top:3px;">NDPA 2023 Compliant · v1.0</div>';
   html += '</div>';
 
+  html += '</div>'; // close ss-body
   html += '</div>'; // close settings-panel
 
   document.body.insertAdjacentHTML('beforeend', html);

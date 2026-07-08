@@ -359,7 +359,7 @@ function cActiveGigs() {
     ];
     var html = '<div style="margin-bottom:28px;">';
     html += sectionHeader('Quick Start', null, '');
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+    html += '<div class="qs-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
     quickStart.forEach(function(q) {
       html += '<div onclick="openPostGig()" style="background:var(--s);border:1px solid var(--br);border-radius:20px;padding:16px 14px;cursor:pointer;'+D.shadow+';'+D.trans+'" onmouseover="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 10px 28px rgba(0,0,0,.18)\';this.style.borderColor=\'rgba(232,197,71,.3)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.14),0 8px 24px rgba(0,0,0,.10)\';this.style.borderColor=\'var(--br)\'" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'translateY(-3px)\'">';
       html += '<div style="font-size:26px;margin-bottom:10px;">'+q.icon+'</div>';
@@ -405,12 +405,12 @@ function cFeaturedTalent() {
   var talent = verif.length ? verif : pool.slice(0,4);
   if (!talent.length) return '';
 
-  var html = '<div style="margin-bottom:18px;">';
+  var html = '<div class="tvt-grid" style="margin-bottom:18px;">';
   html += sectionHeader('⭐ Top Verified Talent', 'Browse all', "showPage('talent')");
   talent.forEach(function(u) {
     var verified = isVerified(u);
     var skills   = (u.skills||[]).slice(0,3);
-    html += '<div style="background:var(--s);border:1px solid var(--br);border-radius:22px;padding:15px;margin-bottom:10px;'+D.shadow+';'+D.trans+'" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'rgba(232,197,71,.28)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'var(--br)\'">';
+    html += '<div class="tvt-card" style="background:var(--s);border:1px solid var(--br);border-radius:22px;padding:15px;margin-bottom:10px;'+D.shadow+';'+D.trans+'" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'rgba(232,197,71,.28)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'var(--br)\'">';
     // Top row: squircle avatar + name + badge
     html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;">';
     html += mkAvatarSquircle(u, 46);
