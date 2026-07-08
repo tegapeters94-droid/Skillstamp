@@ -335,9 +335,19 @@ window.doSignup=async function(){
       bio:'',skills:_obSkills.length?_obSkills:[],badgeStatus:'beginner',score:0,repPoints:0,
       gigsCount:0,earned:0,skillId:null,gradient:gradFor(name),
       wallet:{balance:0,pending:0,earned:0,transactions:[]},
-      created:Date.now(),isAdmin:false,avatar:null
+      created:Date.now(),isAdmin:false,isBanned:false,avatar:null
     };
     await fbSet('users', uid, user);
+    // Verify the write actually landed in Firestore before treating signup as
+    // successful — fbSet swallows errors internally, so a rules rejection
+    // would otherwise look identical to success and only surface as a
+    // confusing "Account not found" on the NEXT login attempt.
+    const verifyDoc = await fbGet('users', uid);
+    if (!verifyDoc) {
+      try { await cred.user.delete(); } catch(delErr) { console.warn('Cleanup of orphaned auth account failed', delErr); }
+      showAErr('ri-err', 'Sign up failed while saving your profile. Please try again.');
+      return;
+    }
     CACHE.users.push(user);
     if(save) LOCAL.set('saved_creds',{email,pass}); else LOCAL.del('saved_creds');
     LOCAL.set('session', uid);
