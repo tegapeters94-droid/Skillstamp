@@ -150,13 +150,12 @@ window.confirmComplete=async function(gid){
     await fbSet('gigs',gig.id,gig);
     var cidx=CACHE.gigs.findIndex(function(g){return g.id===gig.id;});
     if(cidx>=0) CACHE.gigs[cidx]=gig;
-    if(!freelancer.wallet) freelancer.wallet={balance:0,pending:0,earned:0,transactions:[]};
-    freelancer.wallet.balance+=payout;
-    freelancer.wallet.earned=(freelancer.wallet.earned||0)+payout;
-    freelancer.wallet.transactions.unshift({id:'pay_'+Date.now(),type:'in',amount:payout,from:ME.name,desc:'Payment: '+gig.title,ts:Date.now()});
-    freelancer.repPoints=(freelancer.repPoints||0)+20;
-    freelancer.gigsCount=(freelancer.gigsCount||0)+1;
-    await fbSet('users',freelancer.uid,freelancer);
+    // NOTE: we intentionally do NOT write to the freelancer's own user/wallet
+    // doc here — a client can only write their own Firestore documents, so a
+    // direct cross-user wallet credit is always rejected by security rules.
+    // The freelancer's own client picks this up via reconcileFreelancerGigState()
+    // (see js/10-gig-workflow.js) the next time they're in the app, and credits
+    // their own wallet themselves — a self-write, which is always permitted.
     ME.wallet.pending=Math.max(0,(ME.wallet.pending||0)-payNum);
     ME.wallet.transactions.unshift({id:'rel_'+Date.now(),type:'out',amount:payout,from:freelancer.name,desc:'Released: '+gig.title,ts:Date.now()});
     ME.repPoints=(ME.repPoints||0)+10;
@@ -278,5 +277,62 @@ window.submitVerifyRequest=async function(){
   await fbSet('skillVerifications','sv_'+Date.now(),{uid:ME.uid,name:ME.name,skill:skill,proofType:proofType,proofLink:proofLink,description:description,status:'pending',ts:Date.now()});
   closeModal();
   toast('Submitted! Our team will review within 48 hours. ✅');
+};
+
+// ── Reconcile freelancer-side gig state ─────────────────────────────────
+// A client can never write to another user's own Firestore document (only
+// the doc owner can) — so when a client hires someone or releases payment,
+// they cannot directly flip that freelancer's application status to
+// 'accepted' or credit that freelancer's wallet. Instead, each freelancer's
+// own client self-corrects this the next time they're in the app, by
+// comparing their own applications/wallet against the (world-readable) gigs
+// they're attached to. Called from enterApp() in 06-app-shell.js.
+window.reconcileFreelancerGigState=async function(){
+  if(!ME||ME.role!=='freelancer') return;
+  var allGigs=await fbGetAll('gigs');
+  if(!allGigs||!allGigs.length) return;
+  var changed=false;
+
+  // 1) Self-correct application status: pending → accepted once actually hired
+  if(ME.applications&&ME.applications.length){
+    ME.applications.forEach(function(a){
+      if(a.status==='pending'){
+        var g=allGigs.find(function(x){return x.id===a.gigId;});
+        if(g&&g.hiredUid===ME.uid){ a.status='accepted'; changed=true; }
+      }
+    });
+  }
+
+  // 2) Self-claim payout for gigs the client has marked completed — guarded
+  // by a deterministic transaction id (pay_<gigId>) so this can never
+  // double-credit even if it runs on every login.
+  var completedMine=allGigs.filter(function(g){return g.hiredUid===ME.uid&&g.status==='completed';});
+  if(completedMine.length){
+    if(!ME.wallet) ME.wallet={balance:0,pending:0,earned:0,transactions:[]};
+    if(!ME.wallet.transactions) ME.wallet.transactions=[];
+    completedMine.forEach(function(g){
+      var txId='pay_'+g.id;
+      var already=ME.wallet.transactions.some(function(t){return t.id===txId;});
+      if(!already){
+        var payNum=g.escrowAmount||g.pay||0;
+        var fee=Math.round(payNum*0.10);
+        var payout=payNum-fee;
+        var client=getUser(g.posterUid);
+        ME.wallet.balance+=payout;
+        ME.wallet.earned=(ME.wallet.earned||0)+payout;
+        ME.wallet.transactions.unshift({id:txId,type:'in',amount:payout,from:(client&&client.name)||'Client',desc:'Payment: '+g.title,ts:Date.now()});
+        ME.repPoints=(ME.repPoints||0)+20;
+        ME.gigsCount=(ME.gigsCount||0)+1;
+        changed=true;
+      }
+    });
+  }
+
+  if(changed){
+    await saveUser(ME);
+    if(typeof updateHomeStats==='function') updateHomeStats();
+    var wp=document.getElementById('page-wallet');
+    if(wp&&wp.classList.contains('active')&&typeof renderWallet==='function') renderWallet();
+  }
 };
 

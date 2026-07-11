@@ -20,6 +20,12 @@ function enterApp(){
   setTimeout(async function(){
     var fresh=await fbGet('users',ME.uid);
     if(fresh&&fresh.applications) ME.applications=fresh.applications;
+    // Self-correct application status + self-claim payouts — a client can
+    // never write directly to another user's own doc, so this reconciles
+    // state the freelancer's own client needs to apply to itself.
+    if(typeof reconcileFreelancerGigState==='function'){
+      try{ await reconcileFreelancerGigState(); }catch(e){ console.warn('reconcileFreelancerGigState failed', e); }
+    }
   },2000);
   const av=document.getElementById('nav-av');
   if(ME.avatar){av.innerHTML=`<img src="${ME.avatar}" style="width:100%;height:100%;object-fit:cover;">`;}

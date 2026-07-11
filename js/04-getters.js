@@ -108,7 +108,12 @@ function saveNotifs(n){LOCAL.set('notifs:'+ME.uid,n);}
 async function loadFirebaseNotifs(){
   if(!ME||!ME.uid) return;
   try{
-    var all=await fbGetAll('notifications');
+    var notifQ = window.FB_FNS.query(
+      window.FB_FNS.collection(window.FB_DB, 'notifications'),
+      window.FB_FNS.where('uid', '==', ME.uid)
+    );
+    var snap = await window.FB_FNS.getDocs(notifQ);
+    var all = snap.docs.map(function(d){ return d.data(); });
     var mine=all.filter(function(n){return n.uid===ME.uid;}).sort(function(a,b){return (b.ts||0)-(a.ts||0);});
     if(!mine.length) return;
     var existing=getNotifs();
