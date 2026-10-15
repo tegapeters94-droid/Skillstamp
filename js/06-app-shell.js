@@ -4,32 +4,36 @@
 //  APP SHELL
 // ══════════════════════════════════════════════
 function enterApp(){
+  if (!ME && window.ME) ME = window.ME;
+  if (!window.ME && ME) window.ME = ME;
   // Stability: normalize ME + validate cache before any rendering
   if (typeof onAppReady === 'function') { try { onAppReady(); } catch(e) {} }
   var ls=document.getElementById('screen-loading');if(ls)ls.style.display='none';
   var loginEl=document.getElementById('screen-login');
-  loginEl.classList.remove('active');
-  loginEl.style.display='none';
+  if(loginEl) { loginEl.classList.remove('active'); loginEl.style.display='none'; }
   var appEl=document.getElementById('screen-app');
-  appEl.classList.add('active');
-  appEl.style.display='block';
+  if(appEl) { appEl.classList.add('active'); appEl.style.display='block'; }
   var bn=document.getElementById('bottom-nav');if(bn){bn.style.display='';bn.classList.add('app-visible');}
   if(typeof applyThemeBtn==='function') applyThemeBtn();
   setTimeout(checkMaintenanceMode,800);
   // Sync applications from Firebase in case they were updated by clients
-  setTimeout(async function(){
-    var fresh=await fbGet('users',ME.uid);
-    if(fresh&&fresh.applications) ME.applications=fresh.applications;
-    // Self-correct application status + self-claim payouts — a client can
-    // never write directly to another user's own doc, so this reconciles
-    // state the freelancer's own client needs to apply to itself.
-    if(typeof reconcileFreelancerGigState==='function'){
-      try{ await reconcileFreelancerGigState(); }catch(e){ console.warn('reconcileFreelancerGigState failed', e); }
-    }
-  },2000);
+  if (ME && ME.uid) {
+    setTimeout(async function(){
+      var fresh=await fbGet('users',ME.uid);
+      if(fresh&&fresh.applications) ME.applications=fresh.applications;
+      // Self-correct application status + self-claim payouts — a client can
+      // never write directly to another user's own doc, so this reconciles
+      // state the freelancer's own client needs to apply to itself.
+      if(typeof reconcileFreelancerGigState==='function'){
+        try{ await reconcileFreelancerGigState(); }catch(e){ console.warn('reconcileFreelancerGigState failed', e); }
+      }
+    },2000);
+  }
   const av=document.getElementById('nav-av');
-  if(ME.avatar){av.innerHTML=`<img src="${ME.avatar}" style="width:100%;height:100%;object-fit:cover;">`;}
-  else{av.textContent=initials(ME.name);av.style.background=`linear-gradient(135deg,${ME.gradient},${ME.gradient}88)`;}
+  if(av && ME){
+    if(ME.avatar){av.innerHTML=`<img src="${ME.avatar}" style="width:100%;height:100%;object-fit:cover;">`;}
+    else{av.textContent=initials(ME.name);av.style.background=`linear-gradient(135deg,${ME.gradient||'#1a6b3c'},${(ME.gradient||'#1a6b3c')}88)`;}
+  }
   // Admin tab permanently hidden — use admin.html portal instead
   updateHomeStats();
   startRealtimeListeners();

@@ -3,13 +3,25 @@
 // ══════════════════════════════════════════════
 //  GETTERS
 // ══════════════════════════════════════════════
-let ME=null, activeCat='All', activeGigCat='All', activeConv=null, postType='general', notifs=[];
+var ME=null, activeCat='All', activeGigCat='All', activeConv=null, postType='general', notifs=[];
+
+// Bi-directional synchronization between ME and window.ME across all modules
+try {
+  Object.defineProperty(window, 'ME', {
+    get: function() { return ME; },
+    set: function(val) { ME = val; },
+    configurable: true,
+    enumerable: true
+  });
+} catch(e) {
+  window.ME = ME;
+}
 
 function getAllUsers(){return CACHE.users||[];}
 function getUser(uid){return CACHE.users.find(x=>x.uid===uid);}
 function saveUser(u){
   // Update local ME if this is the current user
-  if(ME&&ME.uid===u.uid) ME=u;
+  if(ME&&ME.uid===u.uid) { ME=u; window.ME=u; }
   // Sync cache
   var ci=CACHE.users.findIndex(x=>x.uid===u.uid);
   if(ci>=0) CACHE.users[ci]=u; else CACHE.users.push(u);

@@ -23,11 +23,36 @@ var D = {
 //  MAIN RENDER
 // ═══════════════════════════════════════════════════
 window.renderRoleHome = function() {
+  if (!ME && window.ME) ME = window.ME;
+  if (!window.ME && ME) window.ME = ME;
   var pg = document.getElementById('page-home');
-  if (!pg || !ME) return;
-  pg.innerHTML = (ME.role === 'employer' || ME.role === 'client')
-    ? buildClientHome()
-    : buildFreelancerHome();
+  if (!pg) return;
+  if (!ME) {
+    var sid = (typeof LOCAL !== 'undefined' && LOCAL.get('session')) || (window.FB_AUTH && window.FB_AUTH.currentUser && window.FB_AUTH.currentUser.uid);
+    if (sid && typeof fbGet === 'function') {
+      fbGet('users', sid).then(function(u) {
+        if (u) {
+          ME = u;
+          window.ME = u;
+          renderRoleHome();
+        }
+      }).catch(function(){});
+    }
+    return;
+  }
+  try {
+    pg.innerHTML = (ME.role === 'employer' || ME.role === 'client')
+      ? buildClientHome()
+      : buildFreelancerHome();
+  } catch(err) {
+    console.error('[renderRoleHome] Error rendering dashboard:', err);
+    pg.innerHTML = '<div style="padding:48px 20px;text-align:center;color:var(--td);">'
+      + '<div style="font-size:36px;margin-bottom:12px;">✨</div>'
+      + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:16px;color:var(--tx);margin-bottom:8px;">Welcome to SkillStamp</div>'
+      + '<div style="font-size:12px;margin-bottom:18px;max-width:300px;margin-left:auto;margin-right:auto;">Setting up your dashboard… Tap refresh if your feed does not display automatically.</div>'
+      + '<button class="btn" onclick="location.reload()" style="padding:10px 22px;font-size:13px;border-radius:12px;">Refresh Dashboard</button>'
+      + '</div>';
+  }
 };
 window.renderTimeline = window.renderRoleHome;
 

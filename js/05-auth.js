@@ -475,13 +475,17 @@ window.doGoogleAuth = async function() {
         toast('This account has been suspended.', 'bad');
         return;
       }
+      ME = existingUser;
       window.ME = existingUser;
-      if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
-      LOCAL.set('session', window.ME.uid);
+      if (typeof normalizeUser === 'function') {
+        ME = normalizeUser(ME);
+        window.ME = ME;
+      }
+      LOCAL.set('session', ME.uid);
       startRealtimeListeners();
       if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
 
-      toast('Welcome back, ' + (window.ME.name||'').split(' ')[0] + '! 👋');
+      toast('Welcome back, ' + (ME.name||'').split(' ')[0] + '! 👋');
       try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache load', e); }
       re_enable();
 
@@ -548,6 +552,8 @@ window.doGoogleAuth = async function() {
 
 // Shared helper: load CACHE and call enterApp()
 async function _loadCacheAndEnter() {
+  if (!ME && window.ME) ME = window.ME;
+  if (!window.ME && ME) window.ME = ME;
   try {
     var results = await Promise.all([
       window.FB_FNS.getDocs(window.FB_FNS.collection(window.FB_DB, 'users')),
@@ -930,9 +936,13 @@ window.grConfirm = async function() {
     }
 
     // Set ME
+    ME = newUser;
     window.ME = newUser;
-    if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
-    LOCAL.set('session', window.ME.uid);
+    if (typeof normalizeUser === 'function') {
+      ME = normalizeUser(ME);
+      window.ME = ME;
+    }
+    LOCAL.set('session', ME.uid);
     startRealtimeListeners();
     if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
 
