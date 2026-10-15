@@ -38,6 +38,8 @@ onAuthStateChanged(auth, async (fbUser) => {
       const snap = await getDoc(doc(db, 'users', fbUser.uid));
       if (snap.exists()) {
         window.ME = snap.data();
+        if (typeof window.LOCAL !== 'undefined') window.LOCAL.set('session', fbUser.uid);
+        if (typeof window.normalizeUser === 'function') window.ME = window.normalizeUser(window.ME);
         // Block banned users even on session restore
         if(window.ME && (window.ME.isBanned || window.ME.badgeStatus==='suspended')){
           try{ await signOut(auth); }catch(e){}
