@@ -426,9 +426,22 @@ window.doLogout=async function(){
 //  the email flow. Data shape is identical — 100% compatible.
 // ══════════════════════════════════════════════════════════════════
 
+window._googleAuthInProgress = false;
 window.doGoogleAuth = async function() {
+  if (window._googleAuthInProgress) return;
+  window._googleAuthInProgress = true;
+
   if (!window.FB_FNS || !window.FB_AUTH || !window.FB_DB) {
+    window._googleAuthInProgress = false;
     toast('Auth not ready — please refresh.', 'bad'); return;
+  }
+
+  // Pre-flight check: file:// protocol cannot perform OAuth popup
+  if (window.location.protocol === 'file:') {
+    window._googleAuthInProgress = false;
+    toast('Google Sign-In requires a local web server (http://localhost). It cannot run from file://', 'bad');
+    console.error('[Google Auth] Cannot authenticate via file:// protocol. Google OAuth requires an HTTP or HTTPS origin. Please serve via http://localhost:5500 or another local server.');
+    return;
   }
 
   // Disable button to prevent double-tap
@@ -436,6 +449,7 @@ window.doGoogleAuth = async function() {
   btns.forEach(function(b){ b.disabled = true; b.style.opacity = '.6'; });
 
   var re_enable = function() {
+    window._googleAuthInProgress = false;
     btns.forEach(function(b){ b.disabled = false; b.style.opacity = ''; });
   };
 
@@ -463,10 +477,13 @@ window.doGoogleAuth = async function() {
       }
       window.ME = existingUser;
       if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
+      LOCAL.set('session', window.ME.uid);
+      startRealtimeListeners();
+      if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
+
       toast('Welcome back, ' + (window.ME.name||'').split(' ')[0] + '! 👋');
-      // enterApp() is triggered by onAuthStateChanged in firebase.js automatically
-      // but we help it along here for responsiveness
       try { await _loadCacheAndEnter(); } catch(e) { console.warn('cache load', e); }
+      re_enable();
 
     } else {
       // ── New user — but first check this email isn't already used by a
@@ -501,11 +518,28 @@ window.doGoogleAuth = async function() {
     re_enable();
     console.warn('doGoogleAuth error:', err);
     if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-      // User dismissed popup — silent, no error toast
+      // User dismissed popup — silent
       return;
     }
     if (err.code === 'auth/popup-blocked') {
-      toast('Popup was blocked. Please allow popups for this site and try again.', 'bad');
+      toast('Popup was blocked by your browser. Please allow popups for this site and try again.', 'bad');
+      return;
+    }
+    if (err.code === 'auth/unauthorized-domain') {
+      var currentHost = window.location.hostname || window.location.host;
+      if (currentHost === '127.0.0.1') {
+        toast('Domain 127.0.0.1 is not authorized. Please access via http://localhost or add 127.0.0.1 in Firebase Console.', 'bad');
+      } else {
+        toast('Domain "' + currentHost + '" is not authorized in Firebase Console -> Settings -> Authorized Domains.', 'bad');
+      }
+      return;
+    }
+    if (err.code === 'auth/operation-not-allowed') {
+      toast('Google Sign-In is not enabled in Firebase Console (Authentication -> Sign-in method).', 'bad');
+      return;
+    }
+    if (err.code === 'auth/network-request-failed') {
+      toast('Network connection failed. Please check your internet connection.', 'bad');
       return;
     }
     toast('Google sign-in failed: ' + (err.message || err.code || 'Unknown error'), 'bad');
@@ -898,6 +932,9 @@ window.grConfirm = async function() {
     // Set ME
     window.ME = newUser;
     if (typeof normalizeUser === 'function') window.ME = normalizeUser(window.ME);
+    LOCAL.set('session', window.ME.uid);
+    startRealtimeListeners();
+    if (typeof startNotifRealtimeListener === 'function') setTimeout(startNotifRealtimeListener, 1500);
 
     // Remove modal
     var modal = document.getElementById('google-role-modal');
