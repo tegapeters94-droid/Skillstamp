@@ -52,7 +52,7 @@ window.updateUnreadBadge = function(){
 };
 
 // Override enterApp to setup mobile avatar
-const _origEnterApp = typeof enterApp === 'function' ? enterApp : null;
+// (removed unused `const _origEnterApp` — it clashed with `var _origEnterApp` in 06-app-shell.js and stopped this whole file from loading)
 
 function setupMobileAv(){
   const bnAv=document.getElementById('bn-av');

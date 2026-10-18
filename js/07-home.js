@@ -125,7 +125,7 @@ function fHero() {
     : '<svg width="56" height="56" viewBox="0 0 56 56"><text x="28" y="33" text-anchor="middle" font-size="11">'+pct+'%</text></svg>';
 
   // Mesh gradient hero background
-  var html = '<div style="background:linear-gradient(145deg,#081c0f 0%,#0d2e18 40%,#0a2014 70%,#0c1a10 100%);border-radius:28px;padding:22px 20px;margin-bottom:16px;position:relative;overflow:hidden;">';
+  var html = '<div class="ss-hero" style="background:linear-gradient(145deg,#081c0f 0%,#0d2e18 40%,#0a2014 70%,#0c1a10 100%);border-radius:28px;padding:22px 20px;margin-bottom:16px;position:relative;overflow:hidden;">';
   // Mesh orbs
   html += '<div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(74,222,128,.12) 0%,transparent 70%);pointer-events:none;"></div>';
   html += '<div style="position:absolute;left:-20px;bottom:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(232,197,71,.08) 0%,transparent 70%);pointer-events:none;"></div>';
@@ -336,7 +336,7 @@ function cHero() {
   var totalApplicants = myGigs.reduce(function(sum, g){ return sum + (g.applicants||[]).length; }, 0);
 
   // Deep blue-navy glassmorphism hero
-  var html = '<div style="background:linear-gradient(145deg,#080f1c 0%,#0c1930 40%,#081428 70%,#080f1c 100%);border-radius:28px;padding:22px 20px;margin-bottom:16px;position:relative;overflow:hidden;">';
+  var html = '<div class="ss-hero" style="background:linear-gradient(145deg,#080f1c 0%,#0c1930 40%,#081428 70%,#080f1c 100%);border-radius:28px;padding:22px 20px;margin-bottom:16px;position:relative;overflow:hidden;">';
   html += '<div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(96,165,250,.1) 0%,transparent 70%);pointer-events:none;"></div>';
   html += '<div style="position:absolute;left:-20px;bottom:-50px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(232,197,71,.07) 0%,transparent 70%);pointer-events:none;"></div>';
 
