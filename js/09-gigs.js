@@ -139,7 +139,7 @@ function _gwInjectStyles() {
     '.gw-textarea{resize:vertical;min-height:90px;line-height:1.6;}',
     '.gw-select{appearance:none;-webkit-appearance:none;}',
     '.gw-tip{display:flex;align-items:flex-start;gap:8px;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--td);line-height:1.5;margin-top:10px;}',
-    '.gw-tip strong{color:#059669;}',
+    '.gw-tip strong{color:#047857;}',
     '.gw-scope-cards{display:flex;flex-direction:column;gap:10px;}',
     '.gw-scope-card{background:var(--s2);border:2px solid var(--br);border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s;display:flex;align-items:center;gap:14px;}',
     '.gw-scope-card.sel{border-color:#059669;background:rgba(5,150,105,.06);}',
