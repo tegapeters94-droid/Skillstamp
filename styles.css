@@ -2988,3 +2988,15 @@ nav .nt,.nt{font-size:var(--fs-sm);padding:9px 14px;border-radius:var(--rad-sm);
 #bn-av img{width:100% !important;height:100% !important;object-fit:cover;}
 #bn-av svg{width:24px;height:24px;}
 .bn.active #bn-av{box-shadow:0 0 0 2px var(--gld);}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM LAYER v2 — STAGE 3 (dialogs, wizards, workspace)
+   ═══════════════════════════════════════════════════════════════════════ */
+/* dark-green fills used black text in light theme */
+[data-theme="light"] .ep-save-pill,
+[data-theme="light"] .pw-step-dot-circle.active,
+[data-theme="light"] .ws-step-dot.done,
+[data-theme="light"] .ws-step-dot.active{color:#fff !important;}
+[data-theme="light"] .ep-sec-tab-done,[data-theme="light"] .ep-sec-tab.active.ep-sec-tab-done{color:var(--ok) !important;}
+[data-theme="light"] [style*="color:#ef4444"]{color:var(--danger) !important;}
+[data-theme="light"] [style*="color:#059669"]{color:#047857 !important;}
