@@ -2898,3 +2898,93 @@ textarea.fi{line-height:var(--lh-body);}
   .fi,.search-input-main,input,select,textarea{font-size:16px;}
   .bsm,.b2sm{min-height:40px;}
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM LAYER v2 — STAGE 2
+   Contrast fixes (found with an automated WCAG scan) · desktop containers ·
+   shared component polish · empty/loading states
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Contrast: light theme maps --gld to dark green, but several buttons
+      hard-code black text. Make any dark-green-filled control use white text. */
+[data-theme="light"] [style*="background:var(--gld)"],
+[data-theme="light"] [style*="background: var(--gld)"],
+[data-theme="light"] .tc-btn-primary{color:#fff !important;}
+[data-theme="light"] .tc-btn-primary{box-shadow:0 3px 12px rgba(26,107,60,.28);}
+[data-theme="light"] .tc-btn-primary:hover{background:var(--gdm);box-shadow:0 6px 18px rgba(26,107,60,.34);}
+/* inactive filter chips on Talent were 2.7:1 */
+.talent-cats-scroll .cat{color:var(--td);font-weight:500;}
+[data-theme="light"] .talent-cats-scroll .cat{color:var(--td);}
+.talent-cats-scroll .cat:hover{color:var(--tx);}
+.talent-cats-scroll .cat.active{color:#04130a;font-weight:700;}
+/* near-invisible SkillID caption on talent cards (white @22% on light) */
+[data-theme="light"] .tc-card [style*="rgba(255,255,255,.22)"]{color:var(--td) !important;}
+/* Bright "dark-mode" status colours hard-coded in JS are unreadable on white cards.
+   Map them to the AA-safe semantic tokens in light theme; the dark hero panels keep the originals. */
+[data-theme="light"] [style*="color:#4ade80"]{color:var(--ok) !important;}
+[data-theme="light"] [style*="color:#e8c547"]{color:var(--warn) !important;}
+[data-theme="light"] [style*="color:#60a5fa"]{color:var(--info) !important;}
+[data-theme="light"] [style*="color:#f87171"]{color:var(--danger) !important;}
+[data-theme="light"] [style*="color:#ffa500"]{color:var(--warn) !important;}
+[data-theme="light"] .ss-hero [style*="color:#4ade80"]{color:#4ade80 !important;}
+[data-theme="light"] .ss-hero [style*="color:#e8c547"]{color:#e8c547 !important;}
+[data-theme="light"] .ss-hero [style*="color:#60a5fa"]{color:#60a5fa !important;}
+[data-theme="light"] .ss-hero [style*="color:#f87171"]{color:#f87171 !important;}
+
+/* ── Desktop: profile + notification pages joined the centred container ── */
+@media(min-width:961px){
+  #page-myprofile,#page-viewprofile,#page-notifications,#page-dashboard,#page-admin{max-width:1080px;margin-left:auto;margin-right:auto;}
+  #page-myprofile .pbanner,#page-viewprofile .pbanner{border-radius:0 0 var(--rad-lg) var(--rad-lg);}
+}
+
+/* ── Nav: clearer active state and tap size ── */
+nav .nt,.nt{font-size:var(--fs-sm);padding:9px 14px;border-radius:var(--rad-sm);letter-spacing:.04em;min-height:36px;}
+.nt:hover{color:var(--tx);}
+.bottom-nav .bn,.bn{min-height:52px;}
+.bn span,.bn-label{font-size:var(--fs-xs);}
+
+/* ── Tabs (gigs / client tabs / settings) ── */
+.gig-icontab{font-size:var(--fs-sm);font-weight:600;}
+.atab{font-size:var(--fs-sm);font-weight:600;min-height:var(--tap);}
+
+/* ── Section headings ── */
+.sh{margin-bottom:var(--sp-4);}
+.st{font-size:var(--fs-lg);font-weight:800;letter-spacing:-.01em;}
+.sc{font-size:var(--fs-sm);color:var(--td);}
+
+/* ── Talent cards: calmer stat row, more consistent spacing ── */
+.tc-stat{letter-spacing:.04em;}
+.tc-btn-primary{font-size:var(--fs-sm);padding:11px 16px;min-height:var(--tap);}
+.tc-btn-ghost{width:var(--tap);height:var(--tap);}
+.tc-skill{font-size:var(--fs-xs);padding:4px 10px;}
+
+/* ── Empty / loading states (reusable) ── */
+.empty{border:1px dashed var(--br);border-radius:var(--rad-lg);background:var(--s);color:var(--td);}
+.skel{position:relative;overflow:hidden;background:var(--s2);border-radius:var(--rad-md);}
+.skel::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:shimmer 1.4s infinite;background-size:200% 100%;}
+
+/* ── Modals on phones: bottom-sheet feel, never taller than the screen ── */
+@media(max-width:600px){
+  .modal{width:calc(100% - 24px);max-height:88vh;padding:var(--sp-5);}
+  .modal h3{font-size:var(--fs-lg);}
+}
+
+/* ── Respect reduced-motion preferences ── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important;}
+}
+
+/* ── Stage 2b: remaining AA contrast fixes (light theme) ── */
+[data-theme="light"] .tc-skill{color:#14532d;}
+[data-theme="light"] [style*="color:#4d9fff"],
+[data-theme="light"] .prf-role-pill.client{color:var(--info) !important;}
+[data-theme="light"] .bottom-nav .bn,[data-theme="light"] .bn{color:var(--td) !important;}
+[data-theme="light"] .bottom-nav .bn.active,[data-theme="light"] .bn.active{color:var(--gld) !important;}
+[data-theme="light"] .bn.active svg{stroke:var(--gld) !important;}
+
+/* Bottom-nav "Me" avatar: mobile script puts the user's initial (or photo) here — give it a proper avatar shape */
+#bn-av{border-radius:50%;overflow:hidden;background:var(--gld);color:#fff;font-size:12px;font-weight:800;font-family:Plus Jakarta Sans,sans-serif;line-height:1;}
+#bn-av img{width:100% !important;height:100% !important;object-fit:cover;}
+#bn-av svg{width:24px;height:24px;}
+.bn.active #bn-av{box-shadow:0 0 0 2px var(--gld);}
