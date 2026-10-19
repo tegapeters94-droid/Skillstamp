@@ -16,7 +16,7 @@ window.renderProposalHub = async function() {
     page.appendChild(content);
   }
 
-  content.innerHTML = '<div style="padding:24px 16px;text-align:center;color:var(--td);font-size:12px;">Loading proposals…</div>';
+  content.innerHTML = '<div style="padding:16px;display:grid;gap:12px;" role="status" aria-label="Loading proposals"><div class="skel" style="height:96px;"></div><div class="skel" style="height:96px;"></div></div>';
 
   try {
     var all = await fbGetAll('proposals');

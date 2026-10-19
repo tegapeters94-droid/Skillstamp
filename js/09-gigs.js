@@ -34,7 +34,7 @@ function renderGigs(){
   var pgBtn=document.getElementById('post-gig-btn');
   if(pgBtn) pgBtn.style.display=(ME&&ME.role==='employer')?'':'none';
   var list=document.getElementById('gig-list');
-  if(!gigs.length){list.innerHTML='<div class="empty">'+(mode==='mine'?'No gigs posted yet.':'No gigs available.')+'</div>';return;}
+  if(!gigs.length){list.innerHTML='<div class="empty"><strong class="empty-title">'+(mode==='mine'?'No gigs posted yet':'No gigs available')+'</strong>'+(mode==='mine'?'Post your first gig and talented freelancers will start applying.':'New gigs appear here as clients post them. Check back soon.')+'</div>';return;}
   // Rank gigs for freelancer using algorithm (safe fallback if not loaded)
   if (mode !== 'mine' && ME && ME.role !== 'employer' && typeof rankGigsForUser === 'function') {
     gigs = rankGigsForUser(gigs, ME);

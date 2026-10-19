@@ -74,7 +74,7 @@ function talentCard(u) {
 
   // Verified badge — high contrast inline
   var verifBadge = isVerif
-    ? '<span style="display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,rgba(74,222,128,.16),rgba(74,222,128,.06));border:1px solid rgba(74,222,128,.35);color:#4ade80;font-size:8px;font-weight:800;padding:2px 7px;border-radius:20px;letter-spacing:.03em;flex-shrink:0;">&#10003; Verified</span>'
+    ? '<span class="prf-check" title="Verified" style="flex-shrink:0;">'+verifiedSVG(getVerifColor())+'</span>'
     : '';
 
   // Rating inline

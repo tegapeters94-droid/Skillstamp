@@ -37,7 +37,7 @@ function _doRenderWallet(){
   document.getElementById('w-pending').textContent='$'+(w.pending||0).toLocaleString();
   document.getElementById('w-address').textContent=ME.skillId;
   const txList=document.getElementById('tx-list');
-  if(!w.transactions||!w.transactions.length){txList.innerHTML='<div class="empty" style="padding:20px;">No transactions yet. Apply to gigs to start earning!</div>';return;}
+  if(!w.transactions||!w.transactions.length){txList.innerHTML='<div class="empty" style="padding:20px;"><strong class="empty-title">No transactions yet</strong>Apply to gigs to start earning!</div>';return;}
   txList.innerHTML=w.transactions.map(tx=>`<div class="tx-row">
     <div class="tx-icon" style="background:${tx.type==='in'?'rgba(74,222,128,.12)':'rgba(255,107,53,.12)'};">${tx.type==='in'?'📥':'📤'}</div>
     <div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:12px;">${tx.desc}</div><div style="font-size:10px;color:var(--td);">${tx.from||'SkillStamp'} · ${timeAgo(tx.ts)}</div></div>
