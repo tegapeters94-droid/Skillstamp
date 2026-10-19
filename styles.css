@@ -3080,3 +3080,12 @@ nav .nt,.nt{font-size:var(--fs-sm);padding:9px 14px;border-radius:var(--rad-sm);
 
 /* light theme: purple accent text (#a78bfa) was 2.7:1 on white */
 [data-theme="light"] [style*="color:#a78bfa"]:not(.ss-hero *){color:#6d28d9 !important;}
+
+/* ── Empty state: icon + title + hint (pure CSS icon, no JS needed) ── */
+.empty{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.empty::before{content:'';width:40px;height:40px;margin-bottom:6px;opacity:.55;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7a63' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='22 12 16 12 14 15 10 15 8 12 2 12'/%3E%3Cpath d='M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'/%3E%3C/svg%3E");}
+.empty .empty-title{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:var(--fs-md,15px);color:var(--tx);}
+.skel[role],[role="status"] .skel{min-height:24px;}
+
+/* skeleton: clearer on light backgrounds */
+.skel{background:var(--br);border:1px solid var(--br);opacity:.7;}
