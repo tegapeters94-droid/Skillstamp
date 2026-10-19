@@ -310,7 +310,10 @@ window.reconcileFreelancerGigState=async function(){
   if(completedMine.length){
     if(!ME.wallet) ME.wallet={balance:0,pending:0,earned:0,transactions:[]};
     if(!ME.wallet.transactions) ME.wallet.transactions=[];
-    completedMine.forEach(function(g){
+    // Each payout is saved on its own: the Firestore security rules verify one
+    // completed gig per write (wallet may only grow by that gig's payout).
+    for(var ci=0; ci<completedMine.length; ci++){
+      var g=completedMine[ci];
       var txId='pay_'+g.id;
       var already=ME.wallet.transactions.some(function(t){return t.id===txId;});
       if(!already){
@@ -323,9 +326,10 @@ window.reconcileFreelancerGigState=async function(){
         ME.wallet.transactions.unshift({id:txId,type:'in',amount:payout,from:(client&&client.name)||'Client',desc:'Payment: '+g.title,ts:Date.now()});
         ME.repPoints=(ME.repPoints||0)+20;
         ME.gigsCount=(ME.gigsCount||0)+1;
-        changed=true;
+        await saveUser(ME);
+        changed=false;
       }
-    });
+    }
   }
 
   if(changed){
