@@ -543,6 +543,9 @@ async function _gwSubmit() {
       status:'open', escrowAmount:num, deadline:null, hiredUid:null
     };
     await fbSet('gigs', gig.id, gig);
+    // fbSet swallows errors, so confirm the gig really saved before charging escrow
+    var savedGig = await fbGet('gigs', gig.id);
+    if (!savedGig) throw new Error('Gig was not saved');
     CACHE.gigs.unshift(gig);
     ME.gigsCount = (ME.gigsCount || 0) + 1;
     await saveUser(ME);
