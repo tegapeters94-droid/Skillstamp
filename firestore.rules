@@ -1,7 +1,9 @@
 // SkillStamp — Firestore Security Rules
 // Principle: least privilege. Every collection is locked by default.
 // Users can only write what they own. Admin collections are backend-only.
-// Version: 2025-hardened
+// Version: 2026-10 — makeshift backend: money/rep/verification fields are
+// protected by rules because Cloud Functions are not available (Spark plan).
+// See RULES_CHANGES.md for what changed and what is still not covered.
 
 rules_version = '2';
 service cloud.firestore {
@@ -43,6 +45,82 @@ service cloud.firestore {
              request.resource.data[field] == resource.data[field];
     }
 
+    // Field has the same value before and after (missing counts as null).
+    // Safe for fields that may not exist on older documents.
+    function same(field) {
+      return request.resource.data.get(field, null) == resource.data.get(field, null);
+    }
+
+    // ── Wallet helpers (a wallet is {balance, pending, earned, transactions}) ──
+    function wb(w)  { return w.get('balance', 0); }
+    function wp(w)  { return w.get('pending', 0); }
+    function we(w)  { return w.get('earned', 0); }
+    function wtx(w) { return w.get('transactions', []); }
+
+    // A brand-new account must start with an empty wallet and no reputation.
+    function startsClean(d) {
+      return (!('wallet' in d) ||
+               (wb(d.wallet) == 0 && wp(d.wallet) == 0 && we(d.wallet) == 0 && wtx(d.wallet).size() == 0)) &&
+             d.get('repPoints', 0) == 0 &&
+             d.get('score', 0) == 0 &&
+             d.get('gigsCount', 0) == 0 &&
+             d.get('earned', 0) == 0;
+    }
+
+    // Collecting payment for a gig the client marked completed. The wallet must
+    // grow by exactly the payout (gig escrow minus the 10% fee), the newest
+    // transaction must be 'pay_<gigId>', and that gig must be completed and
+    // assigned to the caller.
+    function claimOk(ow, nw) {
+      let d    = wb(nw) - wb(ow);
+      let txid = wtx(nw)[0].id;
+      let g    = get(/databases/$(database)/documents/gigs/$(txid.replace('pay_', ''))).data;
+      return d > 0 &&
+             we(nw) - we(ow) == d &&
+             wp(nw) == wp(ow) &&
+             txid.matches('pay_[A-Za-z0-9_-]+') &&
+             g.status == 'completed' &&
+             g.hiredUid == request.auth.uid &&
+             d * 10 <= g.escrowAmount * 9 + 5;
+    }
+
+    // The only ways a user may change their OWN wallet:
+    //  A) money only moves or leaves (escrow, withdraw, send, release):
+    //     balance + pending can never go UP and `earned` can't change.
+    //  B) test top-up: at most $50, with a matching 'Top Up' transaction.
+    //  C) one-time $1,000 demo credit on an empty wallet history (test mode).
+    //  D) payout for a completed gig (see claimOk).
+    function walletMoveOk(ow, nw) {
+      return wb(nw) >= 0 && wp(nw) >= 0 && we(nw) >= 0 && (
+        (we(nw) == we(ow) && wb(nw) + wp(nw) <= wb(ow) + wp(ow)) ||
+        (we(nw) == we(ow) && wp(nw) == wp(ow) &&
+          wb(nw) > wb(ow) && wb(nw) - wb(ow) <= 50 &&
+          wtx(nw)[0].type == 'in' && wtx(nw)[0].from == 'Top Up' &&
+          wtx(nw)[0].amount == wb(nw) - wb(ow)) ||
+        (we(nw) == we(ow) && wp(nw) == wp(ow) &&
+          wb(nw) - wb(ow) == 1000 && wtx(ow).size() == 0 &&
+          wtx(nw)[0].id == 't_welcome') ||
+        claimOk(ow, nw)
+      );
+    }
+
+    function walletUpdateOk() {
+      let ow = resource.data.get('wallet', {'balance': 0, 'pending': 0, 'earned': 0, 'transactions': []});
+      return !('wallet' in request.resource.data) ||
+             request.resource.data.wallet == ow ||
+             walletMoveOk(ow, request.resource.data.wallet);
+    }
+
+    // Reputation can only creep up in small steps and a rating stays 0–5.
+    // (Large jumps need an admin.)
+    function statsUpdateOk() {
+      return request.resource.data.get('repPoints', 0) <= resource.data.get('repPoints', 0) + 30 &&
+             request.resource.data.get('gigsCount', 0) <= resource.data.get('gigsCount', 0) + 1 &&
+             request.resource.data.get('score', 0) >= 0 &&
+             request.resource.data.get('score', 0) <= 5 &&
+             same('earned');
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     //  USERS COLLECTION
     //  - Anyone signed in can read profiles (needed for talent browse)
@@ -57,7 +135,9 @@ service cloud.firestore {
       allow create: if isOwner(uid) &&
                        request.resource.data.isAdmin == false &&
                        request.resource.data.isBanned == false &&
-                       request.resource.data.badgeStatus in ['beginner'];
+                       request.resource.data.badgeStatus in ['beginner'] &&
+                       // Cannot start with free money / reputation
+                       startsClean(request.resource.data);
 
       // User can update their own profile, with restrictions
       allow update: if isOwner(uid) &&
@@ -70,7 +150,13 @@ service cloud.firestore {
                        // Cannot change another user's uid
                        fieldUnchanged('uid') &&
                        // Cannot change email (Firebase Auth handles this)
-                       fieldUnchanged('email');
+                       fieldUnchanged('email') &&
+                       // Verification data is issued by admins only
+                       same('skillId') &&
+                       same('verifiedSkills') &&
+                       // Wallet, reputation and rating are rule-guarded
+                       walletUpdateOk() &&
+                       statsUpdateOk();
 
       // Admin can write anything (used for ban, badge, verify operations)
       allow write: if isAdmin();
@@ -105,24 +191,27 @@ service cloud.firestore {
                        resource.data.posterUid == request.auth.uid &&
                        // Cannot change who posted it
                        fieldUnchanged('posterUid') &&
-                       // Cannot self-complete (payment release is backend-only)
-                       !(request.resource.data.status == 'completed' &&
-                         resource.data.status != 'completed');
+                       // Once someone is hired the money terms are frozen
+                       (resource.data.get('hiredUid', null) == null ||
+                         (same('escrowAmount') && same('pay') && same('hiredUid'))) &&
+                       // A gig can only be completed after somebody was hired
+                       (request.resource.data.status != 'completed' ||
+                         resource.data.status == 'completed' ||
+                         (resource.data.status in ['hired', 'delivered', 'in_progress'] &&
+                          resource.data.get('hiredUid', null) != null));
 
       // Allow freelancer to update their delivery
       allow update: if isAuth() && isNotBanned() &&
                        resource.data.hiredUid == request.auth.uid &&
-                       // Freelancer can only update delivery fields
-                       request.resource.data.keys().hasOnly([
+                       // Freelancer can ONLY touch delivery fields — everything else
+                       // (pay, hiredUid, escrowAmount…) must stay as it was.
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                          'deliveryLink', 'deliveryNote', 'deliveredAt', 'autoReleaseAt',
-                         'lastRevisionNote', 'revisionCount',
-                         // All other fields must remain unchanged
-                         'id', 'title', 'description', 'category', 'skills',
-                         'pay', 'escrowAmount', 'scope', 'duration', 'deadline',
-                         'screeningQ', 'posterUid', 'posterName', 'hiredUid',
-                         'status', 'directHire', 'proposalId', 'created',
-                         'applicants', 'proposals', 'referenceImages',
-                       ]);
+                         'lastRevisionNote', 'revisionCount', 'status'
+                       ]) &&
+                       // …and `status` may only change to 'disputed' (raising a dispute)
+                       (same('status') ||
+                         (resource.data.status == 'hired' && request.resource.data.status == 'disputed'));
 
       // Allow any non-banned freelancer (who is not the poster) to APPLY to an
       // open gig — this adds their own uid to `applicants` and their own entry
@@ -165,7 +254,9 @@ service cloud.firestore {
                        request.resource.data.participants.size() == 2;
 
       allow update: if isAuth() && isNotBanned() &&
-                       request.auth.uid in resource.data.participants;
+                       request.auth.uid in resource.data.participants &&
+                       // Cannot add/remove people from a conversation
+                       request.resource.data.participants == resource.data.participants;
 
       allow write: if isAdmin();
     }
