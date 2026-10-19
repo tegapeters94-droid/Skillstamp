@@ -3000,3 +3000,74 @@ nav .nt,.nt{font-size:var(--fs-sm);padding:9px 14px;border-radius:var(--rad-sm);
 [data-theme="light"] .ep-sec-tab-done,[data-theme="light"] .ep-sec-tab.active.ep-sec-tab-done{color:var(--ok) !important;}
 [data-theme="light"] [style*="color:#ef4444"]{color:var(--danger) !important;}
 [data-theme="light"] [style*="color:#059669"]{color:#047857 !important;}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM LAYER v2 — STAGE 4 (page-level polish — CSS only)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Talent directory ── */
+.tgrid{align-items:stretch;}
+.tc-card{display:flex;flex-direction:column;border-radius:var(--rad-lg);padding:var(--sp-5);}
+.tc-card .tc-skill{margin:0;}
+.tc-stats{align-items:stretch;gap:var(--sp-2);padding:var(--sp-3) 0;margin-bottom:var(--sp-4);}
+.tc-stat{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;min-width:0;}
+.tc-stat [style*="letter-spacing:.18em"]{letter-spacing:.06em !important;margin-top:2px !important;font-weight:600;white-space:nowrap;}
+.tc-stat [style*="font-size:17px"]{font-size:var(--fs-lg) !important;}
+.tc-actions{margin-top:auto;}
+.tc-card .tc-top{margin-bottom:var(--sp-3);}
+
+/* ── Page headers: consistent title + helper text ── */
+#page-wallet .section>.sh,#page-gigs .section>.sh{margin-bottom:var(--sp-4);}
+
+/* ── Wallet ── */
+#wallet-demo-notice{font-size:var(--fs-sm) !important;line-height:1.5;border-radius:var(--rad-md) !important;align-items:flex-start !important;}
+.tx-row{padding:var(--sp-3) var(--sp-4);border-radius:var(--rad-md);gap:var(--sp-3);}
+.tx-amount{font-size:var(--fs-md);font-weight:800;white-space:nowrap;}
+.w-btn{min-height:var(--tap);font-size:var(--fs-sm);border-radius:var(--rad-md);}
+
+/* ── Gig list cards ── */
+.gig-item{border-radius:var(--rad-lg);padding:var(--sp-4) var(--sp-5);transition:border-color .2s,box-shadow .2s,transform .2s;}
+.gig-item:hover{box-shadow:var(--shadow-2);transform:translateY(-1px);}
+
+/* ── Home dashboard tiles: stop uppercase micro-labels wrapping awkwardly ── */
+.ss-hero [style*="text-transform:uppercase"]{letter-spacing:.05em !important;}
+
+/* ── Profile page ── */
+@media(min-width:961px){
+  #page-myprofile .pbanner,#page-viewprofile .pbanner{border-radius:var(--rad-lg) var(--rad-lg) 0 0;}
+}
+
+/* ── Wallet: centre the 700px column instead of leaving it hugging the left edge ── */
+@media(min-width:961px){
+  #page-wallet .section > div[style*="max-width:700px"]{margin-left:auto;margin-right:auto;}
+  #page-wallet .section > .sh{max-width:700px;margin-left:auto;margin-right:auto;}
+}
+.w-meta{gap:var(--sp-6);flex-wrap:wrap;}
+.w-mi{font-size:var(--fs-xs);}
+.w-mv{font-size:var(--fs-md);}
+
+/* ── Gig rows: clearer title / meta / price hierarchy ── */
+.gig-title{font-size:var(--fs-md);font-weight:700;line-height:var(--lh-snug);margin-bottom:2px;}
+.gig-pay{font-size:var(--fs-lg);font-weight:800;}
+.gig-item > div:first-child.gig-icon,.gig-icon{width:44px;height:44px;border-radius:var(--rad-md);font-size:20px;flex-shrink:0;}
+.gig-item [style*="text-transform:uppercase"]{letter-spacing:.04em !important;}
+@media(max-width:600px){
+  .gig-item{gap:var(--sp-3);padding:var(--sp-4);}
+  .gig-pay{font-size:var(--fs-md);}
+}
+
+/* ── Category filters: one swipeable row on phones instead of wrapping to 3 lines ── */
+@media(max-width:600px){
+  #gig-cats{flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:var(--sp-1);}
+  #gig-cats::-webkit-scrollbar{display:none;}
+  #gig-cats .cat{flex-shrink:0;}
+}
+
+/* ── Home cards: the stacked heavy shadows turned into a grey smudge between rows (light theme) ── */
+[data-theme="light"] #page-home [style*="box-shadow:0 2px 8px rgba(0,0,0,.14),0 8px 24px rgba(0,0,0,.10)"]:not(.ss-hero){box-shadow:var(--shadow-1) !important;border:1px solid var(--br);}
+
+/* ── Profile (desktop): banner, header card, stats and content share one 12px gutter ── */
+@media(min-width:961px){
+  .prf-banner{margin:16px 12px 0;border-radius:var(--rad-lg) var(--rad-lg) 0 0;overflow:hidden;}
+  .prf-header-card{margin-left:12px !important;margin-right:12px !important;}
+}
