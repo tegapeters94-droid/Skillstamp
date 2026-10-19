@@ -118,7 +118,7 @@ var MAP = {
   '🚀':'rocket','🎓':'grad','🏦':'bank','⚖':'scales','📁':'folder','📂':'folder','❓':'help','🔄':'refresh',
   '➕':'plus','🔔':'bell','🐛':'bug','🚩':'flag','📌':'pin','💎':'gem','🎬':'film','🖼':'image','📞':'call',
   '🏷':'tag','🔖':'bookmark','📚':'book','👁':'eye','🙈':'eyeoff','☀':'sun','🌙':'moon','❤':'heart',
-  '🐍':'code','🧑‍💻':'code','☁':'cloud','🔧':'wrench','👋':'hand',
+  '🐍':'code','🧑‍💻':'code','☁':'cloud','🔧':'wrench',
   '🔴':['dot','#dc2626'],'🟢':['dot','#16a34a']
 };
 
