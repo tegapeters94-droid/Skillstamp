@@ -28,15 +28,16 @@ service cloud.firestore {
     function isAdmin() {
       return isAuth() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
     }
 
     // Caller is not banned
+    // (.get(...) with a default so older accounts missing these fields are not locked out)
     function isNotBanned() {
       return isAuth() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.badgeStatus != 'suspended' &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isBanned != true;
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('badgeStatus', 'beginner') != 'suspended' &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isBanned', false) != true;
     }
 
     // Field is unchanged between incoming and existing doc
@@ -133,9 +134,9 @@ service cloud.firestore {
 
       // Only the user themselves can create their own profile (during signup)
       allow create: if isOwner(uid) &&
-                       request.resource.data.isAdmin == false &&
-                       request.resource.data.isBanned == false &&
-                       request.resource.data.badgeStatus in ['beginner'] &&
+                       request.resource.data.get('isAdmin', false) == false &&
+                       request.resource.data.get('isBanned', false) == false &&
+                       request.resource.data.get('badgeStatus', 'beginner') in ['beginner'] &&
                        // Cannot start with free money / reputation
                        startsClean(request.resource.data);
 
