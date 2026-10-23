@@ -30,28 +30,52 @@ window.openHireModal=async function(gid){
     var screeningAnswer=proposal&&proposal.screeningAnswer?proposal.screeningAnswer:'';
     rows+='<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;margin-bottom:10px;overflow:hidden;">';
     // Applicant header row
-    rows+='<div style="display:flex;align-items:center;gap:10px;padding:11px 12px;">';
+    rows+='<div style="display:flex;align-items:center;gap:8px 10px;padding:11px 12px;flex-wrap:wrap;">';
     rows+=avHTML(u,36,'50%');
-    rows+='<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;font-family:Plus Jakarta Sans,sans-serif;">'+u.name+'</div>';
+    rows+='<div style="flex:1 1 150px;min-width:0;"><div style="font-size:13px;font-weight:700;font-family:Plus Jakarta Sans,sans-serif;">'+window._escHtml(u.name)+'</div>';
     rows+='<div style="font-size:10px;color:var(--td);">'+(u.skillId||'')+(timeline?' · 📅 '+timeline:'')+(rate?' · '+rate:'')+'</div></div>';
     // View Profile button
     rows+='<button onclick="closeModal();viewProfile(\'' + uid + '\')" style="background:none;border:1px solid var(--br);border-radius:6px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--gld);cursor:pointer;flex-shrink:0;">👤 Profile</button>';
+    // Message button — lets the client ask the applicant more questions in chat
+    rows+='<button onclick="closeModal();openMsg(\'' + uid + '\')" style="background:none;border:1px solid var(--br);border-radius:6px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--gld);cursor:pointer;flex-shrink:0;">💬 Message</button>';
     // Radio select
-    rows+='<label style="cursor:pointer;margin-left:6px;"><input type="radio" name="hire-pick" value="'+uid+'" style="width:18px;height:18px;accent-color:var(--grn);"></label>';
+    rows+='<label style="cursor:pointer;margin-left:auto;"><input type="radio" name="hire-pick" value="'+uid+'" style="width:18px;height:18px;accent-color:var(--grn);"></label>';
     rows+='</div>';
     // Proposal cover note
     if(cover){
       rows+='<div style="padding:10px 12px;border-top:1px solid var(--br);font-size:11px;color:var(--td);line-height:1.75;background:var(--bg);">';
       rows+='<div style="font-size:9px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">📋 Proposal</div>';
-      rows+=cover;
+      rows+=window._escHtml(cover).replace(/\n/g,'<br>');
       rows+='</div>';
     }
-    // Screening question answer
-    if(gig.screeningQ&&gig.screeningQ.trim()&&screeningAnswer){
+    // Portfolio item the applicant attached to this application
+    if(proposal&&proposal.pfId){
+      var pf=(u.portfolio||[]).find(function(x){return x.id===proposal.pfId;});
+      if(pf){
+        var pfImg=pf.image||(pf.images&&pf.images[0])||'';
+        rows+='<div style="padding:10px 12px;border-top:1px solid var(--br);background:var(--bg);">';
+        rows+='<div style="font-size:9px;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">🖼 Attached Portfolio</div>';
+        rows+='<div style="display:flex;align-items:center;gap:10px;">';
+        if(pfImg) rows+='<img src="'+pfImg+'" alt="" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--s2);">';
+        rows+='<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--tx);">'+window._escHtml(pf.title||'Untitled project')+'</div>';
+        rows+='<div style="font-size:10px;color:var(--td);">'+window._escHtml(pf.cat||'')+'</div></div>';
+        rows+='<button onclick="openPortfolioItem(\''+uid+'\',\''+pf.id+'\')" style="background:none;border:1px solid var(--br);border-radius:6px;padding:6px 10px;font-size:10px;font-weight:600;color:var(--gld);cursor:pointer;flex-shrink:0;">View project →</button>';
+        rows+='</div></div>';
+      } else {
+        rows+='<div style="padding:8px 12px;border-top:1px solid var(--br);font-size:10px;color:var(--td);">🖼 The attached portfolio item is no longer available. Open their profile to see their work.</div>';
+      }
+    }
+    // Screening answers (a gig can have several questions)
+    var answers=(proposal&&proposal.screeningAnswers&&proposal.screeningAnswers.length)
+      ? proposal.screeningAnswers
+      : ((gig.screeningQ&&gig.screeningQ.trim()&&screeningAnswer)?[{q:gig.screeningQ,a:screeningAnswer}]:[]);
+    if(answers.length){
       rows+='<div style="padding:10px 12px;border-top:1px solid var(--br);background:rgba(5,150,105,.04);">';
-      rows+='<div style="font-size:9px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">❓ Screening Answer</div>';
-      rows+='<div style="font-size:10px;color:var(--td);margin-bottom:4px;font-style:italic;">"'+gig.screeningQ+'"</div>';
-      rows+='<div style="font-size:12px;color:var(--tx);line-height:1.6;">'+screeningAnswer+'</div>';
+      rows+='<div style="font-size:9px;font-weight:700;color:#047857;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">❓ Screening Answer'+(answers.length>1?'s':'')+'</div>';
+      answers.forEach(function(x,i){
+        rows+='<div style="font-size:10px;color:var(--td);margin-bottom:3px;font-style:italic;">'+(answers.length>1?(i+1)+'. ':'')+'"'+window._escHtml(x.q)+'"</div>';
+        rows+='<div style="font-size:12px;color:var(--tx);line-height:1.6;margin-bottom:'+(i<answers.length-1?'10':'0')+'px;">'+window._escHtml(x.a).replace(/\n/g,'<br>')+'</div>';
+      });
       rows+='</div>';
     }
     rows+='</div>';

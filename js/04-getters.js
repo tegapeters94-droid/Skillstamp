@@ -109,7 +109,7 @@ async function pushNotif(uid, type, title, body, meta){
   // If this is for the current user, also update local cache immediately
   if(ME&&ME.uid===uid){
     var existing=getNotifs();
-    existing.unshift({id:notifId,type:type,title:title,msg:body,ts:Date.now(),read:false});
+    existing.unshift({id:notifId,type:type,title:title,msg:body,meta:meta||{},ts:Date.now(),read:false});
     saveNotifs(existing.slice(0,50));
     updateNotifBadge();
   }

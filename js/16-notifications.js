@@ -77,7 +77,8 @@ function _buildNotifRow(n, isPage) {
   var msg     = n.body  || n.msg || '';
   var isUnread = !(n.read || false);
   var timeStr  = _nTimeAgo(n);
-  var metaStr  = JSON.stringify(n.meta || {}).replace(/'/g, '&#39;');
+  // meta is URL-encoded so quotes inside the JSON can never break the onclick attribute
+  var metaStr  = encodeURIComponent(JSON.stringify(n.meta || {})).replace(/'/g, '%27');
   var nid      = (n.id || '').replace(/'/g, '');
 
   // Priority badge
@@ -90,7 +91,7 @@ function _buildNotifRow(n, isPage) {
     ? 'display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--br);cursor:pointer;background:' + (isUnread ? 'rgba(232,197,71,.04)' : 'transparent') + ';transition:background .15s;'
     : 'display:flex;align-items:flex-start;gap:11px;padding:12px 16px;border-bottom:1px solid var(--br);cursor:pointer;background:' + (isUnread ? 'rgba(232,197,71,.04)' : 'transparent') + ';transition:background .15s;';
 
-  var html = '<div onclick="_handleNotifTap(\'' + type + '\',' + metaStr + ',\'' + nid + '\')" style="' + rowStyle + '" onmouseover="this.style.background=\'var(--s2)\'" onmouseout="this.style.background=\'' + (isUnread ? 'rgba(232,197,71,.04)' : 'transparent') + '\'">';
+  var html = '<div onclick="_handleNotifTap(\'' + type + '\',\'' + metaStr + '\',\'' + nid + '\')" style="' + rowStyle + '" onmouseover="this.style.background=\'var(--s2)\'" onmouseout="this.style.background=\'' + (isUnread ? 'rgba(232,197,71,.04)' : 'transparent') + '\'">';
 
   // Icon circle
   html += '<div style="width:36px;height:36px;border-radius:10px;background:' + colours.bg + ';border:1px solid ' + colours.border + ';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + icon + '</div>';
@@ -113,6 +114,7 @@ function _buildNotifRow(n, isPage) {
 
 // ── Unified tap handler (panel + page) ────────────────────────────────────
 window._handleNotifTap = function(type, meta, nid) {
+  if (typeof meta === 'string') { try { meta = JSON.parse(decodeURIComponent(meta)); } catch (e) { meta = {}; } }
   meta = meta || {};
   // Mark single notification as read
   if (nid) _markNotifRead(nid);
@@ -352,54 +354,68 @@ window.clearNotifs = function() {
   toast('Notifications cleared.');
 };
 
-// ── Navigate on tap (unchanged logic) ─────────────────────────────────────
+// ── Navigate on tap — every notification type opens the thing it is about ──
+function _nGo(fn, delay) { setTimeout(function() { try { fn(); } catch (e) { console.warn('notif nav failed', e); } }, delay || 120); }
+
+// Open a gig's detail (with the Apply button). Refreshes the gig list first if
+// the gig is not in memory yet (e.g. posted a moment ago by someone else).
+function _nOpenGig(gigId) {
+  showPage('gigs');
+  if (!gigId) return;
+  var open = function() {
+    var g = getGigs().find(function(x) { return x.id === gigId; });
+    if (g && typeof showGigDetail === 'function') showGigDetail(gigId);
+    else toast('That gig is no longer available.', 'bad');
+  };
+  if (getGigs().some(function(x) { return x.id === gigId; })) { _nGo(open, 250); return; }
+  if (typeof loadGigsToCache === 'function') {
+    Promise.resolve(loadGigsToCache()).then(function() { _nGo(open, 100); }).catch(function() { _nGo(open, 100); });
+  } else { _nGo(open, 250); }
+}
+
 window.navigateFromNotif = function(type, meta) {
   meta = meta || {};
   closeNotifPanel();
+  // Some notifications store their kind in meta.type (e.g. type 'hired' → 'gig_hired')
+  if (type === 'hired') type = 'gig_hired';
+  if (type === 'application') type = 'gig_application';
 
-  if (type === 'gig_hired') {
-    if (meta.clientUid) setTimeout(function() { openMsg(meta.clientUid); }, 100);
+  if (type === 'gig_posted') {
+    _nOpenGig(meta.gigId);                                   // → the gig, with Apply button
+  } else if (type === 'gig_hired') {
+    if (meta.clientUid) _nGo(function() { openMsg(meta.clientUid); });   // → chat with the client
+    else if (meta.gigId) _nGo(function() { openGigWorkspace(meta.gigId); });
     else showPage('gigs');
   } else if (type === 'gig_application') {
-    showPage('gigs');
-    if (meta.gigId) {
-      setTimeout(function() {
-        var gig = getGigs().find(function(g) { return g.id === meta.gigId; });
-        if (gig) openHireModal(meta.gigId);
-      }, 400);
-    }
-  } else if (type === 'gig_posted') {
-    showPage('gigs');
+    showPage('gigs');                                         // → review applicants
+    if (meta.gigId) _nGo(function() { if (getGigs().some(function(g) { return g.id === meta.gigId; })) openHireModal(meta.gigId); }, 400);
   } else if (type === 'payment') {
     showPage('wallet');
   } else if (type === 'message') {
-    if (meta.fromUid) setTimeout(function() { openMsg(meta.fromUid); }, 100);
-    else if (meta.cid) {
-      var parts = (meta.cid || '').split('_');
-      var otherId = parts.find(function(p) { return p !== (ME && ME.uid); });
-      if (otherId) setTimeout(function() { openMsg(otherId); }, 100);
+    var otherId = meta.fromUid;
+    if (!otherId && meta.cid) {
+      otherId = String(meta.cid).split('_').find(function(p) { return p !== (ME && ME.uid); });
     }
-  } else if (type === 'proposal' || type === 'proposal_accepted' || type === 'proposal_rejected') {
+    if (otherId) _nGo(function() { openMsg(otherId); });      // → the DM, ready to reply
+    else showPage('home');
+  } else if (type === 'proposal' || type === 'proposal_rejected') {
     showPage('gigs');
-    setTimeout(function() {
-      if (typeof switchGigTab === 'function') switchGigTab('proposals');
-    }, 300);
+    _nGo(function() { if (typeof switchGigTab === 'function') switchGigTab('proposals'); }, 300);
+  } else if (type === 'proposal_accepted') {
+    if (meta.gigId) _nGo(function() { openGigWorkspace(meta.gigId); });
+    else { showPage('gigs'); _nGo(function() { if (typeof switchGigTab === 'function') switchGigTab('proposals'); }, 300); }
   } else if (type === 'endorsed') {
-    if (meta.fromUid) setTimeout(function() { viewProfile(meta.fromUid); }, 100);
+    if (meta.fromUid) _nGo(function() { viewProfile(meta.fromUid); });   // → the person who endorsed you
     else showPage('myprofile');
   } else if (type === 'profile_view') {
+    if (meta.viewerUid) _nGo(function() { viewProfile(meta.viewerUid); });   // → the person who viewed you
+    else showPage('myprofile');
+  } else if (type === 'verification_approved' || type === 'verification_rejected' || type === 'system') {
     showPage('myprofile');
-  } else if (type === 'verification_approved' || type === 'verification_rejected') {
-    showPage('myprofile');
-  } else if (type === 'delivery' || type === 'revision') {
-    if (meta.gigId) setTimeout(function() { openGigWorkspace(meta.gigId); }, 100);
-    else showPage('gigs');
-  } else if (type === 'dispute_raised' || type === 'dispute_resolved') {
-    if (meta.gigId) setTimeout(function() { openGigWorkspace(meta.gigId); }, 100);
+  } else if (type === 'delivery' || type === 'revision' || type === 'dispute_raised' || type === 'dispute_resolved') {
+    if (meta.gigId) _nGo(function() { openGigWorkspace(meta.gigId); });
     else showPage('gigs');
   } else if (type === 'post_liked' || type === 'post_commented') {
-    showPage('home');
-  } else if (type === 'account_banned' || type === 'account_unbanned') {
     showPage('home');
   } else {
     showPage('home');

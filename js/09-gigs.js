@@ -186,7 +186,7 @@ window.openPostGig = function() {
   _gwInjectStyles();
   _GW = {
     step: 1,
-    data: { title:'', category:'Graphics Design', description:'', skills:[], screeningQ:'', scope:'medium', duration:'1-3 months', budget:'', escrowAgreed:false }
+    data: { title:'', category:'Graphics Design', description:'', skills:[], screeningQ:'', screeningQs:[], scope:'medium', duration:'1-3 months', budget:'', escrowAgreed:false }
   };
   var ov = document.createElement('div');
   ov.id = 'gw-overlay';
@@ -251,7 +251,12 @@ function _gwSave() {
   }
   if (s === 2) {
     var de = document.getElementById('gw-desc'); if (de) d.description = de.value.trim();
-    var sq = document.getElementById('gw-sq');   if (sq) d.screeningQ  = sq.value.trim();
+    var sqEls = document.querySelectorAll('#gw-sq-list .gw-sq-input');
+    if (sqEls.length) {
+      var sqs = [];
+      sqEls.forEach(function(el) { var v = el.value.trim().slice(0, 200); if (v) sqs.push(v); });
+      d.screeningQs = sqs; d.screeningQ = sqs[0] || '';
+    }
     d.skills = [];
     document.querySelectorAll('#gw-skill-cloud .gw-skill.sel').forEach(function(el) { d.skills.push(el.dataset.skill); });
   }
@@ -371,10 +376,11 @@ function _gwStep2(d) {
     + skills.map(function(sk) { return '<span class="gw-skill' + (d.skills.indexOf(sk) >= 0 ? ' sel' : '') + '" data-skill="' + sk + '">' + sk + '</span>'; }).join('')
     + '</div></div>'
     + '<div class="gw-field">'
-    + '<label class="gw-label">Screening Question <span style="font-size:10px;font-weight:400;color:var(--td);">(optional)</span></label>'
-    + '<input id="gw-sq" class="gw-input" placeholder="e.g. How many similar projects have you completed?" value="' + (d.screeningQ||'') + '">'
+    + '<label class="gw-label">Screening Questions <span style="font-size:10px;font-weight:400;color:var(--td);">(optional · up to 5)</span></label>'
+    + '<div id="gw-sq-list">' + _gwSqRows(d) + '</div>'
+    + '<button type="button" id="gw-sq-add" onclick="gwAddQuestion()" style="margin-top:2px;background:none;border:1.5px dashed var(--br);color:#059669;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;width:100%;">+ Add another question</button>'
     + '</div>'
-    + '<div class="gw-tip">🎯 <div><strong>Pro Tip:</strong> A screening question filters low-effort applicants and saves review time.</div></div>';
+    + '<div class="gw-tip">🎯 <div><strong>Pro Tip:</strong> A few focused screening questions filter low-effort applicants and save review time.</div></div>';
 }
 
 // ─ Step 3: Scope ─────────────────────────────────────────────
@@ -538,7 +544,7 @@ async function _gwSubmit() {
     var gig = {
       id:'g'+Date.now(), title:d.title, description:d.description,
       pay:'$'+num.toLocaleString(), payNum:num, category:d.category, type:'Project',
-      scope:d.scope, duration:d.duration, skills:d.skills, screeningQ:d.screeningQ||null,
+      scope:d.scope, duration:d.duration, skills:d.skills, screeningQ:(d.screeningQs&&d.screeningQs[0])||d.screeningQ||null, screeningQs:(d.screeningQs&&d.screeningQs.length)?d.screeningQs:(d.screeningQ?[d.screeningQ]:[]),
       posterUid:ME.uid, posterName:ME.name, created:Date.now(), applicants:[],
       status:'open', escrowAmount:num, deadline:null, hiredUid:null
     };
@@ -713,6 +719,41 @@ function openProposalCredits(){
     +'<div style="font-size:10px;color:var(--td);text-align:center;">Deducted from your wallet balance</div>');
 }
 
+
+// ── Screening-question helpers (a gig can have several questions) ─────────
+// Newer gigs store gig.screeningQs (array). Older gigs only have gig.screeningQ (string).
+window._escHtml = function(t){
+  return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+};
+window._gigQuestions = function(gig){
+  if(!gig) return [];
+  var qs=(gig.screeningQs&&gig.screeningQs.length)?gig.screeningQs:(gig.screeningQ?[gig.screeningQ]:[]);
+  return qs.map(function(q){return String(q||'').trim();}).filter(Boolean);
+};
+window.gwAddQuestion = function(){
+  var list=document.getElementById('gw-sq-list'); if(!list) return;
+  if(list.querySelectorAll('.gw-sq-input').length>=5){ toast('You can add up to 5 questions.','bad'); return; }
+  var row=document.createElement('div'); row.className='gw-sq-row'; row.style.cssText='display:flex;gap:8px;margin-bottom:8px;';
+  row.innerHTML='<input class="gw-input gw-sq-input" maxlength="200" placeholder="Another question for applicants…">'
+    +'<button type="button" onclick="gwRemoveQuestion(this)" aria-label="Remove question" style="flex-shrink:0;width:44px;border:1.5px solid var(--br);background:var(--s2);color:var(--td);border-radius:12px;cursor:pointer;font-size:16px;">&times;</button>';
+  list.appendChild(row);
+  var inp=row.querySelector('input'); if(inp) inp.focus();
+  var add=document.getElementById('gw-sq-add'); if(add&&list.querySelectorAll('.gw-sq-input').length>=5) add.style.display='none';
+};
+window.gwRemoveQuestion = function(btn){
+  var row=btn&&btn.closest?btn.closest('.gw-sq-row'):null; if(row) row.remove();
+  var add=document.getElementById('gw-sq-add'); if(add) add.style.display='';
+};
+function _gwSqRows(d){
+  var qs=(d.screeningQs&&d.screeningQs.length)?d.screeningQs:(d.screeningQ?[d.screeningQ]:['']);
+  return qs.map(function(q,i){
+    return '<div class="gw-sq-row" style="display:flex;gap:8px;margin-bottom:8px;">'
+      +'<input class="gw-input gw-sq-input" maxlength="200" placeholder="'+(i===0?'e.g. How many similar projects have you completed?':'Another question for applicants…')+'" value="'+window._escHtml(q)+'">'
+      +(i>0?'<button type="button" onclick="gwRemoveQuestion(this)" aria-label="Remove question" style="flex-shrink:0;width:44px;border:1.5px solid var(--br);background:var(--s2);color:var(--td);border-radius:12px;cursor:pointer;font-size:16px;">&times;</button>':'')
+      +'</div>';
+  }).join('');
+}
+
 window.applyGig=async function(gid,title,posterUid){
   if(!checkRateLimit('apply_gig',5,60000)) return;
   var isVerified=ME.badgeStatus==='verified'||ME.badgeStatus==='expert'||ME.badgeStatus==='elite';
@@ -739,14 +780,17 @@ window.applyGig=async function(gid,title,posterUid){
     +'<div style="font-size:10px;color:var(--td);margin-top:4px;">You must adhere to this timeline.</div>'
     +'</div>';
 
-  // Show client's screening question if they set one
+  // Show the client's screening question(s) — a gig can have several
+  var gigQs=window._gigQuestions(gig);
   var screeningSection='';
-  if(gig&&gig.screeningQ&&gig.screeningQ.trim()){
+  if(gigQs.length){
     screeningSection='<div class="fg">'
-      +'<label class="fl" style="color:var(--tx);font-weight:700;">Client\'s Screening Question <span style="color:var(--acc);">*required</span></label>'
-      +'<div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--tx);margin-bottom:8px;font-style:italic;">"'+gig.screeningQ+'"</div>'
-      +'<textarea class="fi" id="ap-screening-answer" rows="3" placeholder="Answer the client\'s question honestly and specifically..." style="resize:vertical;"></textarea>'
-      +'</div>';
+      +'<label class="fl" style="color:var(--tx);font-weight:700;">Client\'s Screening Question'+(gigQs.length>1?'s':'')+' <span style="color:var(--acc);">*required</span></label>';
+    gigQs.forEach(function(q,i){
+      screeningSection+='<div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--tx);margin-bottom:8px;font-style:italic;">'+(gigQs.length>1?(i+1)+'. ':'')+'"'+window._escHtml(q)+'"</div>'
+        +'<textarea class="fi ap-sa" data-i="'+i+'" rows="3" placeholder="Answer honestly and specifically..." style="resize:vertical;margin-bottom:12px;"></textarea>';
+    });
+    screeningSection+='</div>';
   }
 
   var isOpenBudget=!gig||!gig.pay||gig.pay==='Open'||gig.pay===0;
@@ -788,11 +832,13 @@ window.applyGig=async function(gid,title,posterUid){
       var cover=(document.getElementById('ap-cover').value||'').trim();
       var pfId=document.getElementById('ap-portfolio')?document.getElementById('ap-portfolio').value:'';
       var rate=document.getElementById('ap-rate')?parseFloat(document.getElementById('ap-rate').value)||null:null;
-      var screeningAnswer=document.getElementById('ap-screening-answer')?(document.getElementById('ap-screening-answer').value||'').trim():'';
+      var saEls=document.querySelectorAll('.ap-sa');
+      var screeningAnswers=gigQs.map(function(q,i){ var el=saEls[i]; return {q:q,a:(el&&el.value||'').trim().slice(0,2000)}; });
+      var screeningAnswer=screeningAnswers.length?screeningAnswers[0].a:'';
       if(cover.length<50){toast('Cover note must be at least 50 characters.','bad');return;}
-      // Require screening answer if client asked a question
-      if(gig&&gig.screeningQ&&gig.screeningQ.trim()&&!screeningAnswer){
-        toast('Please answer the client\'s screening question.','bad');return;
+      // Require an answer to every screening question the client asked
+      if(screeningAnswers.some(function(x){return !x.a;})){
+        toast(gigQs.length>1?'Please answer all of the client\'s screening questions.':'Please answer the client\'s screening question.','bad');return;
       }
       submitBtn.disabled=true;submitBtn.textContent='Submitting...';
 
@@ -806,7 +852,7 @@ window.applyGig=async function(gid,title,posterUid){
         if(!ME.applications) ME.applications=[];
         var alreadySaved=ME.applications.find(function(a){return a.gigId===gid;});
         if(!alreadySaved){
-          ME.applications.push({gigId:gid,title:title,posterUid:posterUid,status:'pending',appliedAt:Date.now(),cover:cover,timeline:gigDuration,rate:rate,pfId:pfId,screeningAnswer:screeningAnswer});
+          ME.applications.push({gigId:gid,title:title,posterUid:posterUid,status:'pending',appliedAt:Date.now(),cover:cover,timeline:gigDuration,rate:rate,pfId:pfId,screeningAnswer:screeningAnswer,screeningAnswers:screeningAnswers});
         }
         await saveUser(ME);
         // Update gig with proposal data including screening answer
@@ -815,13 +861,13 @@ window.applyGig=async function(gid,title,posterUid){
           if(!currentGig.applicants) currentGig.applicants=[];
           if(currentGig.applicants.indexOf(ME.uid)<0) currentGig.applicants.push(ME.uid);
           if(!currentGig.proposals) currentGig.proposals={};
-          currentGig.proposals[ME.uid]={cover:cover,timeline:gigDuration,rate:rate,pfId:pfId,screeningAnswer:screeningAnswer,submittedAt:Date.now()};
+          currentGig.proposals[ME.uid]={cover:cover,timeline:gigDuration,rate:rate,pfId:pfId,screeningAnswer:screeningAnswer,screeningAnswers:screeningAnswers,submittedAt:Date.now()};
           await fbSet('gigs',currentGig.id,currentGig);
         }
         // Fire-and-forget messaging — never let this block the success screen
         try {
           var appMsg='👋 Hi! I\'d like to apply for: '+title+'\n\n'+cover;
-          if(screeningAnswer) appMsg+='\n\n❓ '+gig.screeningQ+'\n→ '+screeningAnswer;
+          screeningAnswers.forEach(function(x){ if(x.a) appMsg+='\n\n❓ '+x.q+'\n→ '+x.a; });
           appMsg+='\n\n📅 Project timeline: '+gigDuration;
           if(rate) appMsg+='\n💰 Proposed rate: $'+rate;
           appMsg+='\n\n🏷 SkillID: '+(ME.skillId||'Pending Verification')+' · '+(isVerified?'✓ Verified':'Unverified');
