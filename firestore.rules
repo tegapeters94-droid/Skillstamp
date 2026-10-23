@@ -324,7 +324,24 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════════
     match /notifications/{notifId} {
       allow read:   if isAuth() && resource.data.uid == request.auth.uid;
-      allow create: if isAuth() && isNotBanned();
+      // Anyone may notify another user, but the notice must carry the REAL sender
+      // (fromUid is forced to be the signed-in user), use a known type, and stay
+      // short. Admin-only types (verification results) and 'system' notices to
+      // other people are refused here; admins can write anything below.
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.keys().hasOnly(['id', 'uid', 'type', 'title', 'body', 'meta', 'read', 'ts', 'fromUid']) &&
+                       request.resource.data.get('fromUid', '') == request.auth.uid &&
+                       request.resource.data.uid is string &&
+                       request.resource.data.uid.size() > 0 &&
+                       request.resource.data.read == false &&
+                       request.resource.data.title is string && request.resource.data.title.size() <= 120 &&
+                       request.resource.data.body  is string && request.resource.data.body.size()  <= 400 &&
+                       request.resource.data.get('meta', {}) is map &&
+                       (request.resource.data.type in ['delivery', 'dispute_raised', 'endorsed', 'gig_application',
+                                                       'gig_posted', 'hired', 'message', 'payment', 'profile_view', 'revision'] ||
+                        (request.resource.data.type == 'system' && request.resource.data.uid == request.auth.uid));
+      // Owners can clear their own notifications
+      allow delete: if isAuth() && resource.data.uid == request.auth.uid;
       allow update: if isAuth() &&
                        resource.data.uid == request.auth.uid &&
                        // Can only mark as read — no other field changes
