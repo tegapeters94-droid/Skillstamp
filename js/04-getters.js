@@ -104,7 +104,7 @@ window.toggleTheme=function(){
 async function pushNotif(uid, type, title, body, meta){
   // Save to Firebase so user sees it even after refresh
   var notifId='notif_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-  var notif={id:notifId,uid:uid,type:type,title:title,body:body,meta:meta||{},read:false,ts:Date.now()};
+  var notif={id:notifId,uid:uid,type:type,title:title,body:body,meta:meta||{},read:false,ts:Date.now(),fromUid:(ME&&ME.uid)||null};
   try{ await fbSet('notifications',notifId,notif); }catch(e){}
   // If this is for the current user, also update local cache immediately
   if(ME&&ME.uid===uid){
