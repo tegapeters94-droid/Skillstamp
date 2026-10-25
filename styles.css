@@ -3089,3 +3089,54 @@ nav .nt,.nt{font-size:var(--fs-sm);padding:9px 14px;border-radius:var(--rad-sm);
 
 /* skeleton: clearer on light backgrounds */
 .skel{background:var(--br);border:1px solid var(--br);opacity:.7;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FULL-PAGE FORMS — "Post a Gig" wizard and "Submit Proposal"
+   (were small pop-ups; now full-screen pages with a centred column)
+   Pure CSS: no logic, markup or behaviour is changed.
+   ═══════════════════════════════════════════════════════════════════ */
+:root{--form-col:720px;--form-gutter:max(20px,calc((100% - var(--form-col)) / 2));}
+
+/* ── Post a Gig wizard ── */
+#gw-overlay{background:var(--bg) !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;align-items:stretch !important;justify-content:stretch !important;z-index:2000 !important;}
+#gw-overlay #gw-sheet{width:100% !important;max-width:none !important;height:100vh;height:100dvh;max-height:none !important;border-radius:0 !important;background:var(--bg) !important;animation:gw-fade .2s ease !important;}
+#gw-overlay #gw-handle{display:none;}
+#gw-overlay #gw-header{background:var(--s);border-bottom:1px solid var(--br);padding:18px var(--form-gutter) 0 !important;position:relative;}
+#gw-overlay #gw-header::before{content:'Post a Gig';display:block;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--td);margin-bottom:12px;}
+#gw-overlay #gw-close-btn{top:10px !important;right:max(14px,calc((100% - var(--form-col)) / 2 - 8px)) !important;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--br) !important;background:var(--s) !important;font-size:16px !important;padding:0 !important;color:var(--tx) !important;}
+#gw-overlay #gw-step-title{font-size:clamp(22px,3.2vw,30px) !important;}
+#gw-overlay #gw-step-sub{font-size:14px !important;padding-bottom:16px !important;}
+#gw-overlay #gw-body{padding:28px var(--form-gutter) 32px !important;}
+#gw-overlay .gw-field{margin-bottom:24px;}
+#gw-overlay .gw-label{font-size:14px;margin-bottom:8px;}
+#gw-overlay .gw-input{font-size:16px !important;padding:14px 16px !important;border-radius:14px !important;background:var(--s) !important;}
+#gw-overlay .gw-textarea{min-height:150px;}
+#gw-overlay .gw-tip{font-size:13px !important;padding:12px 14px !important;border-radius:12px !important;}
+#gw-overlay #gw-footer{background:var(--s);padding:14px var(--form-gutter) calc(18px + env(safe-area-inset-bottom)) !important;box-shadow:0 -6px 20px rgba(0,0,0,.04);}
+#gw-overlay #gw-back,#gw-overlay #gw-next{padding:15px 22px !important;font-size:15px !important;border-radius:14px !important;}
+#gw-overlay #gw-review-section,#gw-overlay #gw-budget-preview{background:var(--s) !important;}
+#gw-overlay .gw-scope-card{background:var(--s);}
+@media (min-width:900px){
+  #gw-overlay .gw-scope-cards{flex-direction:row;}
+  #gw-overlay .gw-scope-card{flex:1;flex-direction:column;align-items:flex-start;text-align:left;}
+  #gw-overlay .gw-scope-radio{margin-left:0;}
+}
+
+/* ── Submit Proposal (apply to a gig) ── */
+.moverlay:has(#ap-submit-btn){background:var(--bg);padding:0;align-items:flex-start;justify-content:center;overflow-y:auto;z-index:2000;}
+.moverlay:has(#ap-submit-btn)::before{content:'Submit Proposal';position:fixed;top:0;left:0;right:0;height:60px;z-index:5;display:flex;align-items:center;justify-content:center;background:var(--s);border-bottom:1px solid var(--br);font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:15px;color:var(--tx);}
+.moverlay:has(#ap-submit-btn)::after{content:'';position:fixed;left:0;right:0;bottom:0;height:96px;z-index:6;pointer-events:none;background:linear-gradient(to bottom,transparent,var(--bg) 55%);}
+.moverlay:has(#ap-submit-btn) .modal{width:calc(100% - 24px);max-width:var(--form-col);max-height:none;overflow:visible;margin:76px auto 120px;padding:28px;background:var(--s);border:1px solid var(--br);border-radius:20px;box-shadow:var(--shadow-md,0 4px 24px rgba(0,0,0,.06));animation:none;}
+.moverlay:has(#ap-submit-btn) .modal>h3{display:none;}
+.moverlay:has(#ap-submit-btn) .mclose{position:fixed;z-index:7;top:10px;left:max(14px,calc((100% - var(--form-col)) / 2 - 8px));right:auto;width:40px;height:40px;border-radius:50%;border:1px solid var(--br);background:var(--s);color:transparent;font-size:0;display:flex;align-items:center;justify-content:center;}
+.moverlay:has(#ap-submit-btn) .mclose::before{content:'←';font-size:20px;line-height:1;color:var(--tx);}
+.moverlay:has(#ap-submit-btn) .modal>p{font-size:15px;padding:14px 16px;background:var(--s2);border:1px solid var(--br);border-radius:14px;margin-bottom:22px;}
+.moverlay:has(#ap-submit-btn) .fg{margin-bottom:24px;}
+.moverlay:has(#ap-submit-btn) .fl{font-size:14px;font-weight:700;margin-bottom:8px;}
+.moverlay:has(#ap-submit-btn) .fi{font-size:16px;padding:14px 16px;border-radius:14px;}
+.moverlay:has(#ap-submit-btn) textarea.fi{min-height:120px;}
+.moverlay:has(#ap-submit-btn) #ap-submit-btn{position:fixed;z-index:7;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));width:min(var(--form-col),calc(100% - 40px)) !important;margin:0 !important;padding:16px !important;font-size:16px;border-radius:14px;box-shadow:0 10px 28px rgba(5,150,105,.28);}
+.moverlay:has(#ap-submit-btn) #ap-submit-btn:active{transform:translateX(-50%) scale(.99);}
+@media (max-width:600px){
+  .moverlay:has(#ap-submit-btn) .modal{padding:20px 16px;margin:72px auto 112px;}
+}
