@@ -71,7 +71,7 @@ window.runGlobalSearch=function(q){
       html+='<div class="search-result-item" onclick="closeGlobalSearch();viewProfile(\''+u.uid+'\')">';
       html+='<div style="'+avStyle+'">'+avContent+'</div>';
       html+='<div style="flex:1;min-width:0;">';
-      html+='<div class="search-result-title">'+u.name+(isVer?' <span style="color:var(--grn);font-size:10px;">✓ Verified</span>':'')+'</div>';
+      html+='<div class="search-result-title">'+u.name+(isVer?' '+'<span class="prf-check" title="Verified" style="flex-shrink:0;display:inline-flex;vertical-align:middle;">'+verifiedSVG(getVerifColor())+'</span>':'')+'</div>';
       html+='<div class="search-result-sub">'+(u.category||'')+(u.country?' · '+u.country:'')+(u.skills&&u.skills.length?' · '+u.skills.slice(0,3).join(', '):'')+'</div>';
       html+='</div></div>';
     });

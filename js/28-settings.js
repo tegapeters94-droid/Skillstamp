@@ -25,7 +25,7 @@ window.openSettings = function() {
     html += '<div style="flex:1;min-width:0;">';
     html += '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--tx);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+ME.name+'</div>';
     html += '<div style="font-size:11px;color:var(--td);margin-top:2px;">'+(ME.email||'')+'</div>';
-    if (isVerif) html += '<div style="margin-top:5px;display:inline-flex;align-items:center;gap:3px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);color:#4ade80;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">✓ Verified</div>';
+    if (isVerif) html += '<div style="margin-top:5px;">'+'<span class="prf-check" title="Verified" style="flex-shrink:0;display:inline-flex;vertical-align:middle;">'+verifiedSVG(getVerifColor())+'</span>'+'</div>';
     html += '</div>';
     html += '</div>';
   }

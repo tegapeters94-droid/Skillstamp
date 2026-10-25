@@ -1273,7 +1273,7 @@ window.openDirectProposal = function(uid) {
   panel.style.cssText = 'position:fixed;inset:0;z-index:2000;background:var(--bg);overflow-y:auto;animation:slideInRight .25s ease;';
 
   var verifBadge = isVerif
-    ? '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);color:#4ade80;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">✓ Verified</span>'
+    ? '<span class="prf-check" title="Verified" style="flex-shrink:0;display:inline-flex;vertical-align:middle;">'+verifiedSVG(getVerifColor())+'</span>'
     : '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);color:var(--acc);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;">Unverified</span>';
 
   var escrowNote = isVerif

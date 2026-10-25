@@ -68,8 +68,7 @@ function isVerified(u) {
   return u.badgeStatus === 'verified' || u.badgeStatus === 'expert' || u.badgeStatus === 'elite';
 }
 function verifiedChip(small) {
-  var sz = small ? 'font-size:8px;padding:2px 6px' : 'font-size:9px;padding:3px 8px';
-  return '<span style="display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,rgba(74,222,128,.18),rgba(74,222,128,.08));border:1px solid rgba(74,222,128,.4);color:#4ade80;font-weight:800;border-radius:20px;vertical-align:middle;letter-spacing:.02em;'+sz+'">&#10003; Verified</span>';
+  return '<span class="prf-check" title="Verified" style="flex-shrink:0;display:inline-flex;vertical-align:middle;">'+verifiedSVG(getVerifColor())+'</span>';
 }
 function sectionHeader(title, linkLabel, linkOnclick) {
   var link = linkLabel
