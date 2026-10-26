@@ -18,6 +18,13 @@ try {
 }
 
 function getAllUsers(){return CACHE.users||[];}
+// People the signed-in user has blocked are left out of every discovery list (talent, search, home, recommendations).
+function ssVisible(arr){
+  try{
+    if(!ME||ME.isAdmin||!Array.isArray(ME.blockedUsers)||!ME.blockedUsers.length) return arr;
+    return (arr||[]).filter(function(u){return ME.blockedUsers.indexOf(u.uid)<0;});
+  }catch(e){return arr;}
+}
 function getUser(uid){return CACHE.users.find(x=>x.uid===uid);}
 function saveUser(u){
   // Update local ME if this is the current user

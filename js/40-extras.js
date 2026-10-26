@@ -202,51 +202,109 @@
     ids.forEach(function (uid) { if (!getUser(uid)) ensureUser(uid, function () { if (window._currentPage === 'saved') renderSaved(); }); });
   }
 
+  /* ═════════════════════ SHEETS (menu / report / block) ═════════════ */
+  function closeSheet() {
+    var o = document.getElementById('sx-ov');
+    if (!o) return;
+    o.classList.remove('in');
+    setTimeout(function () { if (o.parentNode) o.parentNode.removeChild(o); }, 180);
+  }
+  window.ssCloseSheet = closeSheet;
+  function openSheet(html) {
+    var old = document.getElementById('sx-ov'); if (old) old.remove();
+    var o = document.createElement('div');
+    o.id = 'sx-ov'; o.className = 'sx-ov';
+    o.innerHTML = '<div class="sx-sheet" role="dialog" aria-modal="true"><div class="sx-grab"></div>' + html + '</div>';
+    o.addEventListener('mousedown', function (e) { if (e.target === o) closeSheet(); });
+    o.addEventListener('touchstart', function (e) { if (e.target === o) closeSheet(); }, { passive: true });
+    document.body.appendChild(o);
+    requestAnimationFrame(function () { o.classList.add('in'); });
+    return o;
+  }
+  function sheetPerson(u) {
+    return '<div class="sx-person">' + avatarHTML(u, 46) + '<div><div class="sx-pname">' + esc(u.name || 'SkillStamp member') + '</div>'
+      + '<div class="sx-psub">' + esc(u.title || u.role || '') + '</div></div></div>';
+  }
+  var SVG = {
+    flag: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+    ban: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><line x1="5.3" y1="5.3" x2="18.7" y2="18.7"/></svg>',
+    chev: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+    check: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+  };
+
   /* ═════════════════════ BLOCK ═════════════════════════════════════ */
   window.ssToggleBlock = function (uid, silent) {
     if (!ME || !uid || uid === ME.uid) return;
     var blocked = list('blockedUsers').slice(), i = blocked.indexOf(uid);
-    var u = getUser(uid) || { name: 'this user' };
+    var u = getUser(uid) || { name: 'this person' };
     var apply = function () {
       if (i >= 0) blocked.splice(i, 1); else blocked.unshift(uid);
       ownField('blockedUsers', blocked);
-      ok(i >= 0 ? 'Unblocked ' + u.name : 'Blocked ' + u.name);
-      if (window._currentPage === 'saved') renderSaved();
-      if (window._currentPage === 'talent' && typeof renderTalent === 'function') renderTalent();
-      if (window._currentPage === 'gigs' && typeof renderGigs === 'function') renderGigs();
+      ok(i >= 0 ? u.name + ' unblocked' : u.name + ' blocked');
+      var inChat = !!document.getElementById('chat-feed');
+      if (i < 0 && inChat) closeModal();
+      var pg = window._currentPage;
+      if (pg === 'saved') renderSaved();
+      else if (pg === 'talent' && typeof renderTalent === 'function') renderTalent();
+      else if (pg === 'gigs' && typeof renderGigs === 'function') renderGigs();
+      else if (pg === 'home' && typeof renderRoleHome === 'function') renderRoleHome();
+      else if (pg === 'viewprofile' && i < 0) showPage('talent');
     };
-    if (i >= 0 || silent) apply();
-    else confirmBox('Block ' + u.name + '?', 'They won\'t be able to message you, and they\'ll be hidden from your lists. You can unblock them any time from Saved → Blocked.', 'Block', apply, true);
+    if (i >= 0 || silent) { apply(); return; }
+    openSheet('<div class="sx-hero danger">' + SVG.ban + '</div>'
+      + '<div class="sx-title">Block ' + esc(u.name) + '?</div>'
+      + '<ul class="sx-points">'
+      + '<li>They won\'t be able to message you.</li>'
+      + '<li>Their profile and gigs disappear from your talent, search and gig lists.</li>'
+      + '<li>You can unblock them any time in Saved → Blocked.</li></ul>'
+      + '<div class="sx-actions"><button class="sx-btn ghost" onclick="ssCloseSheet()">Cancel</button>'
+      + '<button class="sx-btn danger" id="sx-go">Block</button></div>');
+    document.getElementById('sx-go').onclick = function () { closeSheet(); apply(); };
   };
 
   /* ═════════════════════ REPORT ════════════════════════════════════ */
-  var REASONS = ['Spam or scam', 'Harassment or abuse', 'Fake profile or impersonation', 'Inappropriate content', 'Trying to move payment off-platform', 'Other'];
+  var REASONS = [
+    ['Spam or scam', 'Unwanted promotion or suspicious offers'],
+    ['Harassment or abuse', 'Rude, threatening or hateful behaviour'],
+    ['Fake profile or impersonation', 'Pretending to be someone else'],
+    ['Inappropriate content', 'Offensive or unsuitable material'],
+    ['Trying to move payment off-platform', 'Asking to pay or be paid outside SkillStamp'],
+    ['Other', 'Something else not listed']
+  ];
   window.ssReport = function (type, targetUid, targetId, label) {
     if (!ME) return;
-    setModal('<button class="mclose" onclick="closeModal()">✕</button>'
-      + '<h3>Report ' + esc(type) + '</h3><p style="margin-bottom:12px;">' + esc(label || '') + '</p>'
-      + '<label class="xr-lbl">Reason</label><select id="xr-reason" class="fi no-icon" style="margin-bottom:12px;">'
-      + REASONS.map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('') + '</select>'
-      + '<label class="xr-lbl">Details <span style="font-weight:400;color:var(--td);">(optional)</span></label>'
-      + '<textarea id="xr-details" class="fi no-icon" maxlength="500" rows="4" placeholder="Tell us what happened…" style="height:auto;resize:vertical;margin-bottom:14px;"></textarea>'
-      + '<button class="btn" id="xr-send" style="width:100%;">Submit report</button>'
-      + '<div style="font-size:10px;color:var(--td);margin-top:10px;line-height:1.5;text-align:center;">Reports are reviewed by the SkillStamp team. The person you report is not told who reported them.</div>');
+    var chosen = '';
+    openSheet('<div class="sx-title left">Report ' + esc(type) + '</div>'
+      + '<div class="sx-sub">' + esc(label || '') + '</div>'
+      + '<div class="sx-reasons">' + REASONS.map(function (r, i) {
+        return '<button type="button" class="sx-reason" data-i="' + i + '"><span class="sx-radio"></span><span><strong>' + esc(r[0]) + '</strong><em>' + esc(r[1]) + '</em></span></button>';
+      }).join('') + '</div>'
+      + '<textarea id="xr-details" class="sx-text" maxlength="500" rows="3" placeholder="Add details (optional)"></textarea>'
+      + '<div class="sx-actions"><button class="sx-btn ghost" onclick="ssCloseSheet()">Cancel</button>'
+      + '<button class="sx-btn primary" id="xr-send" disabled>Submit report</button></div>'
+      + '<div class="sx-note">Reports go to the SkillStamp team. The person you report is not told it was you.</div>');
     var btn = document.getElementById('xr-send');
+    document.querySelectorAll('.sx-reason').forEach(function (el) {
+      el.onclick = function () {
+        document.querySelectorAll('.sx-reason').forEach(function (x) { x.classList.remove('on'); });
+        el.classList.add('on'); chosen = REASONS[+el.getAttribute('data-i')][0]; btn.disabled = false;
+      };
+    });
     btn.onclick = function () {
+      if (!chosen) return;
       var guard = 'xr_' + ME.uid + '_' + type + '_' + (targetId || targetUid);
-      try { if (Date.now() - parseInt(localStorage.getItem(guard) || '0', 10) < 86400000) { closeModal(); ok('You already reported this — thank you.'); return; } } catch (e) {}
+      try { if (Date.now() - parseInt(localStorage.getItem(guard) || '0', 10) < 86400000) { closeSheet(); ok('You already reported this. Thank you.'); return; } } catch (e) {}
       btn.disabled = true; btn.textContent = 'Sending…';
       var t = getUser(targetUid) || {};
       var id = 'rep_' + uid8();
       var data = {
         id: id, type: type, targetUid: targetUid || '', targetId: targetId || '', targetName: t.name || label || '',
-        reason: document.getElementById('xr-reason').value,
-        details: (document.getElementById('xr-details').value || '').slice(0, 500),
+        reason: chosen, details: (document.getElementById('xr-details').value || '').slice(0, 500),
         reporterUid: ME.uid, reporterName: ME.name || '', status: 'open', ts: Date.now()
       };
       fns().setDoc(dbRef('reports', id), data).then(function () {
         try { localStorage.setItem(guard, String(Date.now())); } catch (e) {}
-        closeModal(); ok('Report sent. Thank you.');
+        closeSheet(); ok('Report sent. Thank you.');
       }).catch(function (e) {
         console.warn('[extras] report failed', e);
         btn.disabled = false; btn.textContent = 'Submit report';
@@ -257,13 +315,15 @@
 
   /* menu used on profiles and in chat */
   window.ssUserMenu = function (uid) {
-    var u = getUser(uid) || { name: 'this user' };
+    var u = getUser(uid) || { name: 'this person' };
     var isB = list('blockedUsers').indexOf(uid) >= 0;
-    setModal('<button class="mclose" onclick="closeModal()">✕</button><h3>' + esc(u.name) + '</h3>'
-      + '<div class="xm-list">'
-      + '<button onclick="closeModal();ssReport(\'user\',\'' + esc(uid) + '\',\'' + esc(uid) + '\',\'' + esc(u.name) + '\')">' + IC.flag + ' Report this user</button>'
-      + '<button onclick="closeModal();ssToggleBlock(\'' + esc(uid) + '\')">' + IC.ban + ' ' + (isB ? 'Unblock' : 'Block') + ' this user</button>'
-      + '</div>');
+    openSheet(sheetPerson(u)
+      + '<div class="sx-list">'
+      + '<button class="sx-item" id="sx-rep"><span class="sx-ic warn">' + SVG.flag + '</span><span class="sx-tx"><strong>Report</strong><em>Tell us what\'s wrong</em></span>' + SVG.chev + '</button>'
+      + '<button class="sx-item" id="sx-blk"><span class="sx-ic danger">' + SVG.ban + '</span><span class="sx-tx"><strong>' + (isB ? 'Unblock' : 'Block') + '</strong><em>' + (isB ? 'Let them contact you again' : 'Stop messages and hide their profile') + '</em></span>' + SVG.chev + '</button>'
+      + '</div><button class="sx-btn ghost full" onclick="ssCloseSheet()">Cancel</button>');
+    document.getElementById('sx-rep').onclick = function () { closeSheet(); setTimeout(function () { ssReport('user', uid, uid, u.name); }, 190); };
+    document.getElementById('sx-blk').onclick = function () { closeSheet(); setTimeout(function () { ssToggleBlock(uid); }, 190); };
   };
 
   /* ═════════════════════ PROFILE ACTIONS ═══════════════════════════ */

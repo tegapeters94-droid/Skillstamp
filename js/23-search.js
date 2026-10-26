@@ -24,7 +24,7 @@ window.runGlobalSearch=function(q){
     results.innerHTML='<div class="search-empty"><div style="font-size:40px;margin-bottom:12px;opacity:.3;">🔍</div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;">Search SkillStamp</div><div style="font-size:12px;">Find people by name, skill, or country · Find open gigs by title or category</div></div>';
     return;
   }
-  var _rawUsers = (CACHE.users||[]).filter(function(u){
+  var _rawUsers = ssVisible(CACHE.users||[]).filter(function(u){
     return (u.name||'').toLowerCase().includes(query)
       ||(u.skills||[]).some(function(s){return (s||'').toLowerCase().includes(query);})
       ||(u.title||'').toLowerCase().includes(query)

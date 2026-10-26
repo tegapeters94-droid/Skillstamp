@@ -424,7 +424,7 @@ function cActiveGigs() {
 }
 
 function cFeaturedTalent() {
-  var pool = getAllUsers().filter(function(u){ return u.role !== 'employer' && u.role !== 'client' && u.uid !== ME.uid; });
+  var pool = ssVisible(getAllUsers()).filter(function(u){ return u.role !== 'employer' && u.role !== 'client' && u.uid !== ME.uid; });
   var verif = pool.filter(isVerified).sort(function(a,b){return (b.score||0)-(a.score||0);}).slice(0,4);
   var talent = verif.length ? verif : pool.slice(0,4);
   if (!talent.length) return '';

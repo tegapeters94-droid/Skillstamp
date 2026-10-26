@@ -160,12 +160,13 @@ function _msgDayLabel(ts) {
   return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: d.getFullYear() === n.getFullYear() ? undefined : 'numeric' });
 }
 // prev = previous message (for grouping the bubble tail)
-function _buildFlaggedBubble(msg, prev) {
+function _buildFlaggedBubble(msg, prev, next) {
   var isMe = msg.from === (ME && ME.uid);
   var first = !prev || prev.from !== msg.from;
+  var last = !next || next.from !== msg.from;
   var hasImg = msg.img && /^data:image\/(jpeg|png|webp|gif);base64,/.test(msg.img);
   var meta = '<span class="cw-time">' + _msgClock(msg.ts) + '</span>' + (isMe ? (msg.read ? _TICK2 : _TICK1) : '');
-  return '<div class="cw-row ' + (isMe ? 'out' : 'in') + (first ? ' first' : '') + '">'
+  return '<div class="cw-row ' + (isMe ? 'out' : 'in') + (first ? ' first' : '') + (last ? ' last' : '') + '">'
     + '<div class="cw-col">'
     + '<div class="cw-bub' + (hasImg && !msg.text ? ' img-only' : '') + '">'
     + (hasImg ? '<img class="cw-img" src="' + msg.img + '" alt="Photo" onclick="ssLightbox(this.src)">' : '')
@@ -270,13 +271,13 @@ window.openMsg = async function(uid) {
     // Build messages HTML — uses flagged bubble for safety-alert messages
     function buildFeedHTML(messages) {
       if (!messages || !messages.length) {
-        return '<div class="cw-empty">No messages yet.<br>Say hello 👋</div>';
+        return '<div class="cw-empty"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><strong>No messages yet</strong><span>Send a message to start the conversation.</span></div>';
       }
       var out = '', lastDay = '';
       messages.forEach(function(m, i) {
         var day = _msgDayLabel(m.ts);
         if (day !== lastDay) { out += '<div class="cw-day"><span>' + day + '</span></div>'; lastDay = day; }
-        out += _buildFlaggedBubble(m, i ? messages[i - 1] : null);
+        out += _buildFlaggedBubble(m, i ? messages[i - 1] : null, messages[i + 1] || null);
       });
       return out;
     }
@@ -297,13 +298,11 @@ window.openMsg = async function(uid) {
       + (typeof ssChatMenu === 'function' ? '<button id="chat-more-btn" class="cw-icon" aria-label="More options"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button>' : '')
       + '</div>'
       + '<div id="chat-feed" class="cw-feed">' + buildFeedHTML(conv.messages) + '</div>'
-      + '<div class="cw-bar">'
-      + '<div class="cw-field">'
-      + '<input id="chat-input" placeholder="Message" autocomplete="off">'
-      + (typeof ssPickImage === 'function' ? '<button id="chat-attach" class="cw-icon" aria-label="Attach a photo" title="Send a photo"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>' : '')
-      + '</div>'
-      + '<button id="chat-send" class="cw-send" aria-label="Send"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a.993.993 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"/></svg></button>'
-      + '</div>'
+      + '<div class="cw-bar"><div class="cw-comp">'
+      + (typeof ssPickImage === 'function' ? '<button id="chat-attach" class="cw-attach" aria-label="Attach a photo" title="Send a photo"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg></button>' : '')
+      + '<input id="chat-input" placeholder="Write a message…" autocomplete="off" enterkeyhint="send">'
+      + '<button id="chat-send" class="cw-send" aria-label="Send message"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a.993.993 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"/></svg></button>'
+      + '</div></div>'
       + '</div>';
 
     // Scroll feed to bottom
@@ -337,7 +336,7 @@ window.openMsg = async function(uid) {
           text,
           detection.masked,
           function sendAnyway(originalText) {
-            inp.value = '';
+            inp.value = ''; inp.dispatchEvent(new Event('input'));
             actualSend(originalText, true); // flagged=true → receiver sees alert
           },
           function cancel() { inp.focus(); }
@@ -345,7 +344,7 @@ window.openMsg = async function(uid) {
         return;
       }
 
-      inp.value = '';
+      inp.value = ''; inp.dispatchEvent(new Event('input'));
       inp.focus();
       actualSend(text, false);
     }
@@ -362,7 +361,9 @@ window.openMsg = async function(uid) {
         var lastRow = rowsNow.length ? rowsNow[rowsNow.length - 1] : null;
         var div = document.createElement('div');
         div.innerHTML = _buildFlaggedBubble(msg, lastRow ? { from: lastRow.classList.contains('out') ? ME.uid : '__other' } : null);
-        feed2.appendChild(div.firstChild);
+        if (lastRow && lastRow.classList.contains('out')) lastRow.classList.remove('last');
+        var newRow = div.firstChild; newRow.classList.add('last');
+        feed2.appendChild(newRow);
         feed2.scrollTop = feed2.scrollHeight;
       }
       // Save to Firebase + track response time
@@ -420,6 +421,10 @@ window.openMsg = async function(uid) {
     if (sendBtn) sendBtn.onclick = doSend;
 
     var chatInp = document.getElementById('chat-input');
+    var sendEl = document.getElementById('chat-send');
+    function syncSend() { if (sendEl) sendEl.classList.toggle('ready', !!(chatInp && chatInp.value.trim())); }
+    if (chatInp) chatInp.addEventListener('input', syncSend);
+    syncSend();
     if (chatInp) chatInp.onkeydown = function(e) { if (e.key === 'Enter') doSend(); };
 
     // Real-time listener — updates feed as new messages arrive

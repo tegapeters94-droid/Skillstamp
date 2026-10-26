@@ -506,7 +506,7 @@ global.getHomeGigs = function(n) {
 // Top N recommended freelancers for a client home dashboard
 global.getHomeTalent = function(n) {
   n = n || 4;
-  var all = typeof getAllUsers === 'function' ? getAllUsers() : (CACHE && CACHE.users || []);
+  var all = ssVisible(typeof getAllUsers === 'function' ? getAllUsers() : (CACHE && CACHE.users || []));
   var freelancers = all.filter(function(u){ return u.role === 'freelancer' && !u.isBanned; });
   return global.rankTalent(freelancers).slice(0, n);
 };
@@ -518,7 +518,7 @@ global.getHomeTalent = function(n) {
 // "Trending" = high activity score + high performance + recent portfolio
 global.getTrendingTalent = function(n) {
   n = n || 6;
-  var all = typeof getAllUsers === 'function' ? getAllUsers() : [];
+  var all = ssVisible(typeof getAllUsers === 'function' ? getAllUsers() : []);
   var freelancers = all.filter(function(u){ return u.role === 'freelancer' && !u.isBanned; });
   return freelancers.slice().sort(function(a, b) {
     var sa = getActivityScore(a) * 0.5 + getPerformanceScore(a) * 0.3 + getPortfolioScore(a) * 0.2;
@@ -542,7 +542,7 @@ global.getTrendingGigs = function(n) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 global.debugScore = function(uid) {
-  var all   = typeof getAllUsers === 'function' ? getAllUsers() : [];
+  var all   = ssVisible(typeof getAllUsers === 'function' ? getAllUsers() : []);
   var u     = all.find(function(x){ return x.uid === uid; }) || ME;
   if (!u) { console.log('User not found'); return; }
   console.group('SkillStamp Score Debug — ' + u.name);

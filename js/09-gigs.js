@@ -557,7 +557,7 @@ async function _gwSubmit() {
     await saveUser(ME);
 
     // Notify matching-category freelancers (up to 40)
-    getAllUsers().filter(function(u) { return u.role==='freelancer' && u.uid!==ME.uid && u.category===d.category; })
+    ssVisible(getAllUsers()).filter(function(u) { return u.role==='freelancer' && u.uid!==ME.uid && u.category===d.category; })
       .slice(0, 40).forEach(function(u) {
         pushNotif(u.uid, 'gig_posted', '💼 New Gig: '+d.title, ME.name+' posted a '+d.category+' gig — $'+num.toLocaleString(), {type:'gig_posted',gigId:gig.id});
       });
