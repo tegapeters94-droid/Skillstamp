@@ -143,23 +143,37 @@ function showContactWarning(label, originalText, maskedText, onSendAnyway, onCan
 function _msgEsc(t) {
   return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
 }
-function _buildFlaggedBubble(msg) {
+var _TICK1 = '<svg class="cw-tick" viewBox="0 0 16 11" width="15" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5.8l3.2 3.2L11 1.8"/></svg>';
+var _TICK2 = '<svg class="cw-tick seen" viewBox="0 0 20 11" width="19" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5.8l3.2 3.2L11 1.8"/><path d="M8 8.4l.6.6L15 1.8"/></svg>';
+function _msgClock(ts) {
+  var d = new Date(ts || Date.now());
+  var h = d.getHours(), m = d.getMinutes();
+  return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + ' ' + (h < 12 ? 'AM' : 'PM');
+}
+function _msgDayLabel(ts) {
+  var d = new Date(ts || Date.now()), n = new Date();
+  var a = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  var b = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+  var diff = Math.round((b - a) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: d.getFullYear() === n.getFullYear() ? undefined : 'numeric' });
+}
+// prev = previous message (for grouping the bubble tail)
+function _buildFlaggedBubble(msg, prev) {
   var isMe = msg.from === (ME && ME.uid);
-  return '<div style="display:flex;justify-content:' + (isMe ? 'flex-end' : 'flex-start') + ';margin-bottom:10px;">'
-    + '<div style="max-width:82%;">'
-    + '<div style="background:' + (isMe ? 'var(--acc)' : 'var(--s2)') + ';color:' + (isMe ? '#fff' : 'var(--fg)') + ';border-radius:' + (isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px') + ';padding:9px 13px;font-size:12px;line-height:1.5;">'
-    + (msg.text ? '<div style="white-space:pre-wrap;word-break:break-word;">' + _msgEsc(msg.text) + '</div>' : '')
-    + (msg.img && /^data:image\/(jpeg|png|webp|gif);base64,/.test(msg.img)
-        ? '<img src="' + msg.img + '" alt="Photo" onclick="ssLightbox(this.src)" style="display:block;max-width:100%;max-height:260px;border-radius:8px;cursor:zoom-in;margin-top:' + (msg.text ? '6' : '0') + 'px;">'
-        : '')
-    + '<div style="font-size:9px;opacity:.6;margin-top:3px;text-align:' + (isMe ? 'right' : 'left') + ';">' + timeAgo(msg.ts)
-    + (isMe ? ' · ' + (msg.read ? '<span style="font-weight:700;">Seen ✓✓</span>' : 'Sent ✓') : '') + '</div>'
+  var first = !prev || prev.from !== msg.from;
+  var hasImg = msg.img && /^data:image\/(jpeg|png|webp|gif);base64,/.test(msg.img);
+  var meta = '<span class="cw-time">' + _msgClock(msg.ts) + '</span>' + (isMe ? (msg.read ? _TICK2 : _TICK1) : '');
+  return '<div class="cw-row ' + (isMe ? 'out' : 'in') + (first ? ' first' : '') + '">'
+    + '<div class="cw-col">'
+    + '<div class="cw-bub' + (hasImg && !msg.text ? ' img-only' : '') + '">'
+    + (hasImg ? '<img class="cw-img" src="' + msg.img + '" alt="Photo" onclick="ssLightbox(this.src)">' : '')
+    + (msg.text ? '<span class="cw-txt">' + _msgEsc(msg.text) + '</span>' : '')
+    + '<span class="cw-meta">' + meta + '</span>'
     + '</div>'
     + (!isMe && msg._flagged
-      ? '<div style="display:flex;align-items:flex-start;gap:6px;background:#fff1f2;border:1px solid #fecdd3;border-radius:0 0 8px 8px;padding:7px 10px;margin-top:-2px;">'
-        + '<span style="font-size:13px;flex-shrink:0;">🚩</span>'
-        + '<div style="font-size:10px;color:#9f1239;line-height:1.4;"><strong>Safety Alert:</strong> This user is attempting to move communication off-platform. Your payments are only protected if work is kept on SkillStamp.</div>'
-        + '</div>'
+      ? '<div class="cw-flag"><span>🚩</span><div><strong>Safety alert:</strong> This user is trying to move the conversation off-platform. Your payments are only protected if work stays on SkillStamp.</div></div>'
       : '')
     + '</div>'
     + '</div>';
@@ -250,17 +264,21 @@ window.openMsg = async function(uid) {
 
     // Build avatar HTML
     var avHTML = other.avatar
-      ? '<img src="' + other.avatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
-      : '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,' + other.gradient + ',' + other.gradient + '88);display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:#000;flex-shrink:0;">' + initials(other.name) + '</div>';
+      ? '<img src="' + other.avatar + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+      : '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,' + other.gradient + ',' + other.gradient + '88);display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:13px;color:#000;flex-shrink:0;">' + initials(other.name) + '</div>';
 
     // Build messages HTML — uses flagged bubble for safety-alert messages
     function buildFeedHTML(messages) {
       if (!messages || !messages.length) {
-        return '<div style="text-align:center;color:var(--td);font-size:11px;padding:30px 16px;">No messages yet.<br>Send a message to get started.</div>';
+        return '<div class="cw-empty">No messages yet.<br>Say hello 👋</div>';
       }
-      return messages.map(function(m) {
-        return _buildFlaggedBubble(m);
-      }).join('');
+      var out = '', lastDay = '';
+      messages.forEach(function(m, i) {
+        var day = _msgDayLabel(m.ts);
+        if (day !== lastDay) { out += '<div class="cw-day"><span>' + day + '</span></div>'; lastDay = day; }
+        out += _buildFlaggedBubble(m, i ? messages[i - 1] : null);
+      });
+      return out;
     }
 
     // Render the full chat UI into the modal
@@ -270,26 +288,21 @@ window.openMsg = async function(uid) {
     var ov2 = document.getElementById('moverlay');
     if (ov2) ov2.style.padding = '0';
     mc2.innerHTML =
-      '<div style="display:flex;flex-direction:column;height:100%;position:absolute;inset:0;">'
-      // Header
-      + '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--br);flex-shrink:0;background:var(--s);">'
-      + '<button id="chat-back-btn" style="background:none;border:none;color:var(--fg);font-size:22px;cursor:pointer;line-height:1;padding:0 4px 0 0;">←</button>'
+      '<div class="cw-app">'
+      + '<div class="cw-head">'
+      + '<button id="chat-back-btn" class="cw-back" aria-label="Back"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>'
       + avHTML
-      + '<div style="flex:1;min-width:0;">'
-      + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">' + other.name + '</div>'
-      + '<div style="font-size:10px;color:var(--td);">' + (other.title || other.role || 'SkillStamp Member') + '</div>'
+      + '<div class="cw-who"><div class="cw-name">' + _msgEsc(other.name) + '</div>'
+      + '<div class="cw-sub">' + _msgEsc(other.title || other.role || 'SkillStamp member') + '</div></div>'
+      + (typeof ssChatMenu === 'function' ? '<button id="chat-more-btn" class="cw-icon" aria-label="More options"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button>' : '')
       + '</div>'
-      + (typeof ssChatMenu === 'function' ? '<button id="chat-more-btn" aria-label="More" style="background:none;border:none;color:var(--td);cursor:pointer;padding:6px;display:flex;"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' : '')
+      + '<div id="chat-feed" class="cw-feed">' + buildFeedHTML(conv.messages) + '</div>'
+      + '<div class="cw-bar">'
+      + '<div class="cw-field">'
+      + '<input id="chat-input" placeholder="Message" autocomplete="off">'
+      + (typeof ssPickImage === 'function' ? '<button id="chat-attach" class="cw-icon" aria-label="Attach a photo" title="Send a photo"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>' : '')
       + '</div>'
-      // Feed
-      + '<div id="chat-feed" style="flex:1;overflow-y:auto;padding:14px 14px;display:flex;flex-direction:column;">'
-      + buildFeedHTML(conv.messages)
-      + '</div>'
-      // Input bar
-      + '<div style="display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--br);flex-shrink:0;background:var(--s);">'
-      + (typeof ssPickImage === 'function' ? '<button id="chat-attach" aria-label="Attach a photo" title="Send a photo" style="background:none;border:1px solid var(--br);border-radius:10px;width:42px;height:42px;flex-shrink:0;color:var(--td);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>' : '')
-      + '<input id="chat-input" class="fi no-icon" placeholder="Type a message…" style="flex:1;margin:0;font-size:13px;padding:10px 12px;height:42px;min-height:unset;" autocomplete="off">'
-      + '<button id="chat-send" class="btn" style="padding:10px 14px;flex-shrink:0;height:42px;width:auto;">Send</button>'
+      + '<button id="chat-send" class="cw-send" aria-label="Send"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a.993.993 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"/></svg></button>'
       + '</div>'
       + '</div>';
 
@@ -344,8 +357,11 @@ window.openMsg = async function(uid) {
       // Optimistic UI — add to feed immediately
       var feed2 = document.getElementById('chat-feed');
       if (feed2) {
+        var emp = feed2.querySelector('.cw-empty'); if (emp) emp.remove();
+        var rowsNow = feed2.querySelectorAll('.cw-row');
+        var lastRow = rowsNow.length ? rowsNow[rowsNow.length - 1] : null;
         var div = document.createElement('div');
-        div.innerHTML = _buildFlaggedBubble(msg);
+        div.innerHTML = _buildFlaggedBubble(msg, lastRow ? { from: lastRow.classList.contains('out') ? ME.uid : '__other' } : null);
         feed2.appendChild(div.firstChild);
         feed2.scrollTop = feed2.scrollHeight;
       }

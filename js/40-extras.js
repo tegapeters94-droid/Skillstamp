@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   40-extras.js — Saved items, Inbox, Report & Block, Admin Reports /
+   40-extras.js — Saved items, Report & Block, Admin Reports /
    Activity Log, and the Stats page.
    Loaded last. Hooks existing functions by wrapping them; it does not change
    authentication, wallet or payment logic. Remove its <script> tag to revert
@@ -214,7 +214,6 @@
       if (window._currentPage === 'saved') renderSaved();
       if (window._currentPage === 'talent' && typeof renderTalent === 'function') renderTalent();
       if (window._currentPage === 'gigs' && typeof renderGigs === 'function') renderGigs();
-      if (window._currentPage === 'inbox') renderInbox();
     };
     if (i >= 0 || silent) apply();
     else confirmBox('Block ' + u.name + '?', 'They won\'t be able to message you, and they\'ll be hidden from your lists. You can unblock them any time from Saved → Blocked.', 'Block', apply, true);
@@ -281,22 +280,18 @@
     if (!root || !ME || !uid || uid === ME.uid) return;
     var old = root.querySelector('.xpa'); if (old) old.remove();
     var u = getUser(uid); if (!u) return;
+    var banner = root.querySelector('.prf-banner');
+    if (!banner) return;
+    var showSave = (u.role !== 'employer') && isEmp();
     var bar = document.createElement('div');
     bar.className = 'xpa';
-    var showSave = (u.role !== 'employer') && isEmp();
-    bar.innerHTML = (showSave ? '<button class="xpa-b ss-bm-wide" data-bm-kind="talent" data-bm-id="' + esc(uid) + '" onclick="ssToggleSave(\'talent\',\'' + esc(uid) + '\')">' + IC.bm + '<span class="xpa-t"></span></button>' : '')
-      + '<button class="xpa-b" onclick="openMsg(\'' + esc(uid) + '\')">' + IC.msg + ' Message</button>'
-      + '<button class="xpa-b xpa-more" aria-label="More" onclick="ssUserMenu(\'' + esc(uid) + '\')">' + IC.more + '</button>';
-    root.insertBefore(bar, root.firstChild);
+    bar.innerHTML = (showSave ? '<button class="xpa-i ss-bm" data-bm-kind="talent" data-bm-id="' + esc(uid) + '" title="Save" aria-label="Save talent">' + IC.bm + '</button>' : '')
+      + '<button class="xpa-i" aria-label="More options" title="More" onclick="ssUserMenu(\'' + esc(uid) + '\')">' + IC.more + '</button>';
+    banner.appendChild(bar);
+    var sv = bar.querySelector('.ss-bm');
+    if (sv) sv.onclick = function (e) { e.stopPropagation(); ssToggleSave('talent', uid); };
     refreshBookmarks();
-    bar.querySelectorAll('.xpa-t').forEach(function (t) { t.textContent = ''; });
   }
-  // label for the wide save button follows state
-  setInterval(function () {
-    document.querySelectorAll('.ss-bm-wide').forEach(function (b) {
-      var t = b.querySelector('.xpa-t'); if (t) t.textContent = b.classList.contains('on') ? 'Saved' : 'Save';
-    });
-  }, 400);
 
   /* Report a gig from the gig detail modal */
   var _sgd = window.showGigDetail;
@@ -371,84 +366,6 @@
     inp.click();
   };
   window.ssChatMenu = function (uid) { ssUserMenu(uid); };
-
-  /* ═════════════════════ INBOX ═════════════════════════════════════ */
-  var _convs = [], _inboxUnsub = null, _watchUid = null;
-  function unreadOf(c) {
-    var n = 0, blocked = list('blockedUsers');
-    (c.messages || []).forEach(function (m) { if (m.from !== ME.uid && !m.read && blocked.indexOf(m.from) < 0) n++; });
-    return n;
-  }
-  function updateMsgBadges() {
-    var total = 0;
-    _convs.forEach(function (c) { total += unreadOf(c); });
-    var b = document.getElementById('msg-count');
-    if (b) { b.textContent = total > 9 ? '9+' : String(total); b.style.display = total ? 'flex' : 'none'; }
-    var bb = document.getElementById('bn-ubadge');
-    if (bb) { bb.textContent = total > 9 ? '9+' : String(total); bb.style.display = total ? 'flex' : 'none'; }
-  }
-  function startInboxWatch() {
-    if (!ME || !ME.uid || !fns() || !window.FB_DB) return;
-    if (_watchUid === ME.uid && _inboxUnsub) return;
-    stopInboxWatch();
-    _watchUid = ME.uid;
-    try {
-      var q = fns().query(fns().collection(window.FB_DB, 'conversations'), fns().where('participants', 'array-contains', ME.uid));
-      _inboxUnsub = fns().onSnapshot(q, function (snap) {
-        _convs = snap.docs.map(function (d) { var x = d.data(); x._id = d.id; return x; });
-        updateMsgBadges();
-        if (window._currentPage === 'inbox') renderInbox();
-      }, function (e) { console.warn('[extras] inbox watch failed', e && e.message); });
-    } catch (e) { console.warn('[extras] inbox watch error', e); }
-  }
-  function stopInboxWatch() {
-    if (_inboxUnsub) { try { _inboxUnsub(); } catch (e) {} }
-    _inboxUnsub = null; _watchUid = null; _convs = [];
-    updateMsgBadges();
-  }
-  setInterval(function () {
-    if (ME && ME.uid) { if (_watchUid !== ME.uid) startInboxWatch(); }
-    else if (_watchUid) stopInboxWatch();
-  }, 1500);
-
-  function lastPreview(c) {
-    var m = (c.messages || [])[(c.messages || []).length - 1];
-    if (!m) return 'No messages yet';
-    var t = m.img && !m.text ? '📷 Photo' : (m.text || '');
-    t = String(t).replace(/<[^>]*>/g, '');
-    return (m.from === ME.uid ? 'You: ' : '') + t.slice(0, 70);
-  }
-  function renderInbox() {
-    var el = pageEl('inbox');
-    if (!ME) { el.innerHTML = ''; return; }
-    var blocked = list('blockedUsers');
-    var rows = _convs.filter(function (c) { return (c.messages || []).length > 0; })
-      .map(function (c) {
-        var other = (c.participants || []).filter(function (p) { return p !== ME.uid; })[0];
-        return { c: c, other: other };
-      })
-      .filter(function (r) { return r.other && blocked.indexOf(r.other) < 0; })
-      .sort(function (a, b) { return (b.c.lastTs || 0) - (a.c.lastTs || 0); });
-    var h = '<div class="section xp-wrap">' + pageHead('Messages', rows.length ? rows.length + ' conversation' + (rows.length > 1 ? 's' : '') : '');
-    if (!rows.length) {
-      h += emptyBox('No conversations yet', isEmp() ? 'Open a freelancer\'s profile and tap Message to start one.' : 'When a client messages you, or you message them, it shows up here.');
-    } else {
-      rows.forEach(function (r) {
-        var u = getUser(r.other);
-        if (!u) ensureUser(r.other, function () { if (window._currentPage === 'inbox') renderInbox(); });
-        var un = unreadOf(r.c);
-        h += '<div class="xp-row xp-conv' + (un ? ' unread' : '') + '" onclick="openMsg(\'' + esc(r.other) + '\')">'
-          + avatarHTML(u, 44)
-          + '<div class="xp-main"><div class="xp-name">' + esc(u ? u.name : 'SkillStamp member') + '</div>'
-          + '<div class="xp-meta xp-prev">' + esc(lastPreview(r.c)) + '</div></div>'
-          + '<div class="xp-side"><div class="xp-time">' + esc(timeAgo(r.c.lastTs)) + '</div>'
-          + (un ? '<span class="xp-unread">' + (un > 9 ? '9+' : un) + '</span>' : '') + '</div></div>';
-      });
-    }
-    h += '</div>';
-    el.innerHTML = h;
-  }
-  window.renderInbox = renderInbox;
 
   /* ═════════════════════ STATS ═════════════════════════════════════ */
   function fmtDur(ms) {
@@ -540,7 +457,6 @@
     var box = document.createElement('div');
     box.className = 'xh-links';
     box.innerHTML = '<button onclick="showPage(\'stats\')"><span>📊</span> ' + (isEmp() ? 'Hiring stats' : 'My stats') + '</button>'
-      + '<button onclick="showPage(\'inbox\')"><span>💬</span> Messages</button>'
       + '<button onclick="showPage(\'saved\')"><span>🔖</span> Saved</button>';
     // place right after the hero block
     var hero = home.querySelector('.ss-hero');
@@ -551,11 +467,10 @@
   /* ═════════════════════ showPage hook ═════════════════════════════ */
   var _sp = window.showPage;
   window.showPage = function (name) {
-    if (name === 'saved' || name === 'inbox' || name === 'stats') pageEl(name); // must exist before showPage activates it
+    if (name === 'saved' || name === 'stats') pageEl(name); // must exist before showPage activates it
     var r = _sp.apply(this, arguments);
     try {
       if (name === 'saved') renderSaved();
-      else if (name === 'inbox') { renderInbox(); startInboxWatch(); }
       else if (name === 'stats') renderStats();
     } catch (e) { console.warn('[extras] page render', e); }
     return r;
@@ -726,7 +641,7 @@
   setTimeout(function () {
     try {
       var p = window._currentPage;
-      if (ME && (p === 'saved' || p === 'inbox' || p === 'stats')) showPage(p, true);
+      if (ME && (p === 'saved' || p === 'stats')) showPage(p, true);
     } catch (e) {}
   }, 1500);
 })();
