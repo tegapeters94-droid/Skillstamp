@@ -109,7 +109,7 @@ window.adminSearchV6=function(q){
 
 // Tab switcher
 window.adminTab=function(name){
-  ['overview','users','content','skills','announce','analytics'].forEach(function(t){
+  ['overview','users','content','skills','announce','analytics','reports','activity'].forEach(function(t){
     var panel=document.getElementById('admtab-'+t);
     var btn=document.getElementById('admt-'+t);
     if(panel) panel.style.display=(t===name)?'block':'none';
@@ -120,6 +120,8 @@ window.adminTab=function(name){
     }
   });
   if(name==='users')     adminFilterUsers();
+  if(name==='reports' && typeof renderAdminReports==='function') renderAdminReports();
+  if(name==='activity' && typeof renderAdminActivity==='function') renderAdminActivity();
   if(name==='analytics') {
     // Mount analytics into the dedicated container
     var mnt = document.getElementById('admin-analytics-mount');
@@ -524,9 +526,9 @@ function buildAdminHTML(){
   }
 
   // ── Tab nav ──────────────────────────────────────────────────────────────
-  var tabs=['overview','users','content','skills','announce','analytics'];
-  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',announce:'📢',analytics:'📈'};
-  var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',announce:'Broadcast',analytics:'Analytics'};
+  var tabs=['overview','users','content','skills','announce','analytics','reports','activity'];
+  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',announce:'📢',analytics:'📈',reports:'🚩',activity:'📜'};
+  var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',announce:'Broadcast',analytics:'Analytics',reports:'Reports',activity:'Activity Log'};
 
   var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">'
     +'<span style="font-size:24px;">⚙️</span>'
@@ -854,6 +856,9 @@ function buildAdminHTML(){
   h+='<div id="admtab-analytics" style="display:none;">';
   h+='<div id="admin-analytics-mount"><div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">Click the Analytics tab to load data.</div></div>';
   h+='</div>';
+
+  h+='<div id="admtab-reports" style="display:none;"><div style="padding:30px;text-align:center;color:var(--td);font-size:12px;">Loading…</div></div>';
+  h+='<div id="admtab-activity" style="display:none;"><div style="padding:30px;text-align:center;color:var(--td);font-size:12px;">Loading…</div></div>';
 
   h+='</div>'; // end adm-panel
   return h;

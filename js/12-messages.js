@@ -140,13 +140,20 @@ function showContactWarning(label, originalText, maskedText, onSendAnyway, onCan
 }
 
 // ── Receiver safety alert (injected into their feed) ──────────
+function _msgEsc(t) {
+  return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+}
 function _buildFlaggedBubble(msg) {
   var isMe = msg.from === (ME && ME.uid);
   return '<div style="display:flex;justify-content:' + (isMe ? 'flex-end' : 'flex-start') + ';margin-bottom:10px;">'
     + '<div style="max-width:82%;">'
     + '<div style="background:' + (isMe ? 'var(--acc)' : 'var(--s2)') + ';color:' + (isMe ? '#fff' : 'var(--fg)') + ';border-radius:' + (isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px') + ';padding:9px 13px;font-size:12px;line-height:1.5;">'
-    + msg.text
-    + '<div style="font-size:9px;opacity:.55;margin-top:3px;text-align:' + (isMe ? 'right' : 'left') + ';">' + timeAgo(msg.ts) + '</div>'
+    + (msg.text ? '<div style="white-space:pre-wrap;word-break:break-word;">' + _msgEsc(msg.text) + '</div>' : '')
+    + (msg.img && /^data:image\/(jpeg|png|webp|gif);base64,/.test(msg.img)
+        ? '<img src="' + msg.img + '" alt="Photo" onclick="ssLightbox(this.src)" style="display:block;max-width:100%;max-height:260px;border-radius:8px;cursor:zoom-in;margin-top:' + (msg.text ? '6' : '0') + 'px;">'
+        : '')
+    + '<div style="font-size:9px;opacity:.6;margin-top:3px;text-align:' + (isMe ? 'right' : 'left') + ';">' + timeAgo(msg.ts)
+    + (isMe ? ' · ' + (msg.read ? '<span style="font-weight:700;">Seen ✓✓</span>' : 'Sent ✓') : '') + '</div>'
     + '</div>'
     + (!isMe && msg._flagged
       ? '<div style="display:flex;align-items:flex-start;gap:6px;background:#fff1f2;border:1px solid #fecdd3;border-radius:0 0 8px 8px;padding:7px 10px;margin-top:-2px;">'
@@ -272,6 +279,7 @@ window.openMsg = async function(uid) {
       + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">' + other.name + '</div>'
       + '<div style="font-size:10px;color:var(--td);">' + (other.title || other.role || 'SkillStamp Member') + '</div>'
       + '</div>'
+      + (typeof ssChatMenu === 'function' ? '<button id="chat-more-btn" aria-label="More" style="background:none;border:none;color:var(--td);cursor:pointer;padding:6px;display:flex;"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' : '')
       + '</div>'
       // Feed
       + '<div id="chat-feed" style="flex:1;overflow-y:auto;padding:14px 14px;display:flex;flex-direction:column;">'
@@ -279,6 +287,7 @@ window.openMsg = async function(uid) {
       + '</div>'
       // Input bar
       + '<div style="display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--br);flex-shrink:0;background:var(--s);">'
+      + (typeof ssPickImage === 'function' ? '<button id="chat-attach" aria-label="Attach a photo" title="Send a photo" style="background:none;border:1px solid var(--br);border-radius:10px;width:42px;height:42px;flex-shrink:0;color:var(--td);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>' : '')
       + '<input id="chat-input" class="fi no-icon" placeholder="Type a message…" style="flex:1;margin:0;font-size:13px;padding:10px 12px;height:42px;min-height:unset;" autocomplete="off">'
       + '<button id="chat-send" class="btn" style="padding:10px 14px;flex-shrink:0;height:42px;width:auto;">Send</button>'
       + '</div>'
@@ -291,6 +300,13 @@ window.openMsg = async function(uid) {
     // Wire back button
     var backBtn = document.getElementById('chat-back-btn');
     if (backBtn) backBtn.onclick = function() { closeModal(); };
+
+    var moreBtn = document.getElementById('chat-more-btn');
+    if (moreBtn) moreBtn.onclick = function() { ssChatMenu(uid); };
+    var attachBtn = document.getElementById('chat-attach');
+    if (attachBtn) attachBtn.onclick = function() {
+      ssPickImage(function(dataUrl) { actualSend('', false, dataUrl); });
+    };
 
     // Wire send button
     function doSend() {
@@ -321,8 +337,9 @@ window.openMsg = async function(uid) {
       actualSend(text, false);
     }
 
-    function actualSend(text, isFlagged) {
+    function actualSend(text, isFlagged, img) {
       var msg = { from: ME.uid, text: text, ts: Date.now(), read: false };
+      if (img) msg.img = img;
       if (isFlagged) msg._flagged = true;
       // Optimistic UI — add to feed immediately
       var feed2 = document.getElementById('chat-feed');
@@ -367,13 +384,20 @@ window.openMsg = async function(uid) {
         }
         // ───────────────────────────────────────────────────
 
+        if (img && JSON.stringify(c.messages || []).length + img.length > 900000) {
+          var e = new Error('chat-full'); e.code = 'chat-full'; throw e;
+        }
         c.messages.push(msg);
-        c.lastMsg = text;
+        c.lastMsg = text || '📷 Photo';
         c.lastTs = Date.now();
         return fbSet('conversations', cid, c);
       }).then(function() {
-        pushNotif(uid, 'message', '💬 New Message', ME.name + ': ' + text.slice(0, 80), { type: 'message', cid: cid, fromUid: ME.uid });
-      }).catch(function(e) { console.warn('Send failed', e); toast('Failed to send. Try again.', 'bad'); });
+        pushNotif(uid, 'message', '💬 New Message', ME.name + ': ' + (text ? text.slice(0, 80) : '📷 Photo'), { type: 'message', cid: cid, fromUid: ME.uid });
+      }).catch(function(e) {
+        console.warn('Send failed', e);
+        if (e && e.code === 'chat-full') toast('This chat has too many photos to add more. Send text instead.', 'bad');
+        else toast('Failed to send. Try again.', 'bad');
+      });
     } // end actualSend
 
     var sendBtn = document.getElementById('chat-send');
@@ -395,6 +419,20 @@ window.openMsg = async function(uid) {
           var atBottom = f.scrollHeight - f.scrollTop <= f.clientHeight + 80;
           f.innerHTML = buildFeedHTML(data.messages || []);
           if (atBottom) f.scrollTop = f.scrollHeight;
+          // Chat is open: anything the other person sent is now seen
+          var unseen = (data.messages || []).some(function(m) { return m.from !== ME.uid && !m.read; });
+          if (unseen && !window._markReadBusy) {
+            window._markReadBusy = true;
+            setTimeout(function() {
+              fbGet('conversations', cid).then(function(latest) {
+                var ch = false;
+                if (latest && latest.messages) {
+                  latest.messages.forEach(function(m) { if (m.from !== ME.uid && !m.read) { m.read = true; ch = true; } });
+                  if (ch) return fbSet('conversations', cid, latest);
+                }
+              }).catch(function() {}).then(function() { window._markReadBusy = false; });
+            }, 500);
+          }
         }
       );
     } catch(e) { console.warn('Chat listener error', e); }
