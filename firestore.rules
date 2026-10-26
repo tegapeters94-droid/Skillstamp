@@ -384,11 +384,23 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    //  ADMIN AUDIT LOG — backend write only, admin read only
+    //  ADMIN AUDIT LOG — admin append-only, admin read only
     // ═══════════════════════════════════════════════════════════════════════
     match /admin_audit_log/{logId} {
-      allow read:  if isAdmin();
-      allow write: if false; // Only Cloud Functions (Admin SDK) can write here
+      allow read:   if isAdmin();
+      // Admins append entries describing their own actions; entries are immutable
+      allow create: if isAdmin() && request.resource.data.get('adminUid', '') == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  REPORTS — any signed-in user can file one; only admins can read/resolve
+    // ═══════════════════════════════════════════════════════════════════════
+    match /reports/{reportId} {
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.get('reporterUid', '') == request.auth.uid &&
+                       request.resource.data.get('status', 'open') == 'open';
+      allow read, update, delete: if isAdmin();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
