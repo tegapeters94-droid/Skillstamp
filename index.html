@@ -11,6 +11,16 @@
 <meta content="0" http-equiv="Expires"/>
 <meta content="1.0.1442" name="version"/>
 <title>SkillStamp — Verified African Digital Talent</title>
+<meta name="description" content="SkillStamp connects clients with skill-verified African freelancers. Verified profiles, escrow-protected gigs and a trusted way to hire and get hired."/>
+<link rel="canonical" href="https://skillstamp.cv/"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="SkillStamp"/>
+<meta property="og:title" content="SkillStamp — Verified African Digital Talent"/>
+<meta property="og:description" content="Hire skill-verified African freelancers, or get verified and get hired. Escrow-protected gigs and trusted profiles."/>
+<meta property="og:url" content="https://skillstamp.cv/"/>
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="SkillStamp — Verified African Digital Talent"/>
+<meta name="twitter:description" content="Hire skill-verified African freelancers, or get verified and get hired."/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <!-- Styles -->
 <link rel="stylesheet" href="styles.css"/>
@@ -21,15 +31,6 @@
 <style>@keyframes slideInRight{from{transform:translateX(100%);opacity:.8}to{transform:translateX(0);opacity:1}}</style>
 </head>
 <body>
-<!-- ══════════════════════════════════════════════════════
-     SETUP BANNER — Remove this once Firebase is configured
-     ══════════════════════════════════════════════════════ -->
-<div id="setup-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#e8c520;color:#000;padding:12px 16px;font-family:monospace;font-size:12px;align-items:center;gap:10px;">
-<span style="font-size:18px;">⚙️</span>
-<span><strong>Firebase not configured yet.</strong> Replace the REPLACE_WITH_YOUR_* values in the &lt;script type="module"&gt; block.
-  <a href="https://console.firebase.google.com" style="color:#000;text-decoration:underline;" target="_blank">Open Firebase Console →</a></span>
-<button onclick="document.getElementById('setup-banner').style.display='none'" style="margin-left:auto;background:none;border:1px solid #000;border-radius:4px;padding:2px 8px;cursor:pointer;">✕</button>
-</div>
 <!-- ════════ LOGIN ════════ -->
 <div id="screen-loading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:99999;">
     <div class="ls-load-logo" style="display:flex;align-items:center;justify-content:center;">
@@ -521,7 +522,7 @@
 <!-- DASHBOARD -->
 <div class="page" id="page-dashboard">
 <div class="section">
-<div class="sh"><span class="st">Platform Statistics</span><span class="sc">Live demo metrics</span></div>
+<div class="sh"><span class="st">Platform Statistics</span><span class="sc">Live platform metrics</span></div>
 <div class="dgrid">
 <div class="mc" data-i="👤"><div class="mv" id="d-users" style="color:var(--gld);">0</div><div class="ml">Registered</div></div>
 <div class="mc" data-i="💼"><div class="mv" id="d-gigs" style="color:var(--grn);">0</div><div class="ml">Gigs</div></div>
