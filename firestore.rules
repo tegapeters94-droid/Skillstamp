@@ -122,6 +122,34 @@ service cloud.firestore {
              same('earned');
     }
 
+    // ── Notification sender checks ─────────────────────────────────────────
+    // A notice must be backed by a real relationship between sender and
+    // recipient: a shared conversation, a gig the sender owns/works on, or a
+    // proposal between them. This stops people sending fake "you were hired" or
+    // "payment received" notices to strangers.
+    function nMeta()  { return request.resource.data.get('meta', {}); }
+    function nGig()   { return get(/databases/$(database)/documents/gigs/$(string(nMeta().get('gigId', '_')))).data; }
+    function nConv()  { return get(/databases/$(database)/documents/conversations/$(string(nMeta().get('cid', '_')))).data; }
+    function nProp()  { return get(/databases/$(database)/documents/proposals/$(string(nMeta().get('proposalId', '_')))).data; }
+    function notifRelationOk() {
+      let t  = request.resource.data.type;
+      let to = request.resource.data.uid;
+      let me = request.auth.uid;
+      return (t == 'system' && to == me) ||
+             (t == 'profile_view' && nMeta().get('viewerUid', '') == me) ||
+             (t == 'endorsed' && nMeta().get('fromUid', '') == me) ||
+             (t == 'message' && nConv().participants.hasAll([me, to])) ||
+             (t == 'gig_posted' && nGig().posterUid == me) ||
+             (t == 'gig_application' && nGig().posterUid == to) ||
+             (t == 'hired' && nGig().posterUid == me) ||
+             (t == 'payment' && (to == me || nGig().posterUid == me)) ||
+             (t == 'delivery' && nGig().hiredUid == me && nGig().posterUid == to) ||
+             (t == 'revision' && nGig().posterUid == me && nGig().hiredUid == to) ||
+             (t == 'dispute_raised' && (to == me || [nGig().posterUid, nGig().hiredUid].hasAll([me, to]))) ||
+             (t == 'proposal' && nProp().fromUid == me && nProp().toUid == to) ||
+             ((t == 'proposal_accepted' || t == 'proposal_rejected') && nProp().toUid == me && nProp().fromUid == to);
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     //  USERS COLLECTION
     //  - Anyone signed in can read profiles (needed for talent browse)
@@ -339,8 +367,9 @@ service cloud.firestore {
                        request.resource.data.get('meta', {}) is map &&
                        (request.resource.data.type in ['delivery', 'dispute_raised', 'endorsed', 'gig_application',
                                                        'gig_posted', 'hired', 'message', 'payment', 'profile_view', 'revision',
-                                                       'proposal', 'proposal_accepted', 'proposal_rejected'] ||
-                        (request.resource.data.type == 'system' && request.resource.data.uid == request.auth.uid));
+                                                       'proposal', 'proposal_accepted', 'proposal_rejected', 'system']) &&
+                       // ...and must be backed by a real relationship (see notifRelationOk)
+                       notifRelationOk();
       // Owners can clear their own notifications
       allow delete: if isAuth() && resource.data.uid == request.auth.uid;
       allow update: if isAuth() &&
