@@ -26,15 +26,36 @@
       var code = (err && (err.code || err.message)) || 'error';
       // quiet collections where failures are expected / unimportant to the user
       if (col === 'analytics_events' || col === 'notifications') return;
+      // Visitors who are not signed in never see save errors (the landing page
+      // makes background writes that are correctly refused for them).
+      if (!window.ME || !window.ME.uid) return;
       var now = Date.now();
       if (now - lastShown < 6000) return;
       lastShown = now;
       var denied = /permission|insufficient/i.test(String(code));
       if (typeof window.toast === 'function') {
         window.toast(denied
-          ? 'Could not save (' + col + '): blocked by security rules.'
-          : 'Could not save (' + col + '). Check your connection and try again.', 'bad');
+          ? 'We couldn\'t save that change. Please refresh and try again.'
+          : 'Couldn\'t save. Check your connection and try again.', 'bad');
       }
     } catch (e) {}
   };
+
+  // 3) Landing page "Members" pill: the real member count is only readable
+  //    after sign-in. If it can't be read, hide the pill instead of showing a
+  //    bare label ("Growing Members").
+  function fixMembersPill() {
+    var el = document.getElementById('login-user-count');
+    if (!el) return;
+    var pill = el.closest('.ls-gs-pill');
+    var apply = function () {
+      if (!pill) return;
+      var t = (el.textContent || '').trim();
+      pill.style.display = (t === 'Growing' || t === '') ? 'none' : '';
+    };
+    new MutationObserver(apply).observe(el, { childList: true, characterData: true, subtree: true });
+    apply();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fixMembersPill);
+  else fixMembersPill();
 })();
