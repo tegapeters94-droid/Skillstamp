@@ -96,40 +96,101 @@ async function verifyIdToken(token, projectId) {
 }
 
 /* ---------- email template ---------- */
-function welcomeEmail(name, role) {
-  const first = esc(cleanName(name).split(' ')[0] || 'there');
+const BRAND = {
+  site: 'https://skillstamp.cv/',
+  logo: 'https://skillstamp.cv/email-logo.png',
+  dark: '#0d3320',
+  green: '#1a6b3c',
+  mint: '#7ee2a8',
+  tint: '#eaf4ee',
+  ink: '#0d1109',
+  body: '#4b5a50',
+  muted: '#7a877e',
+  line: '#dde2d6',
+  page: '#f4f6f1',
+};
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
+function welcomeEmail(name, role, canReply) {
+  const first = cleanName(name).split(' ')[0] || 'there';
   const isClient = role === 'employer';
+  const B = BRAND;
+  const intro = isClient
+    ? 'Your client account is ready. SkillStamp lists freelancers whose skills have been checked, so you can hire with confidence and pay only when the work is delivered.'
+    : 'Your freelancer account is ready. SkillStamp helps you prove your skills, get noticed by clients and get paid securely for the work you deliver.';
+  const label = isClient ? 'Getting started as a client' : 'Getting started as a freelancer';
+  const cta = isClient ? 'Find talent' : 'Complete my profile';
   const steps = isClient
     ? [
-        ['Browse verified talent', 'Every freelancer on SkillStamp has a Skill ID. Look for the green checkmark.'],
-        ['Post your first gig', 'Describe the work and your budget. Freelancers apply with proposals and portfolios.'],
-        ['Hire with confidence', 'Payment is held in escrow and only released when you approve the delivery.'],
+        ['Browse verified talent', 'Every freelancer has a Skill ID. Look for the green verified seal.'],
+        ['Post your first gig', 'Describe the work and your budget, then review proposals and portfolios.'],
+        ['Pay with confidence', 'Payment is held in escrow and only released when you approve the delivery.'],
       ]
     : [
         ['Complete your profile', 'Add a photo, a headline and your skills so clients can find you.'],
-        ['Get skill-verified', 'Submit your work to earn the verified checkmark and stand out in search.'],
+        ['Get skill-verified', 'Submit your work to earn the verified seal and stand out in search.'],
         ['Apply to gigs', 'Send proposals with your portfolio and start building your reputation.'],
       ];
-  const url = 'https://skillstamp.cv/';
-  const rows = steps.map((s, i) =>
-    `<tr><td style="padding:10px 0;vertical-align:top;width:34px;"><div style="width:26px;height:26px;border-radius:13px;background:#e8f3ec;color:#1a6b3c;font-weight:700;font-size:13px;line-height:26px;text-align:center;">${i + 1}</div></td>` +
-    `<td style="padding:10px 0;"><div style="font-weight:700;font-size:15px;color:#101712;">${esc(s[0])}</div><div style="font-size:14px;color:#55635a;line-height:1.5;margin-top:2px;">${esc(s[1])}</div></td></tr>`).join('');
-  const html = `<!doctype html><html><body style="margin:0;background:#f3f5f1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f5f1;padding:28px 12px;"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #e3e8e1;">
-<tr><td style="background:#0d3320;padding:26px 28px;"><div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-.01em;">Skill<span style="color:#7ee2a8;">Stamp</span></div></td></tr>
-<tr><td style="padding:30px 28px 8px;">
-<div style="font-size:24px;font-weight:800;color:#101712;letter-spacing:-.02em;">Welcome to SkillStamp, ${first}.</div>
-<div style="font-size:15px;color:#55635a;line-height:1.6;margin-top:10px;">${isClient ? 'Your client account is ready. Here is how to find and hire the right talent.' : 'Your freelancer account is ready. Here is how to get noticed and win your first gig.'}</div>
+
+  const rows = steps.map((s, i) => `
+<tr>
+  <td width="44" valign="top" style="padding:14px 0 14px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="32" height="32" align="center" valign="middle" style="width:32px;height:32px;background:${B.green};border-radius:16px;color:#ffffff;font-family:${FONT};font-size:14px;font-weight:700;line-height:32px;">${i + 1}</td></tr></table>
+  </td>
+  <td valign="top" style="padding:14px 0;${i < steps.length - 1 ? 'border-bottom:1px solid ' + B.line + ';' : ''}">
+    <div style="font-family:${FONT};font-size:16px;font-weight:700;color:${B.ink};line-height:1.3;">${esc(s[0])}</div>
+    <div style="font-family:${FONT};font-size:14px;color:${B.body};line-height:1.55;margin-top:3px;">${esc(s[1])}</div>
+  </td>
+</tr>`).join('');
+
+  const html = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Welcome to SkillStamp</title></head>
+<body style="margin:0;padding:0;background:${B.page};">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Your SkillStamp account is ready. Here is how to get started.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${B.page};"><tr><td align="center" style="padding:32px 14px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid ${B.line};border-radius:20px;overflow:hidden;">
+
+<tr><td align="center" bgcolor="${B.dark}" style="background:${B.dark};background-image:linear-gradient(135deg,#0f5430 0%,${B.dark} 70%);padding:38px 28px 34px;">
+  <img src="${B.logo}" width="72" height="72" alt="SkillStamp" style="display:block;margin:0 auto;width:72px;height:72px;border:0;outline:none;">
+  <div style="font-family:${FONT};font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#ffffff;margin-top:14px;">Skill<span style="color:${B.mint};">Stamp</span></div>
+  <div style="font-family:${FONT};font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#a9d9bd;margin-top:6px;">Verified skills. Trusted work.</div>
 </td></tr>
-<tr><td style="padding:8px 28px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr>
-<tr><td style="padding:18px 28px 30px;"><a href="${url}" style="display:inline-block;background:#1a6b3c;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:12px;">Open SkillStamp</a></td></tr>
-<tr><td style="padding:18px 28px;border-top:1px solid #e3e8e1;font-size:12px;color:#7a877e;line-height:1.6;">You are receiving this because you created an account at skillstamp.cv. If this was not you, you can ignore this email.</td></tr>
-</table></td></tr></table></body></html>`;
-  const text = `Welcome to SkillStamp, ${cleanName(name).split(' ')[0] || 'there'}.\n\n` +
+
+<tr><td style="padding:36px 36px 6px;">
+  <div style="font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${B.green};">${esc(label)}</div>
+  <div style="font-family:${FONT};font-size:28px;line-height:1.2;font-weight:800;letter-spacing:-0.02em;color:${B.ink};margin-top:10px;">Welcome, ${esc(first)}.</div>
+  <div style="font-family:${FONT};font-size:16px;line-height:1.65;color:${B.body};margin-top:14px;">${esc(intro)}</div>
+</td></tr>
+
+<tr><td style="padding:14px 36px 4px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+</td></tr>
+
+<tr><td align="center" style="padding:22px 36px 12px;">
+  <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="${B.green}" style="background:${B.green};border-radius:12px;">
+    <a href="${B.site}" style="display:inline-block;padding:15px 36px;font-family:${FONT};font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">${esc(cta)}</a>
+  </td></tr></table>
+</td></tr>
+
+<tr><td style="padding:22px 36px 34px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${B.tint};border-radius:14px;"><tr><td style="padding:16px 20px;font-family:${FONT};font-size:14px;line-height:1.6;color:${B.body};">
+    <strong style="color:${B.ink};">Need a hand?</strong> ${canReply ? 'Reply to this email and a real person will get back to you.' : 'Visit <a href="' + B.site + '" style="color:' + B.green + ';text-decoration:none;font-weight:600;">skillstamp.cv</a> and use the help options in the app.'}
+  </td></tr></table>
+</td></tr>
+
+<tr><td style="padding:22px 36px 28px;border-top:1px solid ${B.line};background:#fafbf8;">
+  <div style="font-family:${FONT};font-size:12px;line-height:1.7;color:${B.muted};">You are receiving this because you created an account at <a href="${B.site}" style="color:${B.green};text-decoration:none;">skillstamp.cv</a>. If this was not you, you can safely ignore this email.</div>
+  <div style="font-family:${FONT};font-size:12px;color:${B.muted};margin-top:10px;">&copy; ${new Date().getUTCFullYear()} SkillStamp</div>
+</td></tr>
+
+</table>
+</td></tr></table>
+</body></html>`;
+
+  const text = `Welcome to SkillStamp, ${first}.\n\n${intro}\n\n${label}\n` +
     steps.map((s, i) => `${i + 1}. ${s[0]} - ${s[1]}`).join('\n') +
-    `\n\nOpen SkillStamp: ${url}\n\nYou are receiving this because you created an account at skillstamp.cv.`;
-  return { subject: `Welcome to SkillStamp, ${cleanName(name).split(' ')[0] || 'there'}`, html, text };
+    `\n\n${cta}: ${B.site}\n\n${canReply ? 'Need a hand? Reply to this email.' : 'Need a hand? Visit skillstamp.cv.'}\n\nYou are receiving this because you created an account at skillstamp.cv. If this was not you, you can safely ignore this email.`;
+  return { subject: `Welcome to SkillStamp, ${first}`, html, text };
 }
 
 async function sendBrevo(env, to, toName, mail) {
@@ -184,7 +245,7 @@ async function handleWelcome(req, env) {
   if (capCount >= cap) return json({ ok: false, error: 'daily limit reached' }, 429, req, env);
 
   try {
-    await sendBrevo(env, email, name, welcomeEmail(name, role));
+    await sendBrevo(env, email, name, welcomeEmail(name, role, !!env.REPLY_TO));
   } catch (e) {
     console.error('welcome send failed', e && e.message);
     return json({ ok: false, error: 'send failed' }, 502, req, env);
