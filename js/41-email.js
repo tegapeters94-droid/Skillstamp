@@ -2,7 +2,7 @@
    Does not touch auth or data logic; fails silently. */
 (function () {
   var API = 'https://skillstamp-email.tegapeters94.workers.dev';
-  if (!API || API.indexOf('tegapeters94') > -1) return;
+  if (!API) return;
   var tries = 0;
   function key(uid) { return 'ss_welcome_' + uid; }
   function check() {
