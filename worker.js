@@ -19,6 +19,13 @@
  *   ALLOWED_ORIGINS      e.g. https://skillstamp.cv,https://www.skillstamp.cv
  *   REPLY_TO             (optional) e.g. hello@skillstamp.cv
  *   DAILY_CAP            (optional) max emails per day, default 250
+ *   SA_JSON              Secret: Google service account key (JSON) with "Cloud Datastore Viewer" - used by the 5-minute job
+ *
+ * Scheduled job (Triggers -> Cron: every 5 minutes)
+ *   Reads new documents from the Firestore `notifications` collection and emails
+ *   the recipient for important events (new proposal, hired, delivery, revision,
+ *   payment, dispute, verification). Respects users.emailNotifs === false,
+ *   limits each person to 5 emails per hour and never sends the same one twice.
  */
 
 const JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
@@ -213,6 +220,145 @@ async function sendBrevo(env, to, toName, mail) {
   }
 }
 
+
+/* ---------- gig / activity notification emails ---------- */
+const NOTIFY_TYPES = {
+  gig_application:       { subject: 'New proposal on your gig',        eyebrow: 'New proposal',      cta: 'Review proposal' },
+  hired:                 { subject: 'You have been hired',              eyebrow: 'You got the job',   cta: 'Open your gig' },
+  delivery:              { subject: 'Work delivered - review it now',   eyebrow: 'Delivery submitted',cta: 'Review delivery' },
+  revision:              { subject: 'A revision was requested',         eyebrow: 'Revision requested',cta: 'See the feedback' },
+  payment:               { subject: 'Payment update on SkillStamp',     eyebrow: 'Payment',           cta: 'View my wallet' },
+  dispute_raised:        { subject: 'A dispute needs your attention',   eyebrow: 'Dispute',           cta: 'Open SkillStamp' },
+  verification_approved: { subject: 'Your skill is verified',           eyebrow: 'Verified',          cta: 'View my profile' },
+  verification_rejected: { subject: 'Update on your skill verification',eyebrow: 'Verification',      cta: 'Open SkillStamp' },
+};
+
+function stripDecor(t) {
+  return String(t || '')
+    .replace(/&#x?[0-9a-fA-F]+;?/g, '')
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2190}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
+    .replace(/\s+/g, ' ').trim().slice(0, 300);
+}
+
+function notifyEmail(type, n, name) {
+  const B = BRAND, def = NOTIFY_TYPES[type];
+  const first = cleanName(name).split(' ')[0] || 'there';
+  let headline = stripDecor(n.title);
+  if (!headline || headline.toLowerCase() === def.eyebrow.toLowerCase()) headline = def.subject;
+  const msg = stripDecor(n.body);
+  const html = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${esc(def.subject)}</title></head>
+<body style="margin:0;padding:0;background:${B.page};">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(msg || headline)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${B.page};"><tr><td align="center" style="padding:32px 14px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid ${B.line};border-radius:20px;overflow:hidden;">
+<tr><td align="center" bgcolor="${B.dark}" style="background:${B.dark};background-image:linear-gradient(135deg,#0f5430 0%,${B.dark} 70%);padding:26px 28px;">
+  <img src="${B.logo}" width="44" height="44" alt="SkillStamp" style="display:inline-block;vertical-align:middle;width:44px;height:44px;border:0;">
+  <span style="font-family:${FONT};font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#ffffff;vertical-align:middle;margin-left:8px;">Skill<span style="color:${B.mint};">Stamp</span></span>
+</td></tr>
+<tr><td style="padding:34px 36px 8px;">
+  <div style="font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${B.green};">${esc(def.eyebrow)}</div>
+  <div style="font-family:${FONT};font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-0.02em;color:${B.ink};margin-top:10px;">${esc(headline)}</div>
+  <div style="font-family:${FONT};font-size:16px;line-height:1.65;color:${B.body};margin-top:14px;">Hi ${esc(first)},</div>
+  ${msg ? `<div style="font-family:${FONT};font-size:16px;line-height:1.65;color:${B.body};margin-top:8px;">${esc(msg)}</div>` : ''}
+</td></tr>
+<tr><td align="left" style="padding:22px 36px 34px;">
+  <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="${B.green}" style="background:${B.green};border-radius:12px;">
+    <a href="${B.site}" style="display:inline-block;padding:14px 32px;font-family:${FONT};font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">${esc(def.cta)}</a>
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:22px 36px 28px;border-top:1px solid ${B.line};background:#fafbf8;">
+  <div style="font-family:${FONT};font-size:12px;line-height:1.7;color:${B.muted};">You are receiving this because of activity on your <a href="${B.site}" style="color:${B.green};text-decoration:none;">SkillStamp</a> account. You can turn these emails off any time in Settings &rarr; Email notifications.</div>
+  <div style="font-family:${FONT};font-size:12px;color:${B.muted};margin-top:10px;">&copy; ${new Date().getUTCFullYear()} SkillStamp</div>
+</td></tr>
+</table></td></tr></table></body></html>`;
+  const text = `${headline}\n\nHi ${first},\n${msg ? '\n' + msg + '\n' : ''}\n${def.cta}: ${B.site}\n\nYou can turn these emails off in Settings > Email notifications.`;
+  return { subject: def.subject, html, text };
+}
+
+/* ---- Google service account -> access token (Firestore REST) ---- */
+let saToken = { v: null, exp: 0 };
+function b64u(buf) {
+  let b = ''; const a = new Uint8Array(buf);
+  for (let i = 0; i < a.length; i++) b += String.fromCharCode(a[i]);
+  return btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function getSaToken(env) {
+  if (saToken.v && Date.now() < saToken.exp) return saToken.v;
+  const sa = JSON.parse(env.SA_JSON);
+  const now = Math.floor(Date.now() / 1000);
+  const head = b64u(enc.encode(JSON.stringify({ alg: 'RS256', typ: 'JWT' })));
+  const claim = b64u(enc.encode(JSON.stringify({
+    iss: sa.client_email, scope: 'https://www.googleapis.com/auth/datastore',
+    aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600,
+  })));
+  const pem = sa.private_key.replace(/-----[A-Z ]+-----/g, '').replace(/\s+/g, '');
+  const der = b64uToBytes(pem.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));
+  const key = await crypto.subtle.importKey('pkcs8', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, enc.encode(head + '.' + claim));
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=' + encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer') + '&assertion=' + head + '.' + claim + '.' + b64u(sig),
+  });
+  if (!r.ok) throw new Error('token ' + r.status + ' ' + (await r.text()).slice(0, 200));
+  const j = await r.json();
+  saToken = { v: j.access_token, exp: Date.now() + (j.expires_in - 120) * 1000 };
+  return saToken.v;
+}
+const fv = (f) => { if (!f) return undefined; const k = Object.keys(f)[0]; const v = f[k]; return k === 'integerValue' ? Number(v) : k === 'nullValue' ? null : v; };
+
+async function runNotifyJob(env) {
+  if (!env.SA_JSON || !env.BREVO_API_KEY) return;
+  const pid = env.FIREBASE_PROJECT_ID;
+  const base = 'https://firestore.googleapis.com/v1/projects/' + pid + '/databases/(default)/documents';
+  const nowMs = Date.now();
+  let cursor = parseInt((await env.SS_KV.get('notif_cursor')) || '0', 10);
+  if (!cursor) { await env.SS_KV.put('notif_cursor', String(nowMs)); return; } // first run: start from now, no backfill
+  const token = await getSaToken(env);
+  const q = { structuredQuery: {
+    from: [{ collectionId: 'notifications' }],
+    where: { fieldFilter: { field: { fieldPath: 'ts' }, op: 'GREATER_THAN', value: { integerValue: String(cursor - 120000) } } },
+    orderBy: [{ field: { fieldPath: 'ts' }, direction: 'ASCENDING' }],
+    limit: 100,
+  } };
+  const r = await fetch(base + ':runQuery', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(q) });
+  if (!r.ok) throw new Error('query ' + r.status + ' ' + (await r.text()).slice(0, 200));
+  const rows = (await r.json()).filter((x) => x.document);
+  let maxTs = cursor;
+  const day = today(), hour = new Date().toISOString().slice(0, 13);
+  const cap = parseInt(env.DAILY_CAP || '250', 10);
+  for (const row of rows) {
+    const f = row.document.fields || {};
+    const id = row.document.name.split('/').pop();
+    const ts = fv(f.ts) || 0;
+    if (ts > maxTs) maxTs = ts;
+    const type = fv(f.type), uid = fv(f.uid);
+    if (!NOTIFY_TYPES[type] || !uid) continue;
+    if (fv(f.read) === true) continue;
+    if (nowMs - ts > 6 * 3600 * 1000) continue;
+    if (await env.SS_KV.get('sent:' + id)) continue;
+    const capCount = parseInt((await env.SS_KV.get('cap:' + day)) || '0', 10);
+    if (capCount >= cap) { console.log('daily cap reached'); break; }
+    const rlKey = 'rl:' + uid + ':' + hour;
+    const rl = parseInt((await env.SS_KV.get(rlKey)) || '0', 10);
+    if (rl >= 5) continue;
+    const ur = await fetch(base + '/users/' + encodeURIComponent(uid), { headers: { Authorization: 'Bearer ' + token } });
+    if (!ur.ok) continue;
+    const uf = (await ur.json()).fields || {};
+    const email = String(fv(uf.email) || '').toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) continue;
+    if (fv(uf.emailNotifs) === false || fv(uf.isBanned) === true) continue;
+    const mail = notifyEmail(type, { title: fv(f.title), body: fv(f.body) }, fv(uf.name));
+    try {
+      await sendBrevo(env, email, cleanName(fv(uf.name)), mail);
+      await env.SS_KV.put('sent:' + id, '1', { expirationTtl: 7 * 86400 });
+      await env.SS_KV.put(rlKey, String(rl + 1), { expirationTtl: 7200 });
+      await env.SS_KV.put('cap:' + day, String(capCount + 1), { expirationTtl: 172800 });
+    } catch (e) { console.error('notify send failed', id, e && e.message); }
+  }
+  if (maxTs > cursor) await env.SS_KV.put('notif_cursor', String(maxTs));
+}
+
 /* ---------- handlers ---------- */
 async function handleWelcome(req, env) {
   const auth = req.headers.get('Authorization') || '';
@@ -257,6 +403,9 @@ async function handleWelcome(req, env) {
 }
 
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runNotifyJob(env).catch((e) => console.error('notify job failed', e && e.message)));
+  },
   async fetch(req, env) {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req, env) });
