@@ -1,8 +1,8 @@
 /* Welcome email hook. Calls the SkillStamp email service once for a brand-new account.
    Does not touch auth or data logic; fails silently. */
 (function () {
-  var API = 'https://skillstamp-email.YOUR-SUBDOMAIN.workers.dev';
-  if (!API || API.indexOf('YOUR-SUBDOMAIN') > -1) return;
+  var API = 'https://skillstamp-email.tegapeters94.workers.dev';
+  if (!API || API.indexOf('tegapeters94') > -1) return;
   var tries = 0;
   function key(uid) { return 'ss_welcome_' + uid; }
   function check() {
