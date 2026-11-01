@@ -3394,3 +3394,12 @@ nav .nt,.nt{font-size:var(--fs-sm);padding:9px 14px;border-radius:var(--rad-sm);
 @keyframes npbar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 @media(max-width:640px){.np-wrap{right:12px;left:12px;width:auto;}}
 [data-theme="dark"] .nx-row.unread{background:rgba(52,211,153,.06);}
+
+
+/* ── Polish: contrast + admin overview layout ─────────────────────────── */
+/* Purple stat numbers / bars were #a78bfa on white (about 2.7:1). Darker in the light theme only. */
+[data-theme="light"]{--pur:#6d28d9;}
+.en-star:hover{transform:scale(1.12);}
+/* Admin overview: 2 stat cards per row is too sparse on wide screens */
+@media (min-width:720px){#admtab-overview>div[style*="repeat(2,1fr)"]{grid-template-columns:repeat(3,1fr) !important;}}
+@media (min-width:1000px){#admtab-overview>div[style*="repeat(2,1fr)"]{grid-template-columns:repeat(4,1fr) !important;}}
