@@ -3,6 +3,7 @@
  *
  * Routes
  *   GET  /health            -> { ok: true }
+ *   POST /reset             -> emails a branded password-reset link ({ email }); public, rate limited
  *   POST /welcome           -> sends the welcome email to the signed-in user
  *                              (Authorization: Bearer <Firebase ID token>)
  *
@@ -19,6 +20,7 @@
  *   ALLOWED_ORIGINS      e.g. https://skillstamp.cv,https://www.skillstamp.cv
  *   REPLY_TO             (optional) e.g. hello@skillstamp.cv
  *   DAILY_CAP            (optional) max emails per day, default 250
+ *   SA_AUTH_JSON         Secret: second service account key (role "Firebase Authentication Admin") - used only to create password-reset links
  *   SA_JSON              Secret: Google service account key (JSON) with "Cloud Datastore Viewer" - used by the 5-minute job
  *
  * Scheduled job (Triggers -> Cron: every 5 minutes)
@@ -278,19 +280,21 @@ function notifyEmail(type, n, name) {
 }
 
 /* ---- Google service account -> access token (Firestore REST) ---- */
-let saToken = { v: null, exp: 0 };
+const saTokens = {};
 function b64u(buf) {
   let b = ''; const a = new Uint8Array(buf);
   for (let i = 0; i < a.length; i++) b += String.fromCharCode(a[i]);
   return btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-async function getSaToken(env) {
-  if (saToken.v && Date.now() < saToken.exp) return saToken.v;
-  const sa = JSON.parse(env.SA_JSON);
+async function getSaToken(env, which, scope) {
+  which = which || 'SA_JSON'; scope = scope || 'https://www.googleapis.com/auth/datastore';
+  const c = saTokens[which];
+  if (c && Date.now() < c.exp) return c.v;
+  const sa = JSON.parse(env[which]);
   const now = Math.floor(Date.now() / 1000);
   const head = b64u(enc.encode(JSON.stringify({ alg: 'RS256', typ: 'JWT' })));
   const claim = b64u(enc.encode(JSON.stringify({
-    iss: sa.client_email, scope: 'https://www.googleapis.com/auth/datastore',
+    iss: sa.client_email, scope: scope,
     aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600,
   })));
   const pem = sa.private_key.replace(/-----[A-Z ]+-----/g, '').replace(/\s+/g, '');
@@ -303,8 +307,8 @@ async function getSaToken(env) {
   });
   if (!r.ok) throw new Error('token ' + r.status + ' ' + (await r.text()).slice(0, 200));
   const j = await r.json();
-  saToken = { v: j.access_token, exp: Date.now() + (j.expires_in - 120) * 1000 };
-  return saToken.v;
+  saTokens[which] = { v: j.access_token, exp: Date.now() + (j.expires_in - 120) * 1000 };
+  return saTokens[which].v;
 }
 const fv = (f) => { if (!f) return undefined; const k = Object.keys(f)[0]; const v = f[k]; return k === 'integerValue' ? Number(v) : k === 'nullValue' ? null : v; };
 
@@ -360,6 +364,99 @@ async function runNotifyJob(env) {
   if (maxTs > cursor) await env.SS_KV.put('notif_cursor', String(maxTs));
 }
 
+
+/* ---------- password reset ---------- */
+function resetEmail(link) {
+  const B = BRAND;
+  const html = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Reset your SkillStamp password</title></head>
+<body style="margin:0;padding:0;background:${B.page};">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Use this link to choose a new password. It expires in one hour.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${B.page};"><tr><td align="center" style="padding:32px 14px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid ${B.line};border-radius:20px;overflow:hidden;">
+<tr><td align="center" bgcolor="${B.dark}" style="background:${B.dark};background-image:linear-gradient(135deg,#0f5430 0%,${B.dark} 70%);padding:26px 28px;">
+  <img src="${B.logo}" width="44" height="44" alt="SkillStamp" style="display:inline-block;vertical-align:middle;width:44px;height:44px;border:0;">
+  <span style="font-family:${FONT};font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#ffffff;vertical-align:middle;margin-left:8px;">Skill<span style="color:${B.mint};">Stamp</span></span>
+</td></tr>
+<tr><td style="padding:34px 36px 6px;">
+  <div style="font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${B.green};">Password reset</div>
+  <div style="font-family:${FONT};font-size:26px;line-height:1.25;font-weight:800;letter-spacing:-0.02em;color:${B.ink};margin-top:10px;">Reset your password</div>
+  <div style="font-family:${FONT};font-size:16px;line-height:1.65;color:${B.body};margin-top:14px;">We received a request to reset the password for your SkillStamp account. Click the button below to choose a new one. This link expires in one hour.</div>
+</td></tr>
+<tr><td align="left" style="padding:22px 36px 12px;">
+  <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="${B.green}" style="background:${B.green};border-radius:12px;">
+    <a href="${esc(link)}" style="display:inline-block;padding:15px 34px;font-family:${FONT};font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">Reset password</a>
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:10px 36px 30px;">
+  <div style="font-family:${FONT};font-size:13px;line-height:1.6;color:${B.muted};">Button not working? Copy and paste this link into your browser:</div>
+  <div style="font-family:${FONT};font-size:12px;line-height:1.5;color:${B.green};word-break:break-all;margin-top:6px;">${esc(link)}</div>
+</td></tr>
+<tr><td style="padding:0 36px 30px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${B.tint};border-radius:14px;"><tr><td style="padding:16px 20px;font-family:${FONT};font-size:14px;line-height:1.6;color:${B.body};">
+    <strong style="color:${B.ink};">Did not ask for this?</strong> You can safely ignore this email. Your password will not change unless you click the button above.
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:22px 36px 28px;border-top:1px solid ${B.line};background:#fafbf8;">
+  <div style="font-family:${FONT};font-size:12px;line-height:1.7;color:${B.muted};">This email was sent by <a href="${B.site}" style="color:${B.green};text-decoration:none;">SkillStamp</a> because a password reset was requested for your account.</div>
+  <div style="font-family:${FONT};font-size:12px;color:${B.muted};margin-top:10px;">&copy; ${new Date().getUTCFullYear()} SkillStamp</div>
+</td></tr>
+</table></td></tr></table></body></html>`;
+  const text = `Reset your SkillStamp password\n\nWe received a request to reset the password for your SkillStamp account. Open the link below to choose a new one. It expires in one hour.\n\n${link}\n\nIf you did not ask for this, you can safely ignore this email. Your password will not change.`;
+  return { subject: 'Reset your SkillStamp password', html, text };
+}
+
+async function handleReset(req, env) {
+  if (!env.SA_AUTH_JSON) return json({ ok: false, error: 'not configured' }, 503, req, env);
+  let body = {};
+  try { body = await req.json(); } catch (e) {}
+  const email = String(body.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return json({ ok: false, error: 'invalid-email' }, 400, req, env);
+
+  const hour = new Date().toISOString().slice(0, 13);
+  const ip = req.headers.get('CF-Connecting-IP') || 'unknown';
+  const eKey = 'rst:e:' + email + ':' + hour;
+  const iKey = 'rst:i:' + ip + ':' + hour;
+  const eN = parseInt((await env.SS_KV.get(eKey)) || '0', 10);
+  const iN = parseInt((await env.SS_KV.get(iKey)) || '0', 10);
+  if (eN >= 3 || iN >= 10) return json({ ok: false, error: 'rate-limited' }, 429, req, env);
+  await env.SS_KV.put(eKey, String(eN + 1), { expirationTtl: 7200 });
+  await env.SS_KV.put(iKey, String(iN + 1), { expirationTtl: 7200 });
+
+  const capKey = 'cap:' + today();
+  const cap = parseInt(env.DAILY_CAP || '250', 10);
+  if (parseInt((await env.SS_KV.get(capKey)) || '0', 10) >= cap) return json({ ok: false, error: 'daily limit reached' }, 429, req, env);
+
+  const token = await getSaToken(env, 'SA_AUTH_JSON', 'https://www.googleapis.com/auth/identitytoolkit');
+  const url = 'https://identitytoolkit.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/accounts:sendOobCode';
+  const call = (extra) => fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({ requestType: 'PASSWORD_RESET', email: email, returnOobLink: true }, extra)),
+  });
+  let r = await call({ continueUrl: 'https://skillstamp.cv/' });
+  if (r.status === 400) {
+    const t = await r.clone().text();
+    if (/INVALID_CONTINUE_URI|UNAUTHORIZED_DOMAIN|MISSING_CONTINUE_URI/.test(t)) r = await call({});
+  }
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    if (/EMAIL_NOT_FOUND|USER_NOT_FOUND/.test(t)) return json({ ok: false, error: 'not-found' }, 404, req, env);
+    console.error('oob failed', r.status, t.slice(0, 200));
+    return json({ ok: false, error: 'failed' }, 502, req, env);
+  }
+  const j = await r.json();
+  if (!j.oobLink) return json({ ok: false, error: 'failed' }, 502, req, env);
+  try {
+    await sendBrevo(env, email, '', resetEmail(j.oobLink));
+  } catch (e) {
+    console.error('reset send failed', e && e.message);
+    return json({ ok: false, error: 'send failed' }, 502, req, env);
+  }
+  await env.SS_KV.put(capKey, String(parseInt((await env.SS_KV.get(capKey)) || '0', 10) + 1), { expirationTtl: 172800 });
+  return json({ ok: true }, 200, req, env);
+}
+
 /* ---------- handlers ---------- */
 async function handleWelcome(req, env) {
   const auth = req.headers.get('Authorization') || '';
@@ -411,6 +508,13 @@ export default {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req, env) });
     if (url.pathname === '/health') return json({ ok: true }, 200, req, env);
+    if (url.pathname === '/reset' && req.method === 'POST') {
+      const origin = req.headers.get('Origin') || '';
+      const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+      if (!origin || !allowed.includes(origin)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try { return await handleReset(req, env); }
+      catch (e) { console.error('reset error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
     if (url.pathname === '/welcome' && req.method === 'POST') {
       const origin = req.headers.get('Origin') || '';
       const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
