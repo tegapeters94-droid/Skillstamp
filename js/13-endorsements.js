@@ -112,8 +112,8 @@ window.openEndorse = function(uid) {
   mh += '<div class="fg">';
   mh += '<label class="fl">Rating</label>';
   mh += '<div style="display:flex;gap:6px;align-items:center;margin-top:4px;" id="en-stars-row">';
-  for (var i = 5; i >= 1; i--) {
-    mh += '<span data-val="' + i + '" class="en-star" style="font-size:26px;cursor:pointer;color:' + (i === 5 ? '#f59e0b' : 'var(--br)') + ';transition:color .15s;line-height:1;" onclick="setEndorseRating(' + i + ')">★</span>';
+  for (var i = 1; i <= 5; i++) {
+    mh += '<span data-val="' + i + '" class="en-star" role="button" aria-label="' + i + ' star' + (i > 1 ? 's' : '') + '" style="font-size:28px;cursor:pointer;color:#f59e0b;transition:color .15s,transform .15s;line-height:1;" onclick="setEndorseRating(' + i + ')">★</span>';
   }
   mh += '<span id="en-rating-label" style="font-size:11px;color:var(--td);margin-left:6px;">Excellent</span>';
   mh += '</div>';
@@ -145,10 +145,10 @@ window.setEndorseRating = function(val) {
   document.getElementById('en-stars-val').value = val;
   var label = document.getElementById('en-rating-label');
   if (label) label.textContent = labels[val] || '';
-  // Update star colors — left is highest (5), right is lowest (1)
+  // Update star colors — stars 1..val are filled
   document.querySelectorAll('.en-star').forEach(function(s) {
     var sv = parseInt(s.getAttribute('data-val'));
-    s.style.color = sv <= val ? '#f59e0b' : 'var(--br)';
+    s.style.color = sv <= val ? '#f59e0b' : '#c4cabf';
   });
 };
 
