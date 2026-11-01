@@ -224,6 +224,7 @@ async function sendBrevo(env, to, toName, mail) {
 /* ---------- gig / activity notification emails ---------- */
 const NOTIFY_TYPES = {
   gig_application:       { subject: 'New proposal on your gig',        eyebrow: 'New proposal',      cta: 'Review proposal' },
+  proposal:              { subject: 'You received a direct proposal',   eyebrow: 'Direct proposal',   cta: 'Review proposal' },
   hired:                 { subject: 'You have been hired',              eyebrow: 'You got the job',   cta: 'Open your gig' },
   delivery:              { subject: 'Work delivered - review it now',   eyebrow: 'Delivery submitted',cta: 'Review delivery' },
   revision:              { subject: 'A revision was requested',         eyebrow: 'Revision requested',cta: 'See the feedback' },
