@@ -107,6 +107,10 @@ window.adminSearchV6=function(q){
 //  ADMIN FUNCTIONS — Full Suite
 // ═══════════════════════════════════════════════════════
 
+// Post author name (posts store it as `name`; older ones as `userName`) and safe text
+function _pAuthor(p){return String(p.name||p.userName||((typeof getUser==='function'&&getUser(p.uid)||{}).name)||'A member');}
+function _aEsc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
 // Tab switcher
 window.adminTab=function(name){
   ['overview','users','content','skills','announce','analytics','reports','activity'].forEach(function(t){
@@ -331,7 +335,7 @@ window.adminExportCSV=function(){
 window.adminExportPostsCSV=function(){
   var rows=[['Author','Content','Type','Likes','Comments','Posted At']];
   (CACHE.posts||[]).forEach(function(p){
-    rows.push([p.userName,(p.content||'').replace(/,/g,' '),p.type||'general',p.likes||0,(p.comments||[]).length,new Date(p.ts||Date.now()).toLocaleString()]);
+    rows.push([_pAuthor(p),(p.content||'').replace(/,/g,' '),p.type||'general',Array.isArray(p.likes)?p.likes.length:(p.likes||0),(p.comments||[]).length,new Date(p.ts||Date.now()).toLocaleString()]);
   });
   downloadCSV('skillstamp_posts.csv',rows);
   toast('⬇ Downloading posts CSV…');
@@ -635,7 +639,7 @@ function buildAdminHTML(){
   if(!actLog.length){
     h+='<div style="text-align:center;font-size:12px;color:var(--td);padding:10px;">No activity yet</div>';
   }
-  var recentAct=[...posts.slice(0,3).map(function(p){return {msg:p.userName+' posted: "'+p.content.slice(0,40)+(p.content.length>40?'…':'')+'"',ts:p.ts,col:'var(--blu)'};}),...gigs.slice(0,2).map(function(g){return {msg:g.posterName+' posted gig: '+g.title.slice(0,35),ts:g.created||Date.now(),col:'var(--gld)'};}),...users.slice(-3).map(function(u){return {msg:u.name+' joined as '+u.role,ts:u.created||Date.now(),col:'var(--grn)'};})].sort(function(a,b){return b.ts-a.ts;}).slice(0,10);
+  var recentAct=[...posts.slice(0,3).map(function(p){var who=_pAuthor(p);var c=String(p.content||'');return {msg:who+' posted: "'+c.slice(0,40)+(c.length>40?'…':'')+'"',ts:p.ts||Date.now(),col:'var(--blu)'};}),...gigs.slice(0,2).map(function(g){return {msg:(g.posterName||((getUser(g.posterUid)||{}).name)||'A client')+' posted gig: '+String(g.title||'').slice(0,35),ts:g.created||Date.now(),col:'var(--gld)'};}),...users.slice(-3).map(function(u){return {msg:u.name+' joined as '+u.role,ts:u.created||Date.now(),col:'var(--grn)'};})].sort(function(a,b){return b.ts-a.ts;}).slice(0,10);
   recentAct.forEach(function(a){
     h+='<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--br);">'
       +'<div style="width:7px;height:7px;border-radius:50%;background:'+a.col+';flex-shrink:0;"></div>'
@@ -723,13 +727,13 @@ function buildAdminHTML(){
     var flagged=(p.flags||[]).length>0;
     h+='<div id="postcrd-'+p.id+'" style="background:var(--s);border:1px solid '+(flagged?'var(--acc)':'var(--br)')+';border-radius:var(--r);padding:11px;margin-bottom:7px;">'
       +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
-      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;">'+p.userName+'</div>'
+      +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;">'+_aEsc(_pAuthor(p))+'</div>'
       +(flagged?'<span style="font-size:9px;background:rgba(255,107,53,.15);color:var(--acc);border-radius:3px;padding:1px 5px;">⚠ Flagged</span>':'')
       +'<div style="margin-left:auto;font-size:9px;color:var(--td);">'+timeAgo(p.ts||Date.now())+'</div>'
       +'</div>'
-      +'<div style="font-size:12px;color:var(--fg);margin-bottom:8px;line-height:1.5;">'+p.content.slice(0,200)+(p.content.length>200?'…':'')+'</div>'
+      +'<div style="font-size:12px;color:var(--fg);margin-bottom:8px;line-height:1.5;">'+_aEsc(String(p.content||'').slice(0,200))+(String(p.content||'').length>200?'…':'')+'</div>'
       +'<div style="display:flex;gap:6px;align-items:center;">'
-      +'<span style="font-size:10px;color:var(--td);">❤ '+( p.likes||0)+' · 💬 '+(p.comments||[]).length+'</span>'
+      +'<span style="font-size:10px;color:var(--td);">❤ '+(Array.isArray(p.likes)?p.likes.length:(p.likes||0))+' · 💬 '+(p.comments||[]).length+'</span>'
       +'<button onclick="adminDeletePost(\''+p.id+'\')" style="margin-left:auto;font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🗑 Delete</button>'
       +'<button onclick="adminFlagPost(\''+p.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--br);border-radius:5px;background:var(--s);color:var(--td);cursor:pointer;">'+(flagged?'✓ Unflag':'⚠ Flag')+'</button>'
       +'</div>'
@@ -748,7 +752,7 @@ function buildAdminHTML(){
       +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;flex:1;">'+g.title+'</div>'
       +'<span style="font-size:10px;color:var(--grn);font-weight:700;">'+g.pay+'</span>'
       +'</div>'
-      +'<div style="font-size:10px;color:var(--td);margin-bottom:8px;">By: '+g.posterName+' · '+(g.category||'General')+' · '+g.type+'</div>'
+      +'<div style="font-size:10px;color:var(--td);margin-bottom:8px;">By: '+_aEsc(g.posterName||'A client')+' · '+_aEsc(g.category||'General')+' · '+_aEsc(g.type||'Project')+'</div>'
       +'<button onclick="adminDeleteGig(\''+g.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🗑 Delete Gig</button>'
       +'</div>';
   });
