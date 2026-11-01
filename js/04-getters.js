@@ -21,8 +21,10 @@ function getAllUsers(){return CACHE.users||[];}
 // People the signed-in user has blocked are left out of every discovery list (talent, search, home, recommendations).
 function ssVisible(arr){
   try{
-    if(!ME||ME.isAdmin||!Array.isArray(ME.blockedUsers)||!ME.blockedUsers.length) return arr;
-    return (arr||[]).filter(function(u){return ME.blockedUsers.indexOf(u.uid)<0;});
+    if(!ME||ME.isAdmin) return arr;
+    var bl=Array.isArray(ME.blockedUsers)?ME.blockedUsers:[];
+    // blocked by me, or suspended by an admin: neither should appear in lists
+    return (arr||[]).filter(function(u){return bl.indexOf(u.uid)<0&&u.badgeStatus!=='suspended'&&u.isBanned!==true;});
   }catch(e){return arr;}
 }
 function getUser(uid){return CACHE.users.find(x=>x.uid===uid);}

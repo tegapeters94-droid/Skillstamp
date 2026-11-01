@@ -526,9 +526,9 @@ function buildAdminHTML(){
   }
 
   // ── Tab nav ──────────────────────────────────────────────────────────────
-  var tabs=['overview','users','content','skills','announce','analytics','reports','activity'];
-  var tabIcons={overview:'📊',users:'👥',content:'🛡',skills:'🔖',announce:'📢',analytics:'📈',reports:'🚩',activity:'📜'};
-  var tabLabels={overview:'Overview',users:'Users',content:'Moderation',skills:'Skills',announce:'Broadcast',analytics:'Analytics',reports:'Reports',activity:'Activity Log'};
+  var tabs=['overview','users','disputes','gigs','content','skills','announce','analytics','reports','activity'];
+  var tabIcons={overview:'📊',users:'👥',disputes:'⚖️',gigs:'💼',content:'🛡',skills:'🔖',announce:'📢',analytics:'📈',reports:'🚩',activity:'📜'};
+  var tabLabels={overview:'Overview',users:'Users',disputes:'Disputes',gigs:'Gigs & Escrow',content:'Moderation',skills:'Skills',announce:'Broadcast',analytics:'Analytics',reports:'Reports',activity:'Activity Log'};
 
   var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">'
     +'<span style="font-size:24px;">⚙️</span>'
@@ -691,6 +691,7 @@ function buildAdminHTML(){
         +'<option value="expert">⭐ Expert</option>'
         +'<option value="suspended">🚫 Suspend</option>'
         +'</select>'
+        +'<button onclick="ssAdminUser(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--grn);border-radius:5px;background:rgba(39,174,96,.08);color:var(--grn);cursor:pointer;font-weight:700;">Manage</button>'
         +'<button onclick="adminEditUser(\''+u.uid+'\')" style="font-size:10px;padding:5px 10px;border:1px solid var(--br);border-radius:5px;background:var(--s);color:var(--fg);cursor:pointer;">✏ Edit</button>'
         +(isBanned
           ?'<button onclick="adminToggleBanInline(\''+u.uid+'\',false)" style="font-size:10px;padding:5px 10px;border:1px solid var(--grn);border-radius:5px;background:rgba(39,174,96,.1);color:var(--grn);cursor:pointer;">✓ Unban</button>'
@@ -857,6 +858,8 @@ function buildAdminHTML(){
   h+='<div id="admin-analytics-mount"><div style="padding:40px;text-align:center;color:var(--td);font-size:12px;">Click the Analytics tab to load data.</div></div>';
   h+='</div>';
 
+  h+='<div id="admtab-disputes" style="display:none;"><div style="padding:30px;text-align:center;color:var(--td);font-size:12px;">Loading…</div></div>';
+  h+='<div id="admtab-gigs" style="display:none;"><div style="padding:30px;text-align:center;color:var(--td);font-size:12px;">Loading…</div></div>';
   h+='<div id="admtab-reports" style="display:none;"><div style="padding:30px;text-align:center;color:var(--td);font-size:12px;">Loading…</div></div>';
   h+='<div id="admtab-activity" style="display:none;"><div style="padding:30px;text-align:center;color:var(--td);font-size:12px;">Loading…</div></div>';
 

@@ -2,6 +2,7 @@
    Does not touch auth or data logic; fails silently. */
 (function () {
   var API = 'https://skillstamp-email.tegapeters94.workers.dev';
+  window.SS_API = API;
   if (!API) return;
   /* Password reset: send the branded email through our own service; fall back to Firebase's default email if it is unavailable. */
   (function wrapReset() {
