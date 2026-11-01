@@ -3,6 +3,35 @@
 // Direct-hire proposals are stored in Firestore collection: "proposals"
 
 // ═══════════════════════════════════════════════════════
+//  SAFE PROPOSAL READS
+//  The Firestore rules only allow a person to read proposals they sent or
+//  received. A query for the WHOLE collection is therefore rejected (the rules
+//  cannot prove every result is theirs), which made the page look empty.
+//  This routes every fbGetAll('proposals') call through two filtered queries.
+// ═══════════════════════════════════════════════════════
+(function () {
+  var orig = window.fbGetAll;
+  if (typeof orig !== 'function') return;
+  window.fbGetAll = async function (col) {
+    if (col !== 'proposals') return orig.apply(this, arguments);
+    var uid = window.ME && window.ME.uid;
+    var F = window.FB_FNS;
+    if (!uid || !F || !window.FB_DB) return [];
+    var found = {}, anyOk = false;
+    var fields = ['fromUid', 'toUid'];
+    for (var i = 0; i < fields.length; i++) {
+      try {
+        var snap = await F.getDocs(F.query(F.collection(window.FB_DB, 'proposals'), F.where(fields[i], '==', uid)));
+        snap.docs.forEach(function (d) { found[d.id] = d.data(); });
+        anyOk = true;
+      } catch (e) { console.warn('proposals read (' + fields[i] + ') failed', e && e.message); }
+    }
+    if (!anyOk) throw new Error('Could not load proposals');
+    return Object.keys(found).map(function (k) { return found[k]; });
+  };
+})();
+
+// ═══════════════════════════════════════════════════════
 //  RENDER — routes by role
 // ═══════════════════════════════════════════════════════
 window.renderProposalHub = async function() {
