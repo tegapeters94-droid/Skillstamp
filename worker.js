@@ -3,6 +3,7 @@
  *
  * Routes
  *   GET  /health            -> { ok: true }
+ *   POST /admin/delete-user -> admin only: permanently deletes a sign-in account ({ uid })
  *   POST /reset             -> emails a branded password-reset link ({ email }); public, rate limited
  *   POST /welcome           -> sends the welcome email to the signed-in user
  *                              (Authorization: Bearer <Firebase ID token>)
@@ -227,6 +228,8 @@ async function sendBrevo(env, to, toName, mail) {
 const NOTIFY_TYPES = {
   gig_application:       { subject: 'New proposal on your gig',        eyebrow: 'New proposal',      cta: 'Review proposal' },
   proposal:              { subject: 'You received a direct proposal',   eyebrow: 'Direct proposal',   cta: 'Review proposal' },
+  dispute_resolved:      { subject: 'Your dispute has been resolved',   eyebrow: 'Dispute resolved',  cta: 'See the decision' },
+  support:               { subject: 'A message from SkillStamp Support',eyebrow: 'Support',           cta: 'Open SkillStamp' },
   hired:                 { subject: 'You have been hired',              eyebrow: 'You got the job',   cta: 'Open your gig' },
   delivery:              { subject: 'Work delivered - review it now',   eyebrow: 'Delivery submitted',cta: 'Review delivery' },
   revision:              { subject: 'A revision was requested',         eyebrow: 'Revision requested',cta: 'See the feedback' },
@@ -457,6 +460,46 @@ async function handleReset(req, env) {
   return json({ ok: true }, 200, req, env);
 }
 
+
+/* ---------- admin: permanently delete a sign-in account ---------- */
+async function handleDeleteUser(req, env) {
+  if (!env.SA_AUTH_JSON || !env.SA_JSON) return json({ ok: false, error: 'not configured' }, 503, req, env);
+  const auth = req.headers.get('Authorization') || '';
+  let claims;
+  try { claims = await verifyIdToken(auth.startsWith('Bearer ') ? auth.slice(7) : '', env.FIREBASE_PROJECT_ID); }
+  catch (e) { return json({ ok: false, error: 'unauthorized' }, 401, req, env); }
+  let body = {};
+  try { body = await req.json(); } catch (e) {}
+  const target = String(body.uid || '');
+  if (!/^[A-Za-z0-9_-]{6,128}$/.test(target)) return json({ ok: false, error: 'bad uid' }, 400, req, env);
+  if (target === claims.sub) return json({ ok: false, error: 'cannot delete yourself' }, 400, req, env);
+
+  // the caller must be an admin according to their own Firestore profile
+  const dsToken = await getSaToken(env, 'SA_JSON', 'https://www.googleapis.com/auth/datastore');
+  const base = 'https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents/users/';
+  const me = await fetch(base + encodeURIComponent(claims.sub), { headers: { Authorization: 'Bearer ' + dsToken } });
+  if (!me.ok) return json({ ok: false, error: 'forbidden' }, 403, req, env);
+  const mf = (await me.json()).fields || {};
+  if (!(mf.isAdmin && mf.isAdmin.booleanValue === true)) return json({ ok: false, error: 'forbidden' }, 403, req, env);
+  // never delete another admin
+  const tr = await fetch(base + encodeURIComponent(target), { headers: { Authorization: 'Bearer ' + dsToken } });
+  if (tr.ok) {
+    const tf = (await tr.json()).fields || {};
+    if (tf.isAdmin && tf.isAdmin.booleanValue === true) return json({ ok: false, error: 'target is an admin' }, 403, req, env);
+  }
+  const token = await getSaToken(env, 'SA_AUTH_JSON', 'https://www.googleapis.com/auth/identitytoolkit');
+  const r = await fetch('https://identitytoolkit.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/accounts:delete', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ localId: target }),
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    if (!/USER_NOT_FOUND|EMAIL_NOT_FOUND/.test(t)) { console.error('delete user failed', r.status, t.slice(0, 200)); return json({ ok: false, error: 'failed' }, 502, req, env); }
+  }
+  console.log('admin ' + claims.sub + ' deleted account ' + target);
+  return json({ ok: true }, 200, req, env);
+}
+
 /* ---------- handlers ---------- */
 async function handleWelcome(req, env) {
   const auth = req.headers.get('Authorization') || '';
@@ -508,6 +551,13 @@ export default {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req, env) });
     if (url.pathname === '/health') return json({ ok: true }, 200, req, env);
+    if (url.pathname === '/admin/delete-user' && req.method === 'POST') {
+      const origin = req.headers.get('Origin') || '';
+      const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+      if (!origin || !allowed.includes(origin)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try { return await handleDeleteUser(req, env); }
+      catch (e) { console.error('delete-user error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
     if (url.pathname === '/reset' && req.method === 'POST') {
       const origin = req.headers.get('Origin') || '';
       const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
