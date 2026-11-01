@@ -3,6 +3,33 @@
 (function () {
   var API = 'https://skillstamp-email.tegapeters94.workers.dev';
   if (!API) return;
+  /* Password reset: send the branded email through our own service; fall back to Firebase's default email if it is unavailable. */
+  (function wrapReset() {
+    var n = 0, iv = setInterval(function () {
+      n++;
+      var F = window.FB_FNS;
+      if (n > 200) return clearInterval(iv);
+      if (!F || typeof F.sendPasswordResetEmail !== 'function') return;
+      clearInterval(iv);
+      if (F.sendPasswordResetEmail.__ss) return;
+      var orig = F.sendPasswordResetEmail;
+      var wrapped = async function (auth, email) {
+        try {
+          var r = await fetch(API + '/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: String(email || '') })
+          });
+          if (r.ok) return;
+          var code = r.status === 404 ? 'auth/user-not-found' : r.status === 400 ? 'auth/invalid-email' : r.status === 429 ? 'auth/too-many-requests' : '';
+          if (code) { var err = new Error(code); err.code = code; throw err; }
+        } catch (e) { if (e && e.code) throw e; }
+        return orig.apply(this, arguments);
+      };
+      wrapped.__ss = true;
+      F.sendPasswordResetEmail = wrapped;
+    }, 250);
+  })();
   var tries = 0;
   function key(uid) { return 'ss_welcome_' + uid; }
   function check() {
