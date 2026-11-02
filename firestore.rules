@@ -165,6 +165,8 @@ service cloud.firestore {
                        request.resource.data.get('isAdmin', false) == false &&
                        request.resource.data.get('isBanned', false) == false &&
                        request.resource.data.get('badgeStatus', 'beginner') in ['beginner'] &&
+                       // Emails live in users_private, never in the public profile
+                       !('email' in request.resource.data) &&
                        // Cannot start with free money / reputation
                        startsClean(request.resource.data);
 
