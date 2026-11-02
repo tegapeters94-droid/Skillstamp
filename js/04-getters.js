@@ -24,7 +24,7 @@ function ssVisible(arr){
     if(!ME||ME.isAdmin) return arr;
     var bl=Array.isArray(ME.blockedUsers)?ME.blockedUsers:[];
     // blocked by me, or suspended by an admin: neither should appear in lists
-    return (arr||[]).filter(function(u){return bl.indexOf(u.uid)<0&&u.badgeStatus!=='suspended'&&u.isBanned!==true;});
+    return (arr||[]).filter(function(u){return bl.indexOf(u.uid)<0&&u.badgeStatus!=='suspended'&&u.isBanned!==true&&u.deleted!==true;});
   }catch(e){return arr;}
 }
 function getUser(uid){return CACHE.users.find(x=>x.uid===uid);}

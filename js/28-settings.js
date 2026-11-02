@@ -175,7 +175,7 @@ window.openSettings = function() {
   html += '</div>';
 
   // Delete account
-  html += '<div onclick="openDeleteAccount()" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
+  html += '<div onclick="settingsNav(\'deleteaccount\')" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.04)\'" onmouseout="this.style.background=\'\'">';
   html += '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></div>';
   html += '<div style="flex:1;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;color:#ef4444;">Delete Account</div><div style="font-size:10px;color:var(--td);">Permanently remove your account and all data</div></div>';
   html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
@@ -268,7 +268,7 @@ window.openDeleteAccount = function() {
     + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:17px;color:#ef4444;margin-bottom:6px;">Delete Account</div>'
     + '<div style="font-size:12px;color:var(--td);line-height:1.65;margin-bottom:16px;">This will <strong style="color:var(--tx);">permanently delete</strong> your SkillStamp account, profile, gig history, and all data. This action <strong style="color:#ef4444;">cannot be undone</strong>.</div>'
     + '<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px;margin-bottom:16px;font-size:11px;color:var(--td);text-align:left;">'
-    + '⚠️ Any funds in escrow will be held and reviewed by our team before release.'
+    + '⚠️ Your profile is hidden straight away and permanently deleted within 30 days. Log back in during that time to cancel. Any funds in escrow will be held and reviewed by our team before release.'
     + '</div>'
     + '</div>'
     + '<div class="fg"><label class="fl">Type <strong>DELETE</strong> to confirm</label>'
@@ -281,15 +281,15 @@ window.openDeleteAccount = function() {
     var btn = document.getElementById('del-btn');
     btn.disabled = true; btn.textContent = 'Deleting…';
     try {
-      // Mark account as deleted in Firestore (full deletion handled by admin/cloud)
-      await fbSet('users', ME.uid, Object.assign({}, ME, { deleted: true, deletedAt: Date.now() }));
-      await fbSet('deleted_accounts', ME.uid, { uid: ME.uid, name: ME.name, email: ME.email || '', deletedAt: Date.now() });
+      // Flag the account for deletion (hidden from the platform right away; an admin removes it permanently within 30 days)
+      var delAt = Date.now();
+      await window.FB_FNS.updateDoc(window.FB_FNS.doc(window.FB_DB, 'users', ME.uid), { deleted: true, deletedAt: delAt, promoOptIn: false });
       closeModal();
       await doLogout();
-      toast('Account deletion requested. Our team will process it within 30 days.');
+      toast('Your account is hidden and scheduled for deletion. Log in within 30 days if you change your mind.');
     } catch(e) {
       btn.disabled = false; btn.textContent = 'Delete My Account →';
-      toast('Could not process. Please contact support@skillstamp.africa', 'bad');
+      toast('Could not process your request. Please try again or email support@skillstamp.cv', 'bad');
     }
   };
 };
@@ -308,6 +308,7 @@ window.settingsNav = function(action) {
     'feedback':       function() { openFeedbackForm(); },
     'tos':            function() { showTos(); },
     'privacy':        function() { showPrivacy(); },
+    'deleteaccount':  function() { openDeleteAccount(); },
   };
   var fn = actions[action];
   if (!fn) return;
