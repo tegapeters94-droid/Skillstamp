@@ -530,9 +530,9 @@ function buildAdminHTML(){
   }
 
   // ── Tab nav ──────────────────────────────────────────────────────────────
-  var tabs=['overview','users','disputes','gigs','content','skills','announce','analytics','reports','activity'];
-  var tabIcons={overview:'📊',users:'👥',disputes:'⚖️',gigs:'💼',content:'🛡',skills:'🔖',announce:'📢',analytics:'📈',reports:'🚩',activity:'📜'};
-  var tabLabels={overview:'Overview',users:'Users',disputes:'Disputes',gigs:'Gigs & Escrow',content:'Moderation',skills:'Skills',announce:'Broadcast',analytics:'Analytics',reports:'Reports',activity:'Activity Log'};
+  var tabs=['overview','users','disputes','gigs','content','skills','announce','campaigns','analytics','reports','activity'];
+  var tabIcons={overview:'📊',users:'👥',disputes:'⚖️',gigs:'💼',content:'🛡',skills:'🔖',announce:'📢',campaigns:'✉️',analytics:'📈',reports:'🚩',activity:'📜'};
+  var tabLabels={overview:'Overview',users:'Users',disputes:'Disputes',gigs:'Gigs & Escrow',content:'Moderation',skills:'Skills',announce:'Broadcast',campaigns:'Campaigns',analytics:'Analytics',reports:'Reports',activity:'Activity Log'};
 
   var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">'
     +'<span style="font-size:24px;">⚙️</span>'
@@ -811,6 +811,7 @@ function buildAdminHTML(){
   // ════════════════════════════════════════════════════════════════
   //  TAB 5 — BROADCAST / ANNOUNCE
   // ════════════════════════════════════════════════════════════════
+  h+='<div id="admtab-campaigns" style="display:none;"></div>';
   h+='<div id="admtab-announce" style="display:none;">';
 
   var ann=CACHE.announcement||null;
