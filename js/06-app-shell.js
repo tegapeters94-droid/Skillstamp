@@ -72,7 +72,7 @@ function enterApp(){
 
 // ── PROFILE COMPLETION CHECK ────────────────────────────────
 function checkProfileComplete() {
-  if (!ME || ME.role !== 'freelancer') return;
+  if (!ME || ME.role !== 'freelancer' || ME.isAdmin) return;
 
   // One per login session
   var sessKey = 'pc_shown_' + ME.uid;
