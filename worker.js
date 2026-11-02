@@ -353,7 +353,12 @@ async function runNotifyJob(env) {
     const ur = await fetch(base + '/users/' + encodeURIComponent(uid), { headers: { Authorization: 'Bearer ' + token } });
     if (!ur.ok) continue;
     const uf = (await ur.json()).fields || {};
-    const email = String(fv(uf.email) || '').toLowerCase();
+    let email = '';
+    try {
+      const pr = await fetch(base + '/users_private/' + encodeURIComponent(uid), { headers: { Authorization: 'Bearer ' + token } });
+      if (pr.ok) email = String(fv(((await pr.json()).fields || {}).email) || '').toLowerCase();
+    } catch (e) {}
+    if (!email) email = String(fv(uf.email) || '').toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) continue;
     if (fv(uf.emailNotifs) === false || fv(uf.isBanned) === true) continue;
     const mail = notifyEmail(type, { title: fv(f.title), body: fv(f.body) }, fv(uf.name));

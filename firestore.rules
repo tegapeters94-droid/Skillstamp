@@ -43,7 +43,7 @@ service cloud.firestore {
     // Field is unchanged between incoming and existing doc
     function fieldUnchanged(field) {
       return !(field in request.resource.data) ||
-             request.resource.data[field] == resource.data[field];
+             request.resource.data[field] == resource.data.get(field, null);
     }
 
     // Field has the same value before and after (missing counts as null).
@@ -188,6 +188,18 @@ service cloud.firestore {
                        statsUpdateOk();
 
       // Admin can write anything (used for ban, badge, verify operations)
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  USERS_PRIVATE: each member's email, readable only by the owner and admins
+    // ═══════════════════════════════════════════════════════════════════════
+    match /users_private/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid) &&
+                       request.resource.data.keys().hasOnly(['uid', 'email']) &&
+                       request.resource.data.get('uid', uid) == uid &&
+                       request.resource.data.get('email', '').lower() == request.auth.token.email.lower();
       allow write: if isAdmin();
     }
 
