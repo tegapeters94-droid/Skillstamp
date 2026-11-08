@@ -108,6 +108,72 @@
     } catch (e) { applying = false; }
   }, 2000);
 
+
+  /* ── existing members without a city: ask once ("Is this where you are?") ── */
+  (function existingMembers() {
+    var shown = false;
+    function ready() {
+      var m = window.ME; if (!m || !m.uid || shown) return false;
+      if (m.city || m.deleted === true) return false;
+      if (ls('ss_geo_done_' + m.uid) || ls('ss_geo_asked_' + m.uid)) return false;
+      var snooze = Number(ls('ss_geo_snooze_' + m.uid) || 0); if (snooze && Date.now() < snooze) return false;
+      var created = Number(m.created) || 0; if (created && Date.now() - created < 30 * 60 * 1000) return false;
+      var busy = ['ss-promo-ask', 'ss-pc-overlay', 'ss-del-restore', 'settings-panel'].some(function (id) { var e = document.getElementById(id); return e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).opacity !== '0'; });
+      if (busy) return false;
+      if (document.querySelector('.modal-bg.open,.modal-overlay.open,#moverlay.show')) return false;
+      return true;
+    }
+    function box(g) {
+      var m = window.ME, d = document.createElement('div');
+      d.id = 'ss-geo-ask';
+      d.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:1890;width:min(440px,calc(100% - 28px));background:var(--s,#fff);border:1px solid var(--br,#dde2d6);border-radius:16px;box-shadow:0 10px 36px rgba(0,0,0,.25);padding:16px;font-family:Plus Jakarta Sans,sans-serif;';
+      var place = (g.city ? g.city + ', ' : '') + g.country;
+      d.innerHTML = '<div style="display:flex;gap:10px;align-items:flex-start;"><div style="font-size:22px;line-height:1;">📍</div><div style="flex:1;min-width:0;">'
+        + '<div style="font-weight:800;font-size:14px;color:var(--tx,#0d1109);">Is this where you are?</div>'
+        + '<div style="font-size:12px;line-height:1.55;color:var(--td,#6b7a70);margin-top:3px;">We think you are in <b>' + esc(place) + '</b>. Adding your location helps clients find you. You can change it any time in Edit Profile.</div></div>'
+        + '<button id="ss-ga-x" aria-label="Close" style="background:none;border:none;color:var(--td,#6b7a70);font-size:18px;cursor:pointer;line-height:1;padding:0 2px;">×</button></div>'
+        + '<div style="display:flex;gap:8px;margin-top:12px;"><button id="ss-ga-yes" style="flex:1;background:#1a6b3c;color:#fff;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;">Yes, use it</button>'
+        + '<button id="ss-ga-no" style="flex:1;background:transparent;color:var(--tx,#0d1109);border:1px solid var(--br,#dde2d6);border-radius:10px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;">No, I will set it</button></div>';
+      document.body.appendChild(d);
+      function hide() { d.remove(); }
+      document.getElementById('ss-ga-yes').onclick = function () {
+        var upd = {}; if (!m.country) upd.country = g.country; if (g.city) upd.city = g.city;
+        ls('ss_geo_asked_' + m.uid, '1'); hide();
+        var F = window.FB_FNS;
+        F.updateDoc(F.doc(window.FB_DB, 'users', m.uid), upd).then(function () {
+          Object.assign(m, upd);
+          try { var cu = CACHE.users.find(function (x) { return x.uid === m.uid; }); if (cu) Object.assign(cu, upd); } catch (e) {}
+          say('Location saved: ' + place);
+        }).catch(function () { say("Couldn't save it. You can add it in Edit Profile.", true); });
+      };
+      document.getElementById('ss-ga-no').onclick = function () { ls('ss_geo_asked_' + m.uid, '1'); hide(); };
+      document.getElementById('ss-ga-x').onclick = function () { ls('ss_geo_snooze_' + m.uid, String(Date.now() + 7 * 864e5)); hide(); };
+    }
+    var waited = 0, iv = null;
+    function start() {
+      iv = setInterval(function () {
+        if (++waited > 300) return clearInterval(iv);
+        try {
+          if (!ready()) return;
+          clearInterval(iv);
+          setTimeout(function () {
+            try {
+              if (!ready()) { start(); return; }       // something else is on screen: keep waiting
+              shown = true;
+              detect().then(function (g) {
+                var m = window.ME;
+                // only suggest a city that matches the country they already chose (or fill both if they have none)
+                if (!g || !g.city || !g.country || !inList(g.country) || (m.country && m.country !== g.country)) { ls('ss_geo_asked_' + m.uid, '1'); return; }
+                box(g);
+              });
+            } catch (e) {}
+          }, 9000);
+        } catch (e) {}
+      }, 4000);
+    }
+    start();
+  })();
+
   /* ── Edit Profile: "Detect my location" ── */
   function injectEdit() {
     try {
