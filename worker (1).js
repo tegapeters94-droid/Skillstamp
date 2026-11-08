@@ -361,7 +361,7 @@ async function runNotifyJob(env) {
     } catch (e) {}
     if (!email) email = String(fv(uf.email) || '').toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) continue;
-    if (fv(uf.emailNotifs) === false || fv(uf.isBanned) === true) continue;
+    if (fv(uf.emailNotifs) === false || fv(uf.isBanned) === true || fv(uf.deleted) === true) continue;
     const mail = notifyEmail(type, { title: fv(f.title), body: fv(f.body) }, fv(uf.name));
     try {
       await sendBrevo(env, email, cleanName(fv(uf.name)), mail);
@@ -696,7 +696,7 @@ async function handleCampaign(req, env) {
     const q = { structuredQuery: {
       from: [{ collectionId: 'users' }],
       where: { fieldFilter: { field: { fieldPath: 'promoOptIn' }, op: 'EQUAL', value: { booleanValue: true } } },
-      select: { fields: [{ fieldPath: 'name' }, { fieldPath: 'role' }, { fieldPath: 'isBanned' }, { fieldPath: 'badgeStatus' }] },
+      select: { fields: [{ fieldPath: 'name' }, { fieldPath: 'role' }, { fieldPath: 'isBanned' }, { fieldPath: 'badgeStatus' }, { fieldPath: 'deleted' }] },
       limit: 2000,
     } };
     const r = await fetch(a.base + ':runQuery', { method: 'POST', headers: { Authorization: 'Bearer ' + a.dsToken, 'Content-Type': 'application/json' }, body: JSON.stringify(q) });
@@ -706,7 +706,7 @@ async function handleCampaign(req, env) {
     for (const row of rows) {
       const f = row.document.fields || {};
       const uid = row.document.name.split('/').pop();
-      if (fv(f.isBanned) === true || fv(f.badgeStatus) === 'suspended') continue;
+      if (fv(f.isBanned) === true || fv(f.badgeStatus) === 'suspended' || fv(f.deleted) === true) continue;
       const role = fv(f.role);
       if (c.audience !== 'all' && role !== c.audience) continue;
       u.push([uid, cleanName(fv(f.name))]);
@@ -751,12 +751,12 @@ async function runCampaignJob(env) {
     return out;
   };
   const priv = await bg('users_private', ['email']);
-  const pub = await bg('users', ['email', 'promoOptIn', 'isBanned', 'badgeStatus', 'name']);
+  const pub = await bg('users', ['email', 'promoOptIn', 'isBanned', 'badgeStatus', 'name', 'deleted']);
   let sent = 0;
   for (const [uid, nm] of batch) {
     const p = pub[uid] || {};
     const email = String(fv((priv[uid] || {}).email) || fv(p.email) || '').toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || fv(p.promoOptIn) !== true || fv(p.isBanned) === true || fv(p.badgeStatus) === 'suspended' || await env.SS_KV.get('unsub:' + uid)) { camp.skipped++; continue; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || fv(p.promoOptIn) !== true || fv(p.isBanned) === true || fv(p.deleted) === true || fv(p.badgeStatus) === 'suspended' || await env.SS_KV.get('unsub:' + uid)) { camp.skipped++; continue; }
     try {
       await sendBrevo(env, email, nm || cleanName(fv(p.name)), promoEmail(camp, nm || fv(p.name), await unsubUrl(env, uid)));
       camp.sent++; sent++;
@@ -830,6 +830,16 @@ export default {
       if (!origin || !allowed.includes(origin)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
       try { return await handleDeleteUser(req, env); }
       catch (e) { console.error('delete-user error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if (url.pathname === '/geo' && req.method === 'GET') {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      const cf = req.cf || {};
+      let country = '';
+      try { if (cf.country && /^[A-Z]{2}$/.test(cf.country)) country = new Intl.DisplayNames(['en'], { type: 'region' }).of(cf.country) || ''; } catch (e) {}
+      const clean = (v) => String(v || '').replace(/[<>"'&]/g, '').trim().slice(0, 60);
+      const r = json({ ok: true, code: clean(cf.country), country: clean(country), city: clean(cf.city), region: clean(cf.region) }, 200, req, env);
+      r.headers.set('Cache-Control', 'no-store');
+      return r;
     }
     if (url.pathname === '/unsub' && (req.method === 'GET' || req.method === 'POST')) {
       try { return await handleUnsub(req, env, url); } catch (e) { console.error('unsub error', e && e.message); return new Response(pageHtml('Something went wrong', 'Please try again in a moment.'), { status: 502, headers: HTML_H }); }
