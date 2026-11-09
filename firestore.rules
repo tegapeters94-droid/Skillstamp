@@ -218,6 +218,28 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    //  MESSAGE GUARD: attempt log, member reports, admin-taught phrases
+    // ═══════════════════════════════════════════════════════════════════════
+    match /guard_events/{id} {
+      allow create: if isAuth() &&
+                       request.resource.data.uid == request.auth.uid &&
+                       request.resource.data.keys().hasOnly(['uid','to','label','sev','act','prev','ts']) &&
+                       request.resource.data.get('prev','').size() <= 130;
+      allow read, delete: if isAdmin();
+    }
+    match /guard_reports/{id} {
+      allow create: if isAuth() &&
+                       request.resource.data.uid == request.auth.uid &&
+                       request.resource.data.keys().hasOnly(['uid','against','text','ts']) &&
+                       request.resource.data.get('text','').size() <= 520;
+      allow read, update, delete: if isAdmin();
+    }
+    match /guard_terms/{id} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     //  AVATARS COLLECTION
     //  Separate collection to keep user docs small.
     //  Only the owner can write their own avatar.
