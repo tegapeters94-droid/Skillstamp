@@ -813,9 +813,53 @@ function originOk(req, env) {
   return !!origin && allowed.includes(origin);
 }
 
+/* ── error alerts: email the owner when a NEW kind of app error appears ── */
+async function runErrorAlerts(env) {
+  if (!env.SA_JSON || !env.BREVO_API_KEY || !env.ALERT_EMAIL) return;
+  const day = today();
+  const capKey = 'erralerts:' + day;
+  let sentToday = parseInt((await env.SS_KV.get(capKey)) || '0', 10);
+  if (sentToday >= 5) return;
+  const nowMs = Date.now();
+  let cursor = parseInt((await env.SS_KV.get('err:last')) || '0', 10);
+  if (!cursor) { await env.SS_KV.put('err:last', String(nowMs)); return; }
+  const token = await getSaToken(env);
+  const base = 'https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents';
+  const q = { structuredQuery: {
+    from: [{ collectionId: 'client_errors' }],
+    where: { fieldFilter: { field: { fieldPath: 'ts' }, op: 'GREATER_THAN', value: { integerValue: String(cursor) } } },
+    orderBy: [{ field: { fieldPath: 'ts' }, direction: 'ASCENDING' }],
+    limit: 30,
+  } };
+  const r = await fetch(base + ':runQuery', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(q) });
+  if (!r.ok) throw new Error('err query ' + r.status);
+  const rows = (await r.json()).filter((x) => x.document);
+  if (!rows.length) return;
+  let maxTs = cursor; const fresh = [];
+  for (const row of rows) {
+    const f = row.document.fields || {};
+    const ts = fv(f.ts) || 0; if (ts > maxTs) maxTs = ts;
+    const sig = fv(f.sig); if (!sig) continue;
+    if (fresh.find((x) => x.sig === sig)) continue;
+    if (await env.SS_KV.get('errseen:' + sig)) continue;
+    await env.SS_KV.put('errseen:' + sig, '1', { expirationTtl: 7 * 86400 });
+    fresh.push({ sig, type: fv(f.type), msg: fv(f.msg), path: fv(f.path), code: fv(f.code), col: fv(f.col) });
+  }
+  await env.SS_KV.put('err:last', String(maxTs));
+  if (!fresh.length) return;
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const list = fresh.slice(0, 8);
+  const html = '<p>SkillStamp members hit ' + fresh.length + ' new kind(s) of error:</p><ul>' + list.map((e) => '<li><b>' + esc(e.type) + '</b> on ' + esc(e.path) + '<br>' + esc(e.msg) + '</li>').join('') + '</ul><p>Open Admin &rarr; Overview &rarr; App errors for details.</p>';
+  const text = 'New SkillStamp errors:\n' + list.map((e) => '- [' + e.type + '] ' + e.path + ': ' + e.msg).join('\n') + '\nSee Admin > Overview > App errors.';
+  await sendBrevo(env, env.ALERT_EMAIL, 'Admin', { subject: 'SkillStamp: ' + fresh.length + ' new app error' + (fresh.length > 1 ? 's' : ''), html, text });
+  await env.SS_KV.put(capKey, String(sentToday + 1), { expirationTtl: 172800 });
+}
+
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
+      try { await env.SS_KV.put('cron:last', String(Date.now())); } catch (e) {}
+      try { await runErrorAlerts(env); } catch (e) { console.error('error alerts failed', e && e.message); }
       try { await runNotifyJob(env); } catch (e) { console.error('notify job failed', e && e.message); }
       try { await runCampaignJob(env); } catch (e) { console.error('campaign job failed', e && e.message); }
     })());
@@ -823,13 +867,29 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req, env) });
-    if (url.pathname === '/health') return json({ ok: true }, 200, req, env);
+    if (url.pathname === '/health') {
+      let age = null;
+      try { const t = parseInt((await env.SS_KV.get('cron:last')) || '0', 10); if (t) age = Math.round((Date.now() - t) / 60000); } catch (e) {}
+      const stale = age != null && age > 15;
+      if (url.searchParams.get('strict') === '1' && stale) return json({ ok: false, cronAgeMin: age, error: 'scheduler stalled' }, 503, req, env);
+      return json({ ok: true, cronAgeMin: age }, 200, req, env);
+    }
     if (url.pathname === '/admin/delete-user' && req.method === 'POST') {
       const origin = req.headers.get('Origin') || '';
       const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
       if (!origin || !allowed.includes(origin)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
       try { return await handleDeleteUser(req, env); }
       catch (e) { console.error('delete-user error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if (url.pathname === '/geo' && req.method === 'GET') {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      const cf = req.cf || {};
+      let country = '';
+      try { if (cf.country && /^[A-Z]{2}$/.test(cf.country)) country = new Intl.DisplayNames(['en'], { type: 'region' }).of(cf.country) || ''; } catch (e) {}
+      const clean = (v) => String(v || '').replace(/[<>"'&]/g, '').trim().slice(0, 60);
+      const r = json({ ok: true, code: clean(cf.country), country: clean(country), city: clean(cf.city), region: clean(cf.region) }, 200, req, env);
+      r.headers.set('Cache-Control', 'no-store');
+      return r;
     }
     if (url.pathname === '/unsub' && (req.method === 'GET' || req.method === 'POST')) {
       try { return await handleUnsub(req, env, url); } catch (e) { console.error('unsub error', e && e.message); return new Response(pageHtml('Something went wrong', 'Please try again in a moment.'), { status: 502, headers: HTML_H }); }

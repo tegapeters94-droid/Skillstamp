@@ -206,6 +206,18 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    //  CLIENT_ERRORS: app error reports (no personal content). Admin reads.
+    // ═══════════════════════════════════════════════════════════════════════
+    match /client_errors/{id} {
+      allow create, update: if isAuth() &&
+                       request.resource.data.uid == request.auth.uid &&
+                       request.resource.data.keys().hasOnly(['sig','type','msg','stack','path','ua','ts','day','n','col','code','uid','role']) &&
+                       request.resource.data.get('msg','').size() <= 400 &&
+                       request.resource.data.get('stack','').size() <= 900;
+      allow read, delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     //  AVATARS COLLECTION
     //  Separate collection to keep user docs small.
     //  Only the owner can write their own avatar.
