@@ -240,6 +240,38 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    //  REVIEWS: one per person per completed gig, written by a party to that
+    //  gig. Cannot be edited. The reviewed person may add ONE reply.
+    // ═══════════════════════════════════════════════════════════════════════
+    match /reviews/{rid} {
+      function reviewGigOk(d) {
+        let g = get(/databases/$(database)/documents/gigs/$(d.gigId)).data;
+        return g.status == 'completed' &&
+               ((g.posterUid == request.auth.uid && g.get('hiredUid', '') == d.toUid) ||
+                (g.get('hiredUid', '') == request.auth.uid && g.posterUid == d.toUid));
+      }
+      allow read: if isAuth();
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.keys().hasOnly(['gigId','fromUid','toUid','side','stars','q1','q2','q3','comment','gigTitle','ts']) &&
+                       request.resource.data.fromUid == request.auth.uid &&
+                       request.resource.data.toUid != request.auth.uid &&
+                       rid == request.resource.data.gigId + '_' + request.auth.uid &&
+                       request.resource.data.side in ['client', 'freelancer'] &&
+                       request.resource.data.stars is int &&
+                       request.resource.data.stars >= 1 && request.resource.data.stars <= 5 &&
+                       request.resource.data.get('q1', 1) >= 1 && request.resource.data.get('q1', 1) <= 5 &&
+                       request.resource.data.get('q2', 1) >= 1 && request.resource.data.get('q2', 1) <= 5 &&
+                       request.resource.data.get('q3', 1) >= 1 && request.resource.data.get('q3', 1) <= 5 &&
+                       request.resource.data.get('comment', '').size() <= 600 &&
+                       reviewGigOk(request.resource.data);
+      allow update: if isAuth() && resource.data.toUid == request.auth.uid &&
+                       !('reply' in resource.data) &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply', 'replyTs']) &&
+                       request.resource.data.get('reply', '').size() <= 400;
+      allow update, delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     //  AVATARS COLLECTION
     //  Separate collection to keep user docs small.
     //  Only the owner can write their own avatar.
