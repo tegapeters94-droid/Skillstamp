@@ -24,6 +24,10 @@
  *   SA_AUTH_JSON         Secret: second service account key (role "Firebase Authentication Admin") - used only to create password-reset links
  *   SA_JSON              Secret: Google service account key (JSON) with "Cloud Datastore Viewer" - used by the 5-minute job
  *
+ *   GET  /push/key          -> public Web Push key (the Worker creates its own key pair on first use and keeps it in KV)
+ *   POST /push/subscribe    -> save this device for push alerts (Bearer Firebase ID token)
+ *   POST /push/unsubscribe  -> remove this device ({ endpoint })
+ *
  * Scheduled job (Triggers -> Cron: every 5 minutes)
  *   Reads new documents from the Firestore `notifications` collection and emails
  *   the recipient for important events (new proposal, hired, delivery, revision,
@@ -316,8 +320,123 @@ async function getSaToken(env, which, scope) {
 }
 const fv = (f) => { if (!f) return undefined; const k = Object.keys(f)[0]; const v = f[k]; return k === 'integerValue' ? Number(v) : k === 'nullValue' ? null : v; };
 
+
+/* ---------- Web Push (VAPID + aes128gcm, RFC 8291/8292) ---------- */
+let vapidCache = null;
+async function getVapid(env) {
+  if (vapidCache) return vapidCache;
+  let jwk = null;
+  try { const raw = await env.SS_KV.get('vapid:jwk'); if (raw) jwk = JSON.parse(raw); } catch (e) {}
+  if (!jwk) {
+    const kp = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    jwk = await crypto.subtle.exportKey('jwk', kp.privateKey);
+    await env.SS_KV.put('vapid:jwk', JSON.stringify({ kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y, d: jwk.d }));
+  }
+  const priv = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y, d: jwk.d, ext: true }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const pub = new Uint8Array(65); pub[0] = 4; pub.set(b64uToBytes(jwk.x), 1); pub.set(b64uToBytes(jwk.y), 33);
+  vapidCache = { priv, pubB64: b64u(pub) };
+  return vapidCache;
+}
+async function hkdf(salt, ikm, info, len) {
+  const k = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info }, k, len * 8));
+}
+function concatBytes() {
+  let n = 0; for (const a of arguments) n += a.length;
+  const o = new Uint8Array(n); let p = 0; for (const a of arguments) { o.set(a, p); p += a.length; }
+  return o;
+}
+async function encryptPush(sub, plaintext) {
+  const uaPub = b64uToBytes(sub.p256dh), auth = b64uToBytes(sub.auth);
+  const eph = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const asPub = new Uint8Array(await crypto.subtle.exportKey('raw', eph.publicKey));
+  const uaKey = await crypto.subtle.importKey('raw', uaPub, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const secret = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: uaKey }, eph.privateKey, 256));
+  const ikm = await hkdf(auth, secret, concatBytes(enc.encode('WebPush: info\0'), uaPub, asPub), 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, enc.encode('Content-Encoding: aes128gcm\0'), 16);
+  const nonce = await hkdf(salt, ikm, enc.encode('Content-Encoding: nonce\0'), 12);
+  const aes = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt']);
+  const data = concatBytes(plaintext, new Uint8Array([2]));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aes, data));
+  const hdr = new Uint8Array(21); hdr.set(salt, 0); new DataView(hdr.buffer).setUint32(16, 4096); hdr[20] = 65;
+  return concatBytes(hdr, asPub, ct);
+}
+/* returns 'ok' | 'gone' | 'fail' */
+async function sendWebPush(env, sub, payload) {
+  const v = await getVapid(env);
+  const aud = new URL(sub.endpoint).origin;
+  const head = b64u(enc.encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' })));
+  const claim = b64u(enc.encode(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: 'mailto:' + (env.SENDER_EMAIL || 'support@skillstamp.cv') })));
+  const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, v.priv, enc.encode(head + '.' + claim));
+  const body = await encryptPush(sub, enc.encode(JSON.stringify(payload)));
+  const r = await fetch(sub.endpoint, {
+    method: 'POST',
+    headers: { Authorization: 'vapid t=' + head + '.' + claim + '.' + b64u(sig) + ', k=' + v.pubB64, 'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', TTL: '86400', Urgency: 'normal' },
+    body,
+  });
+  if (r.status === 404 || r.status === 410) return 'gone';
+  return r.ok ? 'ok' : 'fail';
+}
+async function getSubs(env, uid) {
+  try { const raw = await env.SS_KV.get('push:' + uid); const a = raw ? JSON.parse(raw) : []; return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+async function handlePush(req, env, url) {
+  if (url.pathname === '/push/key') {
+    const v = await getVapid(env);
+    return json({ ok: true, key: v.pubB64 }, 200, req, env);
+  }
+  let claims;
+  try { claims = await verifyIdToken((req.headers.get('Authorization') || '').replace(/^Bearer /, ''), env.FIREBASE_PROJECT_ID); }
+  catch (e) { return json({ ok: false, error: 'unauthorized' }, 401, req, env); }
+  const uid = claims.sub;
+  let body = {}; try { body = await req.json(); } catch (e) {}
+  if (url.pathname === '/push/subscribe') {
+    const s = body && body.subscription, k = s && s.keys;
+    if (!s || !k || typeof s.endpoint !== 'string' || !/^https:\/\//.test(s.endpoint) || s.endpoint.length > 1000 || typeof k.p256dh !== 'string' || typeof k.auth !== 'string' || k.p256dh.length > 200 || k.auth.length > 60)
+      return json({ ok: false, error: 'bad subscription' }, 400, req, env);
+    const list = (await getSubs(env, uid)).filter((x) => x.endpoint !== s.endpoint);
+    list.unshift({ endpoint: s.endpoint, p256dh: k.p256dh, auth: k.auth, ts: Date.now() });
+    await env.SS_KV.put('push:' + uid, JSON.stringify(list.slice(0, 5)));
+    return json({ ok: true }, 200, req, env);
+  }
+  if (url.pathname === '/push/unsubscribe') {
+    const ep = String(body.endpoint || '');
+    const list = (await getSubs(env, uid)).filter((x) => x.endpoint !== ep);
+    if (list.length) await env.SS_KV.put('push:' + uid, JSON.stringify(list)); else await env.SS_KV.delete('push:' + uid);
+    return json({ ok: true }, 200, req, env);
+  }
+  return json({ ok: false, error: 'not found' }, 404, req, env);
+}
+async function pushForNotification(env, base, token, id, uid, f, ts) {
+  if (!uid || await env.SS_KV.get('pushed:' + id)) return;
+  const subs = await getSubs(env, uid);
+  if (!subs.length) return;
+  const hour = new Date().toISOString().slice(0, 13), rlKey = 'prl:' + uid + ':' + hour;
+  const rl = parseInt((await env.SS_KV.get(rlKey)) || '0', 10);
+  if (rl >= 10) return;
+  try {
+    const ur = await fetch(base + '/users/' + encodeURIComponent(uid), { headers: { Authorization: 'Bearer ' + token } });
+    if (!ur.ok) return;
+    const uf = (await ur.json()).fields || {};
+    if (fv(uf.isBanned) === true || fv(uf.deleted) === true) return;
+  } catch (e) { return; }
+  const payload = { title: stripDecor(fv(f.title)).slice(0, 80) || 'SkillStamp', body: stripDecor(fv(f.body)).slice(0, 140), url: '/', tag: String(fv(f.type) || 'ss') };
+  const keep = []; let sent = 0;
+  for (const s of subs) {
+    let res = 'fail';
+    try { res = await sendWebPush(env, s, payload); } catch (e) { console.error('push send failed', e && e.message); }
+    if (res === 'ok') sent++;
+    if (res !== 'gone') keep.push(s);
+  }
+  if (keep.length !== subs.length) { if (keep.length) await env.SS_KV.put('push:' + uid, JSON.stringify(keep)); else await env.SS_KV.delete('push:' + uid); }
+  await env.SS_KV.put('pushed:' + id, '1', { expirationTtl: 2 * 86400 });
+  if (sent) await env.SS_KV.put(rlKey, String(rl + 1), { expirationTtl: 7200 });
+}
+
 async function runNotifyJob(env) {
-  if (!env.SA_JSON || !env.BREVO_API_KEY) return;
+  if (!env.SA_JSON) return;
+  const canEmail = !!env.BREVO_API_KEY;
   const pid = env.FIREBASE_PROJECT_ID;
   const base = 'https://firestore.googleapis.com/v1/projects/' + pid + '/databases/(default)/documents';
   const nowMs = Date.now();
@@ -342,6 +461,10 @@ async function runNotifyJob(env) {
     const ts = fv(f.ts) || 0;
     if (ts > maxTs) maxTs = ts;
     const type = fv(f.type), uid = fv(f.uid);
+    if (uid && fv(f.read) !== true && nowMs - ts <= 6 * 3600 * 1000) {
+      try { await pushForNotification(env, base, token, id, uid, f, ts); } catch (e) { console.error('push failed', id, e && e.message); }
+    }
+    if (!canEmail) continue;
     if (!NOTIFY_TYPES[type] || !uid) continue;
     if (fv(f.read) === true) continue;
     if (nowMs - ts > 6 * 3600 * 1000) continue;
@@ -880,6 +1003,10 @@ export default {
       if (!origin || !allowed.includes(origin)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
       try { return await handleDeleteUser(req, env); }
       catch (e) { console.error('delete-user error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if (url.pathname.startsWith('/push/') && (req.method === 'GET' || req.method === 'POST')) {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try { return await handlePush(req, env, url); } catch (e) { console.error('push error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
     }
     if (url.pathname === '/geo' && req.method === 'GET') {
       if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
