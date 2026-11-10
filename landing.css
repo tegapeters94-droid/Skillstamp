@@ -276,3 +276,73 @@
 #lp .rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease;}
 #lp .rv.in{opacity:1;transform:none;}
 @media(prefers-reduced-motion:reduce){#lp *{animation:none !important;transition:none !important;}#lp .rv{opacity:1;transform:none;}}
+
+/* ══ MOBILE REFINEMENT (phones only; desktop and tablet rules above are untouched) ══ */
+@media(max-width:639px){
+  #lp{--gut:clamp(20px,6vw,24px);}
+  #lp .lp-wrap{padding-left:var(--gut);padding-right:var(--gut);}
+  #lp .lp-menu{padding:8px var(--gut) 22px;}
+
+  /* rhythm */
+  #lp .lp-sec{padding:72px 0;}
+  #lp .lp-sec-head{gap:16px;margin-bottom:28px;}
+  #lp h2{font-size:clamp(28px,8vw,32px);line-height:1.14;letter-spacing:-.03em;}
+  #lp .lp-sub{font-size:16px;line-height:1.7;margin-top:14px;}
+  #lp .lp-eyebrow{margin-bottom:14px;font-size:12px;}
+  #lp .lp-center{margin-top:36px;}
+  #lp .lp-center .lp-btn,#lp .lp-final-cta .lp-btn,#lp .lp-cta-row .lp-btn{width:100%;}
+
+  /* hero */
+  #lp .lp-hero{padding:32px 0 72px;}
+  #lp .lp-hero-grid{gap:48px;}
+  #lp h1{font-size:clamp(35px,10vw,40px);line-height:1.08;letter-spacing:-.04em;text-wrap:balance;}
+  #lp .lp-lede{font-size:16.5px;line-height:1.7;margin-top:20px;}
+  #lp .lp-cta-row{gap:12px;margin-top:32px;}
+  #lp .lp-fine{margin-top:16px;text-align:center;}
+  #lp .lp-facts{flex-direction:column;gap:12px;margin-top:28px;padding-top:24px;}
+  #lp .lp-hero-art{gap:14px;margin-top:4px;}
+  #lp .lp-p-trail{display:none;}
+  #lp .lp-p-search{padding:14px;}
+  #lp .lp-p-profile{padding:20px;margin-top:6px;}
+  #lp .lp-pp-head{margin-bottom:16px;}
+
+  /* talent discovery: swipeable row */
+  #lp .lp-toolbar{gap:16px;margin-bottom:24px;}
+  #lp .lp-chips{margin:0 calc(var(--gut) * -1);padding:2px var(--gut);}
+  #lp .lp-grid3{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:var(--gut);margin:0 calc(var(--gut) * -1);padding:6px var(--gut) 22px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  #lp .lp-grid3::-webkit-scrollbar{display:none;}
+  #lp .lp-pcard{flex:0 0 min(80vw,310px);scroll-snap-align:start;padding:20px;gap:16px;}
+  #lp .lp-pcard:hover{transform:none;}
+  #lp .lp-pc-top{padding-right:0;padding-top:18px;}
+  #lp .lp-sample{top:14px;right:16px;}
+  #lp .lp-grid3::after{content:"";flex:0 0 2px;}
+  #lp .lp-center{margin-top:12px;}
+  #lp .lp-searchbar{padding:0 8px 0 16px;gap:10px;font-size:14px;}#lp .lp-searchbar kbd{padding:10px 14px;font-size:13px;}
+
+  /* skillid */
+  #lp .lp-split{gap:44px;}
+  #lp .lp-bul{gap:22px;margin-top:28px;}
+  #lp .lp-rec{padding:18px;}
+  #lp .lp-rec-label{margin-bottom:14px;}
+
+  /* how it works */
+  #lp .lp-tabs{width:100%;}#lp .lp-tabs button{flex:1;padding:11px 10px;}
+  #lp .lp-step{padding:20px;}
+
+  /* benefits */
+  #lp .lp-row{gap:28px;padding-bottom:64px;}
+  #lp .lp-card{padding:18px;border-radius:20px;}
+  #lp .lp-also{gap:14px;padding-top:0;}
+  #lp .lp-also>div{padding:20px;}
+
+  /* trust */
+  #lp .lp-principles{gap:12px;}
+  #lp .lp-principles li{padding:18px;gap:14px;}
+
+  /* final + footer */
+  #lp .lp-final{padding:0 0 72px;}
+  #lp .lp-final-in{padding:40px 24px;border-radius:24px;gap:28px;}
+  #lp .lp-foot{padding:56px 0 32px;}
+  #lp .lp-foot-grid{gap:40px 24px;}
+  #lp .lp-foot-bar{margin-top:40px;}
+}
