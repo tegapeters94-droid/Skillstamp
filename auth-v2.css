@@ -20,7 +20,8 @@
 /* soft canvas depth (very light, no blobs) */
 #screen-login .av2{min-height:100vh;min-height:100dvh;background:
   radial-gradient(900px 380px at 50% -120px,rgba(16,185,129,.07),transparent 70%),var(--c-canvas);}
-#screen-login .av2-main{display:flex;justify-content:center;padding:20px 18px 40px;min-width:0;}
+#screen-login .av2-main{display:flex;justify-content:center;padding:0;min-width:0;}
+#screen-login #ls-signin,#screen-login #ls-signup{padding:20px 18px 40px;}
 #screen-login #ls-start,#screen-login #ls-signin,#screen-login #ls-signup{width:100%;min-height:0;flex-direction:column;align-items:center;}
 #screen-login #ls-start.ls-enter,#screen-login #ls-signin.ls-enter,#screen-login #ls-signup.ls-enter{animation:av2-in .28s ease both;}
 @keyframes av2-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -78,7 +79,7 @@
 #screen-login .av2-card{background:var(--c-card);border:1px solid var(--c-line);border-radius:18px;box-shadow:var(--sh-md);padding:30px 28px;}
 #screen-login .av2-card-form{padding:30px 28px 26px;}
 #screen-login .av2-mhead{display:flex;justify-content:center;margin:0 0 22px;}
-@media (max-width:480px){#screen-login .av2-card,#screen-login .av2-card-form{padding:24px 18px;border-radius:16px;}#screen-login .av2-main{padding:16px 14px 32px;}}
+@media (max-width:480px){#screen-login .av2-card,#screen-login .av2-card-form{padding:24px 18px;border-radius:16px;}#screen-login #ls-signin,#screen-login #ls-signup{padding:16px 14px 32px;}}
 #screen-login .av2-back{display:inline-flex;align-items:center;gap:4px;width:auto;height:auto;padding:6px 8px 6px 0;margin:0 0 14px;background:none;border:0;border-radius:6px;box-shadow:none;color:var(--c-mut);font:500 13.5px/1 Inter,system-ui,sans-serif;cursor:pointer;align-self:flex-start;}
 #screen-login .av2-back:hover{color:var(--c-ink);}
 #screen-login .av2-back svg{stroke:currentColor;}
