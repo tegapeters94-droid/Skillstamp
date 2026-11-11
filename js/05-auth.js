@@ -270,7 +270,7 @@ window.doLogin=async function(){
     // Seed test wallet if empty
     if(!ME.wallet) ME.wallet={balance:0,pending:0,earned:0,transactions:[]};
     var hasWelcome=(ME.wallet.transactions||[]).find(function(t){return t.id==='t_welcome';});
-    if(!hasWelcome){
+    if(!hasWelcome && false){ /* demo credit retired: test credits are granted by admin */
       ME.wallet.balance=(ME.wallet.balance||0)+1000;
       ME.wallet.transactions.unshift({id:'t_welcome',type:'in',amount:1000,from:'SkillStamp',desc:'Demo credit — not withdrawable (for testing only)',ts:Date.now()});
       saveUser(ME);
