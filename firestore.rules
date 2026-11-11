@@ -88,19 +88,10 @@ service cloud.firestore {
     // The only ways a user may change their OWN wallet:
     //  A) money only moves or leaves (escrow, withdraw, send, release):
     //     balance + pending can never go UP and `earned` can't change.
-    //  B) test top-up: at most $50, with a matching 'Top Up' transaction.
-    //  C) one-time $1,000 demo credit on an empty wallet history (test mode).
-    //  D) payout for a completed gig (see claimOk).
+    //  B) payout for a completed gig (see claimOk).
     function walletMoveOk(ow, nw) {
       return wb(nw) >= 0 && wp(nw) >= 0 && we(nw) >= 0 && (
         (we(nw) == we(ow) && wb(nw) + wp(nw) <= wb(ow) + wp(ow)) ||
-        (we(nw) == we(ow) && wp(nw) == wp(ow) &&
-          wb(nw) > wb(ow) && wb(nw) - wb(ow) <= 50 &&
-          wtx(nw)[0].type == 'in' && wtx(nw)[0].from == 'Top Up' &&
-          wtx(nw)[0].amount == wb(nw) - wb(ow)) ||
-        (we(nw) == we(ow) && wp(nw) == wp(ow) &&
-          wb(nw) - wb(ow) == 1000 && wtx(ow).size() == 0 &&
-          wtx(nw)[0].id == 't_welcome') ||
         claimOk(ow, nw)
       );
     }
@@ -167,6 +158,7 @@ service cloud.firestore {
                        request.resource.data.get('badgeStatus', 'beginner') in ['beginner'] &&
                        // Emails live in users_private, never in the public profile
                        !('email' in request.resource.data) &&
+                       !('walletMode' in request.resource.data) &&
                        // Cannot start with free money / reputation
                        startsClean(request.resource.data);
 
@@ -182,6 +174,8 @@ service cloud.firestore {
                        fieldUnchanged('uid') &&
                        // Cannot change email (Firebase Auth handles this)
                        fieldUnchanged('email') &&
+                       // Wallet mode (test/live) is set by admins only
+                       fieldUnchanged('walletMode') &&
                        // Verification data is issued by admins only
                        same('skillId') &&
                        same('verifiedSkills') &&
@@ -196,6 +190,11 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════════
     //  USERS_PRIVATE: each member's email, readable only by the owner and admins
     // ═══════════════════════════════════════════════════════════════════════
+    // Copies of wallets cleared by an admin reset (admin only)
+    match /wallet_archive/{id} {
+      allow read, write: if isAdmin();
+    }
+
     match /users_private/{uid} {
       allow read: if isOwner(uid) || isAdmin();
       allow create, update: if isOwner(uid) &&
