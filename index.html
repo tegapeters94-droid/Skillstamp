@@ -34,6 +34,7 @@
 <link rel="stylesheet" href="styles.css"/>
 <link rel="stylesheet" href="auth-v2.css"/>
 <link rel="stylesheet" href="landing.css"/>
+<link rel="stylesheet" href="verify.css"/>
 <!-- QR Code library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <!-- Firebase (ES Module) -->
@@ -390,6 +391,8 @@
                   </select></div></div>
                 <div class="ls-fg"><label class="av2-label" for="ri-city">City <span class="av2-opt">optional</span></label><div class="ls-input-wrap"><input class="ls-input" id="ri-city" type="text" placeholder="Lagos" autocomplete="address-level2" maxlength="60"/></div></div>
               </div>
+
+              <div class="ls-fg"><label class="av2-label" for="ri-ph">Mobile number</label><div class="ls-input-wrap"><input class="ls-input" id="ri-ph" type="tel" inputmode="tel" autocomplete="tel" placeholder="+234 801 234 5678" maxlength="20"/></div><div class="av2-opt" style="margin-top:6px;font-size:11px;">Kept private. Used to keep accounts real and for future SMS sign-in.</div></div>
 
               <input type="hidden" id="ri-cat" value=""/>
 
@@ -776,5 +779,6 @@
 <script src="js/54-auth-ui.js"></script>
 <script src="js/55-landing.js"></script>
 <script src="js/56-pwa.js"></script>
+<script src="js/57-verify.js"></script>
 </body>
 </html>

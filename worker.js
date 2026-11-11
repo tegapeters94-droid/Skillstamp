@@ -590,6 +590,125 @@ async function handleReset(req, env) {
 }
 
 
+/* ---------- email verification by 6-digit code ---------- */
+function verifyEmail(code, first) {
+  const B = BRAND;
+  const html = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Your SkillStamp verification code</title></head>
+<body style="margin:0;padding:0;background:${B.page};">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Your code is ${code}. It expires in 15 minutes.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${B.page};"><tr><td align="center" style="padding:32px 14px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid ${B.line};border-radius:20px;overflow:hidden;">
+<tr><td align="center" bgcolor="${B.dark}" style="background:${B.dark};background-image:linear-gradient(135deg,#0f5430 0%,${B.dark} 70%);padding:26px 28px;">
+  <img src="${B.logo}" width="44" height="44" alt="SkillStamp" style="display:inline-block;vertical-align:middle;width:44px;height:44px;border:0;">
+  <span style="font-family:${FONT};font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#ffffff;vertical-align:middle;margin-left:8px;">Skill<span style="color:${B.mint};">Stamp</span></span>
+</td></tr>
+<tr><td style="padding:34px 36px 6px;">
+  <div style="font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${B.green};">Verify your email</div>
+  <div style="font-family:${FONT};font-size:26px;line-height:1.25;font-weight:800;letter-spacing:-0.02em;color:${B.ink};margin-top:10px;">Your verification code</div>
+  <div style="font-family:${FONT};font-size:16px;line-height:1.65;color:${B.body};margin-top:14px;">Hi ${esc(first || 'there')}, enter this code in SkillStamp to confirm your email address. It expires in 15 minutes.</div>
+</td></tr>
+<tr><td align="left" style="padding:20px 36px 12px;">
+  <div style="display:inline-block;background:${B.tint};border:1px solid ${B.line};border-radius:14px;padding:16px 26px;font-family:'Courier New',monospace;font-size:34px;font-weight:800;letter-spacing:.35em;color:${B.green};">${code}</div>
+</td></tr>
+<tr><td style="padding:10px 36px 30px;">
+  <div style="font-family:${FONT};font-size:14px;line-height:1.6;color:${B.body};"><strong style="color:${B.ink};">Did not create an account?</strong> You can safely ignore this email. Never share this code with anyone.</div>
+</td></tr>
+<tr><td style="padding:22px 36px 28px;border-top:1px solid ${B.line};background:#fafbf8;">
+  <div style="font-family:${FONT};font-size:12px;line-height:1.7;color:${B.muted};">Sent by <a href="${B.site}" style="color:${B.green};text-decoration:none;">SkillStamp</a> because this address was used to sign up.</div>
+</td></tr>
+</table></td></tr></table></body></html>`;
+  const text = `Your SkillStamp verification code is ${code}.\n\nIt expires in 15 minutes. If you did not create an account, ignore this email. Never share this code.\n\nSkillStamp - ${B.site}`;
+  return { subject: `${code} is your SkillStamp verification code`, html, text };
+}
+
+async function sha256Hex(s) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyAuth(req, env) {
+  const auth = req.headers.get('Authorization') || '';
+  try { return await verifyIdToken(auth.startsWith('Bearer ') ? auth.slice(7) : '', env.FIREBASE_PROJECT_ID); }
+  catch (e) { return null; }
+}
+
+async function handleVerifySend(req, env) {
+  if (!env.SA_AUTH_JSON || !env.BREVO_API_KEY) return json({ ok: false, error: 'not configured' }, 503, req, env);
+  const claims = await verifyAuth(req, env);
+  if (!claims) return json({ ok: false, error: 'unauthorized' }, 401, req, env);
+  const uid = claims.sub;
+  const email = String(claims.email || '').toLowerCase();
+  if (!email) return json({ ok: false, error: 'no-email' }, 400, req, env);
+  if (claims.email_verified) return json({ ok: true, already: true }, 200, req, env);
+
+  const key = 'vcode:' + uid;
+  const prev = JSON.parse((await env.SS_KV.get(key)) || 'null');
+  const now = Date.now();
+  if (prev && now - prev.sent < 60000) return json({ ok: false, error: 'wait', retry: Math.ceil((60000 - (now - prev.sent)) / 1000) }, 429, req, env);
+  const day = today();
+  const dKey = 'vsend:' + uid + ':' + day;
+  const dN = parseInt((await env.SS_KV.get(dKey)) || '0', 10);
+  if (dN >= 5) return json({ ok: false, error: 'rate-limited' }, 429, req, env);
+  const ip = req.headers.get('CF-Connecting-IP') || 'unknown';
+  const iKey = 'vsend:ip:' + ip + ':' + day;
+  const iN = parseInt((await env.SS_KV.get(iKey)) || '0', 10);
+  if (iN >= 20) return json({ ok: false, error: 'rate-limited' }, 429, req, env);
+  const capKey = 'cap:' + day;
+  const cap = parseInt(env.DAILY_CAP || '250', 10);
+  if (parseInt((await env.SS_KV.get(capKey)) || '0', 10) >= cap) return json({ ok: false, error: 'daily limit reached' }, 429, req, env);
+
+  const buf = new Uint32Array(1); crypto.getRandomValues(buf);
+  const code = String(100000 + (buf[0] % 900000));
+  const hash = await sha256Hex(code + ':' + uid + ':' + email);
+  await env.SS_KV.put(key, JSON.stringify({ h: hash, exp: now + 15 * 60000, sent: now, tries: 0, email: email }), { expirationTtl: 1800 });
+  await env.SS_KV.put(dKey, String(dN + 1), { expirationTtl: 172800 });
+  await env.SS_KV.put(iKey, String(iN + 1), { expirationTtl: 172800 });
+  try {
+    await sendBrevo(env, email, '', verifyEmail(code, String(claims.name || '').split(' ')[0]));
+  } catch (e) {
+    console.error('verify send failed', e && e.message);
+    return json({ ok: false, error: 'send failed' }, 502, req, env);
+  }
+  await env.SS_KV.put(capKey, String(parseInt((await env.SS_KV.get(capKey)) || '0', 10) + 1), { expirationTtl: 172800 });
+  return json({ ok: true }, 200, req, env);
+}
+
+async function handleVerifyCheck(req, env) {
+  if (!env.SA_AUTH_JSON) return json({ ok: false, error: 'not configured' }, 503, req, env);
+  const claims = await verifyAuth(req, env);
+  if (!claims) return json({ ok: false, error: 'unauthorized' }, 401, req, env);
+  let body = {};
+  try { body = await req.json(); } catch (e) {}
+  const code = String(body.code || '').replace(/\D/g, '');
+  if (code.length !== 6) return json({ ok: false, error: 'bad-code' }, 400, req, env);
+  const uid = claims.sub;
+  const email = String(claims.email || '').toLowerCase();
+  const key = 'vcode:' + uid;
+  const rec = JSON.parse((await env.SS_KV.get(key)) || 'null');
+  if (!rec || Date.now() > rec.exp || rec.email !== email) return json({ ok: false, error: 'expired' }, 400, req, env);
+  if (rec.tries >= 5) { await env.SS_KV.delete(key); return json({ ok: false, error: 'too-many' }, 429, req, env); }
+  const hash = await sha256Hex(code + ':' + uid + ':' + email);
+  if (hash !== rec.h) {
+    rec.tries += 1;
+    await env.SS_KV.put(key, JSON.stringify(rec), { expirationTtl: 1800 });
+    return json({ ok: false, error: 'wrong', left: Math.max(0, 5 - rec.tries) }, 400, req, env);
+  }
+  const token = await getSaToken(env, 'SA_AUTH_JSON', 'https://www.googleapis.com/auth/identitytoolkit');
+  const r = await fetch('https://identitytoolkit.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/accounts:update', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ localId: uid, emailVerified: true }),
+  });
+  if (!r.ok) {
+    console.error('verify update failed', r.status, (await r.text().catch(() => '')).slice(0, 200));
+    return json({ ok: false, error: 'failed' }, 502, req, env);
+  }
+  await env.SS_KV.delete(key);
+  return json({ ok: true }, 200, req, env);
+}
+
+
 /* ---------- admin: permanently delete a sign-in account ---------- */
 async function handleDeleteUser(req, env) {
   if (!env.SA_AUTH_JSON || !env.SA_JSON) return json({ ok: false, error: 'not configured' }, 503, req, env);
@@ -1035,6 +1154,11 @@ export default {
       if (!origin || !allowed.includes(origin)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
       try { return await handleReset(req, env); }
       catch (e) { console.error('reset error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if ((url.pathname === '/verify/send' || url.pathname === '/verify/check') && req.method === 'POST') {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try { return url.pathname === '/verify/send' ? await handleVerifySend(req, env) : await handleVerifyCheck(req, env); }
+      catch (e) { console.error('verify error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
     }
     if (url.pathname === '/welcome' && req.method === 'POST') {
       const origin = req.headers.get('Origin') || '';

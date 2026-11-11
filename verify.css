@@ -1,0 +1,43 @@
+/* Email verification + restyled pop-ups (Forgot password, Google role picker). */
+.vf-overlay{position:fixed;inset:0;z-index:10050;background:rgba(13,17,9,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px}
+.vf-card{position:relative;width:100%;max-width:400px;background:#fff;border-radius:24px;padding:32px 26px 24px;text-align:center;box-shadow:0 30px 70px rgba(13,17,9,.28);font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#0d1109;animation:vfIn .22s ease}
+@keyframes vfIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.vf-x{position:absolute;top:12px;right:14px;border:0;background:none;font-size:26px;line-height:1;color:#7a8a74;cursor:pointer}
+.vf-logo{width:52px;height:52px;object-fit:contain;margin:0 auto 12px;display:block}
+.vf-card h3{margin:0 0 8px;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.vf-p{margin:0 0 18px;font-size:14px;line-height:1.55;color:#4a5a44}
+.vf-p b{color:#0d1109;word-break:break-all}
+.vf-input{width:100%;box-sizing:border-box;text-align:center;font:800 28px/1 'Courier New',monospace;letter-spacing:.35em;padding:15px 10px;border:1.5px solid #dfe8da;border-radius:14px;background:#f7f9f6;color:#1a6b3c;outline:none}
+.vf-input:focus{border-color:#1a6b3c;box-shadow:0 0 0 4px rgba(26,107,60,.12);background:#fff}
+.vf-msg{margin-top:12px;font-size:13px;color:#b42318;background:#fef3f2;border-radius:10px;padding:9px 12px}
+.vf-msg.ok{color:#1a6b3c;background:#eef7f1}
+.vf-btn{width:100%;margin-top:16px;padding:15px;border:0;border-radius:14px;background:#1a6b3c;color:#fff;font:800 15px 'Plus Jakarta Sans',system-ui,sans-serif;cursor:pointer}
+.vf-btn:disabled{opacity:.6}
+.vf-link{margin-top:10px;border:0;background:none;color:#1a6b3c;font:700 13px 'Plus Jakarta Sans',system-ui,sans-serif;cursor:pointer;padding:8px}
+.vf-link:disabled{opacity:.5}
+.vf-note{margin-top:6px;font-size:11px;color:#8a9a84}
+.vf-banner{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:900;margin:0 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0d3320;color:#fff;border-radius:14px;padding:11px 14px;font:600 12.5px/1.4 'Plus Jakarta Sans',system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.vf-banner button{flex-shrink:0;border:0;background:#4ade80;color:#0d3320;font:800 12px 'Plus Jakarta Sans',system-ui,sans-serif;padding:8px 14px;border-radius:10px;cursor:pointer}
+@media(min-width:900px){.vf-banner{bottom:20px;left:auto;right:20px;max-width:440px}}
+
+/* ---- Forgot password pop-up ---- */
+.moverlay:has(#fp-send-btn){-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);background:rgba(13,17,9,.55)}
+.moverlay:has(#fp-send-btn) .modal{max-width:400px;width:calc(100% - 32px);background:#fff;border:0;border-radius:24px;padding:34px 26px 26px;text-align:center;box-shadow:0 30px 70px rgba(13,17,9,.28);font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+.moverlay:has(#fp-send-btn) .modal h3{font-size:22px;font-weight:800;letter-spacing:-.02em;color:#0d1109;margin:0 0 8px}
+.moverlay:has(#fp-send-btn) .modal h3::before{content:"";display:block;width:52px;height:52px;margin:0 auto 12px;background:url(logo-green.png) center/contain no-repeat}
+.moverlay:has(#fp-send-btn) .modal p{font-size:14px!important;line-height:1.55;color:#4a5a44!important;margin:0 0 18px}
+.moverlay:has(#fp-send-btn) .fg{text-align:left;margin-bottom:12px}
+.moverlay:has(#fp-send-btn) .fl{font-size:12px;font-weight:700;color:#0d1109;margin-bottom:6px;display:block}
+.moverlay:has(#fp-send-btn) .fi{box-sizing:border-box;border:1.5px solid #dfe8da;background:#f7f9f6;border-radius:14px;padding:14px 16px;font-size:15px;color:#0d1109;outline:none}
+.moverlay:has(#fp-send-btn) .fi:focus{border-color:#1a6b3c;box-shadow:0 0 0 4px rgba(26,107,60,.12);background:#fff}
+.moverlay:has(#fp-send-btn) #fp-send-btn{background:#1a6b3c;border:0;border-radius:14px;padding:15px;font-size:15px;font-weight:800;color:#fff}
+.moverlay:has(#fp-send-btn) #fp-success{background:#eef7f1!important;border:0!important;border-radius:12px!important;color:#1a6b3c!important;font-weight:600}
+.moverlay:has(#fp-send-btn) .mclose{top:14px;right:16px;font-size:24px;color:#7a8a74}
+
+/* ---- Google role picker ---- */
+#google-role-modal{background:rgba(13,17,9,.55)!important}
+#google-role-modal>div{border-radius:26px!important;padding:30px 22px 22px!important;max-width:400px!important;box-shadow:0 30px 70px rgba(13,17,9,.28)!important;position:relative;overflow:hidden}
+#google-role-modal>div::before{content:"";display:block;height:4px;position:absolute;top:0;left:0;right:0;background:linear-gradient(90deg,#1a6b3c,#4ade80)}
+#google-role-modal [id^="gr-card-"]{border-radius:18px!important;padding:22px 12px!important}
+#google-role-modal [id^="gr-card-"]:hover{border-color:#1a6b3c}
+#google-role-modal #gr-confirm-btn{border-radius:14px!important;padding:16px!important}
