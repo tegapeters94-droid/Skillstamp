@@ -243,6 +243,7 @@ service cloud.firestore {
     // Escrow payout / refund records, written only by the Worker (never by members)
     match /escrow_paid/{id} { allow read: if isAdmin(); allow write: if false; }
     match /escrow_done/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /escrow_locks/{id} { allow read: if isAdmin() || (isAuth() && resource.data.uid == request.auth.uid); allow write: if false; }
 
     // Copies of wallets cleared by an admin reset (admin only)
     match /wallet_archive/{id} {
