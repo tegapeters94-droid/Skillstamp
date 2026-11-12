@@ -738,11 +738,21 @@ async function fsRead(env, tok, path) {
   const j = await r.json(); const d = {}; Object.keys(j.fields || {}).forEach((k) => { d[k] = fromFS(j.fields[k]); });
   return { updateTime: j.updateTime, data: d };
 }
+let LAST_COMMIT = { status: 0, text: '' };
 async function fsCommit(env, tok, writes) {
   const r = await fetch('https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents:commit', {
     method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: writes }),
   });
+  LAST_COMMIT = { status: r.status, text: '' };
+  if (!r.ok) { try { LAST_COMMIT.text = (await r.text()).slice(0, 300); } catch (e) {} console.error('firestore commit failed', r.status, LAST_COMMIT.text); }
   return r.ok;
+}
+/* map a failed commit to a useful answer: a real write conflict is "busy", anything else is reported */
+function commitErr(req, env) {
+  const t = LAST_COMMIT.text || '';
+  if (LAST_COMMIT.status === 403 || /PERMISSION_DENIED/.test(t)) return json({ ok: false, error: 'permission', detail: t.slice(0, 160) }, 500, req, env);
+  if (LAST_COMMIT.status === 409 || /ABORTED|FAILED_PRECONDITION|ALREADY_EXISTS/.test(t)) return json({ ok: false, error: 'busy', detail: t.slice(0, 160) }, 409, req, env);
+  return json({ ok: false, error: 'commit-' + LAST_COMMIT.status, detail: t.slice(0, 160) }, 500, req, env);
 }
 function docName(env, path) { return 'projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents/' + path; }
 function walletOf(u) {
@@ -808,7 +818,7 @@ async function handleEscrowLock(req, env) {
     { update: { name: docName(env, 'users/' + c.uid), fields: { wallet: toFS(w) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: me.updateTime } },
     { update: { name: docName(env, 'escrow_locks/' + id), fields: { key: toFS(id), kind: toFS(kind), uid: toFS(c.uid), amount: toFS(amount), status: toFS('locked'), at: toFS(now) } }, currentDocument: { exists: false } },
   ]);
-  if (!ok) return json({ ok: false, error: 'busy' }, 409, req, env);
+  if (!ok) return commitErr(req, env);
   return json({ ok: true, wallet: w }, 200, req, env);
 }
 
@@ -835,7 +845,7 @@ async function handleProposalCancel(req, env) {
     writes.push({ update: { name: docName(env, 'escrow_locks/' + id), fields: { status: toFS('refunded'), refundedAt: toFS(now) } }, updateMask: { fieldPaths: ['status', 'refundedAt'] }, currentDocument: { updateTime: lock.updateTime } });
   }
   if (!writes.length) return json({ ok: true, nothing: true }, 200, req, env);
-  if (!(await fsCommit(env, c.tok, writes))) return json({ ok: false, error: 'busy' }, 409, req, env);
+  if (!(await fsCommit(env, c.tok, writes))) return commitErr(req, env);
   return json({ ok: true, refunded: back, wallet: wallet }, 200, req, env);
 }
 
@@ -848,7 +858,7 @@ async function handleEscrowSettle(req, env) {
   const gig = await fsRead(env, a.dsToken, 'gigs/' + gigId);
   const lock = await findLock(env, a.dsToken, gigId, gig && gig.data.proposalId);
   if (!lock || lock.data.status !== 'locked') return json({ ok: true, nothing: true }, 200, req, env);
-  if (!(await fsCommit(env, a.dsToken, [{ update: { name: docName(env, 'escrow_locks/' + lock.key), fields: { status: toFS('settled'), settledAt: toFS(Date.now()), by: toFS(a.claims.sub) } }, updateMask: { fieldPaths: ['status', 'settledAt', 'by'] }, currentDocument: { updateTime: lock.updateTime } }]))) return json({ ok: false, error: 'busy' }, 409, req, env);
+  if (!(await fsCommit(env, a.dsToken, [{ update: { name: docName(env, 'escrow_locks/' + lock.key), fields: { status: toFS('settled'), settledAt: toFS(Date.now()), by: toFS(a.claims.sub) } }, updateMask: { fieldPaths: ['status', 'settledAt', 'by'] }, currentDocument: { updateTime: lock.updateTime } }]))) return commitErr(req, env);
   return json({ ok: true }, 200, req, env);
 }
 
@@ -904,7 +914,7 @@ async function handleEscrow(req, env, kind) {
     ];
     if (lockedHere) writes.push({ update: { name: docName(env, 'escrow_locks/' + lock.key), fields: { status: toFS('released'), releasedAt: toFS(now) } }, updateMask: { fieldPaths: ['status', 'releasedAt'] }, currentDocument: { updateTime: lock.updateTime } });
     if (!trusted) { pw.pending = (pw.pending || 0) - amount; writes.unshift({ update: { name: docName(env, 'users/' + posterUid), fields: { wallet: toFS(pw) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: po.updateTime } }); }
-    if (!(await fsCommit(env, tok, writes))) return json({ ok: false, error: 'busy' }, 409, req, env);
+    if (!(await fsCommit(env, tok, writes))) return commitErr(req, env);
     return json({ ok: true, wallet: fw, payout: payout }, 200, req, env);
   }
 
@@ -925,7 +935,7 @@ async function handleEscrow(req, env, kind) {
     { update: { name: docName(env, 'escrow_locks/' + gigId), fields: { status: toFS('refunded'), refundedAt: toFS(now) } }, updateMask: { fieldPaths: ['status', 'refundedAt'] }, currentDocument: { updateTime: lk.updateTime } },
     { delete: docName(env, 'gigs/' + gigId), currentDocument: { updateTime: gig.updateTime } },
   ]);
-  if (!ok) return json({ ok: false, error: 'busy' }, 409, req, env);
+  if (!ok) return commitErr(req, env);
   return json({ ok: true, wallet: w, refunded: back }, 200, req, env);
 }
 
