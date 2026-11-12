@@ -38,10 +38,21 @@ window.openReHire=function(prevGigId,freelancerUid){
       };
       await fbSet('gigs',gig.id,gig);
       CACHE.gigs.unshift(gig);
+      if(ME.walletMode==='test'){
       ME.wallet.balance=Math.max(0,(ME.wallet.balance||0)-budget);
       ME.wallet.pending=(ME.wallet.pending||0)+budget;
       ME.wallet.transactions.unshift({id:'t'+Date.now(),type:'out',amount:budget,from:ME.name,desc:'Re-hire: '+title,ts:Date.now()});
       saveUser(ME);
+      } else {
+        var rlk=await window.ssEscrowLock('gig',gig.id);
+        if(!rlk.ok){
+          try{window.FB_FNS.deleteDoc(window.FB_FNS.doc(window.FB_DB,'gigs',gig.id));}catch(e4){}
+          CACHE.gigs=CACHE.gigs.filter(function(x){return x.id!==gig.id;});
+          btn.disabled=false;btn.textContent='Re-hire & Lock Escrow →';
+          toast(rlk.error==='insufficient'?'Insufficient wallet balance. Top up first.':'Could not lock the escrow. Please try again.','bad');return;
+        }
+        ME.wallet=rlk.wallet;
+      }
       pushNotif(freelancerUid,'hired','🎉 Re-hired!',ME.name+' hired you again for: '+title+' — $'+budget,{type:'gig_hired',gigId:gig.id,clientUid:ME.uid});
       sendAutoMsg(freelancerUid,'👋 Hi '+u.name.split(' ')[0]+'! I\'ve re-hired you for a new project: '+title+'. Budget: $'+budget+'. Timeline: '+timeline+'. Great working with you again!');
       closeModal();

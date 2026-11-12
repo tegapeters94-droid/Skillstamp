@@ -1439,7 +1439,18 @@ window.openDirectProposal = function(uid) {
       }
 
       // Deduct escrow if verified
-      if (isVerif) {
+      if (isVerif && ME.walletMode !== 'test') {
+        var plk = await window.ssEscrowLock('proposal', result.proposal.id);
+        if (!plk.ok) {
+          try { await window.ssEscrowCancel(result.proposal.id); } catch (e3) {}
+          submitBtn.disabled = false;
+          submitBtn.textContent = '💼 Send Proposal & Lock Escrow →';
+          toast(plk.error === 'insufficient' ? 'Insufficient wallet balance. Top up first.' : 'Could not lock the escrow. Please try again.', 'bad');
+          return;
+        }
+        ME.wallet = plk.wallet;
+        if (typeof renderWallet === 'function') renderWallet();
+      } else if (isVerif) {
         ME.wallet.balance  = Math.max(0, (ME.wallet.balance || 0) - budget);
         ME.wallet.pending  = (ME.wallet.pending || 0) + budget;
         ME.wallet.transactions.unshift({ id: 't' + Date.now(), type: 'out', amount: budget, from: ME.name, desc: 'Escrow: ' + title, ts: Date.now() });

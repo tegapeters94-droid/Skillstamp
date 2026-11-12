@@ -537,9 +537,11 @@ async function _gwSubmit() {
 
   try {
     if (!ME.wallet) ME.wallet = { balance:0, pending:0, earned:0, transactions:[] };
+    if (ME.walletMode === 'test') { /* live wallets are charged by the Worker below */
     ME.wallet.balance  = Math.max(0, bal - num);
     ME.wallet.pending  = (ME.wallet.pending || 0) + num;
     ME.wallet.transactions.unshift({ id:'escrow_'+Date.now(), type:'out', amount:num, from:'Escrow', desc:'Escrow: '+d.title, ts:Date.now() });
+    }
 
     var gig = {
       id:'g'+Date.now(), title:d.title, description:d.description,
@@ -552,6 +554,11 @@ async function _gwSubmit() {
     // fbSet swallows errors, so confirm the gig really saved before charging escrow
     var savedGig = await fbGet('gigs', gig.id);
     if (!savedGig) throw new Error('Gig was not saved');
+    if (ME.walletMode !== 'test') {
+      var lk = await window.ssEscrowLock('gig', gig.id);
+      if (!lk.ok) { try { window.FB_FNS.deleteDoc(window.FB_FNS.doc(window.FB_DB, 'gigs', gig.id)); } catch (e2) {} throw new Error('escrow ' + (lk.error || 'failed')); }
+      ME.wallet = lk.wallet;
+    }
     CACHE.gigs.unshift(gig);
     ME.gigsCount = (ME.gigsCount || 0) + 1;
     await saveUser(ME);
@@ -569,9 +576,11 @@ async function _gwSubmit() {
 
   } catch(err) {
     console.error('submitGig failed', err);
+    if (ME.walletMode === 'test') {
     ME.wallet.balance  = bal;
     ME.wallet.pending  = Math.max(0, (ME.wallet.pending||0) - num);
     ME.wallet.transactions.shift();
+    }
     if (btn) { btn.disabled = false; btn.textContent = '🔒 Post Gig & Lock Escrow'; }
     toast('Failed to post gig. Please try again.', 'bad');
   }

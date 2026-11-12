@@ -240,6 +240,7 @@
         patch.status = a.release > 0 ? 'completed' : 'cancelled';
       } else patch.status = g.deliveredAt ? 'delivered' : 'hired';
       await upd('gigs', gid, patch);
+      if (type !== 'dismiss') { try { if (window.ssEscrowSettle) await window.ssEscrowSettle(gid); } catch (e) { console.warn('[admin] escrow settle', e); } }
       var cg = (CACHE.gigs || []).findIndex(function (x) { return x.id === gid; });
       if (cg >= 0) Object.assign(CACHE.gigs[cg], patch);
       if (dispId) await upd('disputes', dispId, { status: 'resolved', resolution: type, note: note, refund: back, release: res.release, resolvedBy: window.ME.uid, resolvedByName: window.ME.name || '', resolvedAt: now });
