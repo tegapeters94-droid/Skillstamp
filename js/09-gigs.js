@@ -425,7 +425,7 @@ function _gwStep4(d) {
     + '<div id="gw-bp" style="' + (num ? '' : 'display:none') + '">'
     + '<div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px;">💰 Escrow Breakdown</div>'
     + '<div class="gw-brow"><span style="color:var(--td);">Contract Value</span><span id="gw-bp-t">₦' + num.toLocaleString() + '</span></div>'
-    + '<div class="gw-brow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span id="gw-bp-f" style="color:#ef4444;">-$' + fee.toLocaleString() + '</span></div>'
+    + '<div class="gw-brow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span id="gw-bp-f" style="color:#ef4444;">-₦' + fee.toLocaleString() + '</span></div>'
     + '<div class="gw-brow total"><span>Freelancer Receives</span><span id="gw-bp-p" style="color:#059669;">₦' + pay.toLocaleString() + '</span></div>'
     + '</div>'
     + '<div class="gw-tip">🔒 <div>Budget is <strong>locked in escrow</strong> when you post. Released only after you confirm delivery.</div></div>';
@@ -506,7 +506,7 @@ function _gwWireStep(step, d) {
         var num=parseFloat(bEl.value)||0, fee=Math.round(num*.1), pay=num-fee;
         var pr=document.getElementById('gw-bp'); if(pr) pr.style.display=num>0?'':'none';
         var t=document.getElementById('gw-bp-t'); if(t) t.textContent='₦'+num.toLocaleString();
-        var f=document.getElementById('gw-bp-f'); if(f) f.textContent='-$'+fee.toLocaleString();
+        var f=document.getElementById('gw-bp-f'); if(f) f.textContent='-₦'+fee.toLocaleString();
         var p=document.getElementById('gw-bp-p'); if(p) p.textContent='₦'+pay.toLocaleString();
         var bal=(ME.wallet&&ME.wallet.balance)||0;
         var warn=document.querySelector('.gw-wallet-warn');
@@ -619,7 +619,7 @@ window.showGigDetail=function(gid){
   mh+='<div class="escrow">';
   mh+='<div style="font-size:11px;font-weight:600;margin-bottom:9px;">💰 Escrow Breakdown</div>';
   mh+='<div class="erow"><span style="color:var(--td);">Contract Value</span><span>'+ssPay(g.pay)+'</span></div>';
-  mh+='<div class="erow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-$'+fee+'</span></div>';
+  mh+='<div class="erow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-₦'+fee+'</span></div>';
   mh+='<div class="erow" style="border-top:1px solid var(--br);padding-top:6px;margin-top:4px;font-weight:700;"><span>Freelancer Receives</span><span style="color:var(--grn);">₦'+payout+'</span></div>';
   mh+='</div>';
   // Action buttons — using ids, wired after render
