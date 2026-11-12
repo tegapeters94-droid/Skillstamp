@@ -57,11 +57,12 @@ service cloud.firestore {
     function wp(w)  { return w.get('pending', 0); }
     function we(w)  { return w.get('earned', 0); }
     function wtx(w) { return w.get('transactions', []); }
+    function wh(w)  { return w.get('held', 0); }   // money held for a pending withdrawal
 
     // A brand-new account must start with an empty wallet and no reputation.
     function startsClean(d) {
       return (!('wallet' in d) ||
-               (wb(d.wallet) == 0 && wp(d.wallet) == 0 && we(d.wallet) == 0 && wtx(d.wallet).size() == 0)) &&
+               (wb(d.wallet) == 0 && wp(d.wallet) == 0 && wh(d.wallet) == 0 && we(d.wallet) == 0 && wtx(d.wallet).size() == 0)) &&
              d.get('repPoints', 0) == 0 &&
              d.get('score', 0) == 0 &&
              d.get('gigsCount', 0) == 0 &&
@@ -79,6 +80,7 @@ service cloud.firestore {
       return d > 0 &&
              we(nw) - we(ow) == d &&
              wp(nw) == wp(ow) &&
+             wh(nw) == wh(ow) &&
              txid.matches('pay_[A-Za-z0-9_-]+') &&
              g.status == 'completed' &&
              g.hiredUid == request.auth.uid &&
@@ -87,11 +89,11 @@ service cloud.firestore {
 
     // The only ways a user may change their OWN wallet:
     //  A) money only moves or leaves (escrow, withdraw, send, release):
-    //     balance + pending can never go UP and `earned` can't change.
+    //     balance + pending + held can never go UP, and held can only be raised by the member (lowered by admin) and `earned` can't change.
     //  B) payout for a completed gig (see claimOk).
     function walletMoveOk(ow, nw) {
       return wb(nw) >= 0 && wp(nw) >= 0 && we(nw) >= 0 && (
-        (we(nw) == we(ow) && wb(nw) + wp(nw) <= wb(ow) + wp(ow)) ||
+        (we(nw) == we(ow) && wh(nw) >= wh(ow) && wb(nw) + wp(nw) + wh(nw) <= wb(ow) + wp(ow) + wh(ow)) ||
         claimOk(ow, nw)
       );
     }
@@ -212,6 +214,24 @@ service cloud.firestore {
                        resource.data.status == 'awaiting' &&
                        request.resource.data.status == 'claimed' &&
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'claimedAt']);
+      allow write: if isAdmin();
+    }
+
+    // Withdrawal requests. A member asks for money out (their wallet amount is moved to
+    // `held`); only an admin can mark it paid or send the held money back.
+    match /withdrawals/{wdId} {
+      allow read: if isAdmin() || (isAuth() && resource.data.uid == request.auth.uid);
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.keys().hasOnly(['uid', 'name', 'amount', 'ref', 'status', 'created', 'bankName', 'accountNumber', 'accountName']) &&
+                       request.resource.data.uid == request.auth.uid &&
+                       request.resource.data.status == 'pending' &&
+                       request.resource.data.amount is number &&
+                       request.resource.data.amount >= 1000 && request.resource.data.amount <= 5000000 &&
+                       request.resource.data.ref is string && request.resource.data.ref.size() <= 20 &&
+                       request.resource.data.accountNumber.matches('^[0-9]{10}$') &&
+                       request.resource.data.bankName is string && request.resource.data.bankName.size() <= 60 &&
+                       request.resource.data.accountName is string && request.resource.data.accountName.size() <= 80 &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('walletMode', 'live') != 'test';
       allow write: if isAdmin();
     }
 
