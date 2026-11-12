@@ -92,9 +92,14 @@ service cloud.firestore {
     //     balance + pending + held can never go UP, and held can only be raised by the member (lowered by admin) and `earned` can't change.
     //  B) payout for a completed gig (see claimOk).
     function walletMoveOk(ow, nw) {
+      // Live (real-money) wallets can only be raised by an admin or the Worker, and money set
+      // aside in escrow (`pending`) can only be released by them too. Test wallets keep the
+      // older client-side behaviour.
+      let test = resource.data.get('walletMode', 'live') == 'test';
       return wb(nw) >= 0 && wp(nw) >= 0 && we(nw) >= 0 && (
-        (we(nw) == we(ow) && wh(nw) >= wh(ow) && wb(nw) + wp(nw) + wh(nw) <= wb(ow) + wp(ow) + wh(ow)) ||
-        claimOk(ow, nw)
+        (we(nw) == we(ow) && wh(nw) >= wh(ow) && (test || wp(nw) >= wp(ow)) &&
+          wb(nw) + wp(nw) + wh(nw) <= wb(ow) + wp(ow) + wh(ow)) ||
+        (test && claimOk(ow, nw))
       );
     }
 
@@ -235,6 +240,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Escrow payout / refund records, written only by the Worker (never by members)
+    match /escrow_paid/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /escrow_done/{id} { allow read: if isAdmin(); allow write: if false; }
+
     // Copies of wallets cleared by an admin reset (admin only)
     match /wallet_archive/{id} {
       allow read, write: if isAdmin();
@@ -272,13 +281,16 @@ service cloud.firestore {
 
       allow create: if isAuth() && isNotBanned() &&
                        request.resource.data.posterUid == request.auth.uid &&
-                       request.resource.data.status in ['open'];
+                       request.resource.data.status in ['open'] &&
+                       !('resolution' in request.resource.data);
 
       allow update: if isAuth() && isNotBanned() &&
                        // Only the poster can update the gig
                        resource.data.posterUid == request.auth.uid &&
                        // Cannot change who posted it
                        fieldUnchanged('posterUid') &&
+                       // Dispute decisions are written by admins only
+                       fieldUnchanged('resolution') &&
                        // Once someone is hired the money terms are frozen
                        (resource.data.get('hiredUid', null) == null ||
                          (same('escrowAmount') && same('pay') && same('hiredUid'))) &&

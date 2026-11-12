@@ -709,6 +709,117 @@ async function handleVerifyCheck(req, env) {
 }
 
 
+/* ---------- escrow payouts and refunds (live wallets) ---------- */
+function toFS(v) {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === 'boolean') return { booleanValue: v };
+  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (typeof v === 'string') return { stringValue: v };
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(toFS) } };
+  const f = {}; Object.keys(v).forEach((k) => { if (v[k] !== undefined) f[k] = toFS(v[k]); });
+  return { mapValue: { fields: f } };
+}
+function fromFS(x) {
+  if (!x) return null;
+  if ('nullValue' in x) return null;
+  if ('booleanValue' in x) return x.booleanValue;
+  if ('integerValue' in x) return Number(x.integerValue);
+  if ('doubleValue' in x) return x.doubleValue;
+  if ('stringValue' in x) return x.stringValue;
+  if ('timestampValue' in x) return x.timestampValue;
+  if ('arrayValue' in x) return (x.arrayValue.values || []).map(fromFS);
+  if ('mapValue' in x) { const o = {}; const f = x.mapValue.fields || {}; Object.keys(f).forEach((k) => { o[k] = fromFS(f[k]); }); return o; }
+  return null;
+}
+async function fsRead(env, tok, path) {
+  const r = await fetch('https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents/' + path, { headers: { Authorization: 'Bearer ' + tok } });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('read ' + path + ' ' + r.status);
+  const j = await r.json(); const d = {}; Object.keys(j.fields || {}).forEach((k) => { d[k] = fromFS(j.fields[k]); });
+  return { updateTime: j.updateTime, data: d };
+}
+async function fsCommit(env, tok, writes) {
+  const r = await fetch('https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents:commit', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: writes }),
+  });
+  return r.ok;
+}
+function docName(env, path) { return 'projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents/' + path; }
+function walletOf(u) {
+  const w = Object.assign({ balance: 0, pending: 0, earned: 0, transactions: [] }, (u && u.wallet) || {});
+  w.transactions = Array.isArray(w.transactions) ? w.transactions.slice() : [];
+  return w;
+}
+
+async function handleEscrow(req, env, kind) {
+  if (!env.SA_JSON) return json({ ok: false, error: 'not configured' }, 503, req, env);
+  const claims = await verifyAuth(req, env);
+  if (!claims) return json({ ok: false, error: 'unauthorized' }, 401, req, env);
+  let body = {}; try { body = await req.json(); } catch (e) {}
+  const gigId = String(body.gigId || '');
+  if (!/^[A-Za-z0-9_-]{3,64}$/.test(gigId)) return json({ ok: false, error: 'bad-gig' }, 400, req, env);
+  const uid = claims.sub;
+  const rl = 'esc:' + uid + ':' + today();
+  const n = parseInt((await env.SS_KV.get(rl)) || '0', 10);
+  if (n >= 300) return json({ ok: false, error: 'rate-limited' }, 429, req, env);
+  await env.SS_KV.put(rl, String(n + 1), { expirationTtl: 172800 });
+
+  const tok = await getSaToken(env, 'SA_JSON', 'https://www.googleapis.com/auth/datastore');
+  const gig = await fsRead(env, tok, 'gigs/' + gigId);
+  if (!gig) return json({ ok: false, error: 'no-gig' }, 404, req, env);
+  const g = gig.data, amount = Number(g.escrowAmount) || 0;
+  if (!(amount > 0) || amount > 100000000) return json({ ok: false, error: 'no-escrow' }, 400, req, env);
+  const now = Date.now();
+
+  if (kind === 'claim') {
+    if (g.hiredUid !== uid || g.status !== 'completed') return json({ ok: false, error: 'not-eligible' }, 403, req, env);
+    const done = await fsRead(env, tok, 'escrow_paid/' + gigId);
+    const fl = await fsRead(env, tok, 'users/' + uid);
+    if (!fl) return json({ ok: false, error: 'no-user' }, 404, req, env);
+    const fw = walletOf(fl.data);
+    if (done || fw.transactions.some((t) => t && t.id === 'pay_' + gigId)) return json({ ok: true, already: true, wallet: fw }, 200, req, env);
+    if (fl.data.walletMode === 'test') return json({ ok: false, error: 'test-mode' }, 400, req, env);
+    const posterUid = String(g.posterUid || '');
+    const po = await fsRead(env, tok, 'users/' + posterUid);
+    if (!po) return json({ ok: false, error: 'no-client' }, 404, req, env);
+    if (po.data.walletMode === 'test') return json({ ok: false, error: 'test-money' }, 400, req, env);
+    const trusted = !!(g.resolution && typeof g.resolution === 'object' && g.resolution.by); // admin already settled the client's side
+    const pw = walletOf(po.data);
+    if (!trusted && (pw.pending || 0) < amount) return json({ ok: false, error: 'client-underfunded' }, 402, req, env);
+    const fee = Math.round(amount * 0.10), payout = amount - fee;
+    fw.balance = (fw.balance || 0) + payout; fw.earned = (fw.earned || 0) + payout;
+    fw.transactions.unshift({ id: 'pay_' + gigId, type: 'in', amount: payout, from: po.data.name || 'Client', desc: 'Payment: ' + (g.title || 'Gig'), ts: now });
+    const writes = [
+      { update: { name: docName(env, 'users/' + uid), fields: { wallet: toFS(fw) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: fl.updateTime } },
+      { update: { name: docName(env, 'escrow_paid/' + gigId), fields: { gigId: toFS(gigId), amount: toFS(amount), payout: toFS(payout), fee: toFS(fee), posterUid: toFS(posterUid), freelancerUid: toFS(uid), trusted: toFS(trusted), at: toFS(now) } }, currentDocument: { exists: false } },
+    ];
+    if (!trusted) { pw.pending = (pw.pending || 0) - amount; writes.unshift({ update: { name: docName(env, 'users/' + posterUid), fields: { wallet: toFS(pw) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: po.updateTime } }); }
+    if (!(await fsCommit(env, tok, writes))) return json({ ok: false, error: 'busy' }, 409, req, env);
+    return json({ ok: true, wallet: fw, payout: payout }, 200, req, env);
+  }
+
+  /* refund: the client withdraws an open gig that nobody was hired for */
+  if (g.posterUid !== uid) return json({ ok: false, error: 'not-eligible' }, 403, req, env);
+  if (g.hiredUid || g.status !== 'open') return json({ ok: false, error: 'already-hired' }, 400, req, env);
+  const used = await fsRead(env, tok, 'escrow_done/' + gigId);
+  if (used) return json({ ok: false, error: 'already-refunded' }, 409, req, env);
+  const me = await fsRead(env, tok, 'users/' + uid);
+  if (!me) return json({ ok: false, error: 'no-user' }, 404, req, env);
+  if (me.data.walletMode === 'test') return json({ ok: false, error: 'test-mode' }, 400, req, env);
+  const w = walletOf(me.data);
+  const back = Math.min(amount, w.pending || 0);
+  w.pending = (w.pending || 0) - back; w.balance = (w.balance || 0) + back;
+  if (back > 0) w.transactions.unshift({ id: 'refund_' + gigId, type: 'in', amount: back, from: 'Escrow', desc: 'Escrow returned: ' + (g.title || 'Gig'), ts: now });
+  const ok = await fsCommit(env, tok, [
+    { update: { name: docName(env, 'users/' + uid), fields: { wallet: toFS(w) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: me.updateTime } },
+    { update: { name: docName(env, 'escrow_done/' + gigId), fields: { gigId: toFS(gigId), amount: toFS(back), posterUid: toFS(uid), at: toFS(now) } }, currentDocument: { exists: false } },
+    { delete: docName(env, 'gigs/' + gigId), currentDocument: { updateTime: gig.updateTime } },
+  ]);
+  if (!ok) return json({ ok: false, error: 'busy' }, 409, req, env);
+  return json({ ok: true, wallet: w, refunded: back }, 200, req, env);
+}
+
+
 /* ---------- admin: permanently delete a sign-in account ---------- */
 async function handleDeleteUser(req, env) {
   if (!env.SA_AUTH_JSON || !env.SA_JSON) return json({ ok: false, error: 'not configured' }, 503, req, env);
@@ -1159,6 +1270,11 @@ export default {
       if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
       try { return url.pathname === '/verify/send' ? await handleVerifySend(req, env) : await handleVerifyCheck(req, env); }
       catch (e) { console.error('verify error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if ((url.pathname === '/escrow/claim' || url.pathname === '/escrow/refund') && req.method === 'POST') {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try { return await handleEscrow(req, env, url.pathname === '/escrow/claim' ? 'claim' : 'refund'); }
+      catch (e) { console.error('escrow error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
     }
     if (url.pathname === '/welcome' && req.method === 'POST') {
       const origin = req.headers.get('Origin') || '';
