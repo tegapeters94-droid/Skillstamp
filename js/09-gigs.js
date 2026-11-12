@@ -556,7 +556,7 @@ async function _gwSubmit() {
     if (!savedGig) throw new Error('Gig was not saved');
     if (ME.walletMode !== 'test') {
       var lk = window.ssEscrowLock ? await window.ssEscrowLock('gig', gig.id) : { ok: false, error: 'script-missing' };
-      if (!lk.ok) { try { window.FB_FNS.deleteDoc(window.FB_FNS.doc(window.FB_DB, 'gigs', gig.id)); } catch (e2) {} throw new Error('escrow ' + (lk.error || 'failed')); }
+      if (!lk.ok) { try { window.FB_FNS.deleteDoc(window.FB_FNS.doc(window.FB_DB, 'gigs', gig.id)); } catch (e2) {} window.__escrowDetail = lk.detail || ''; throw new Error('escrow ' + (lk.error || 'failed')); }
       ME.wallet = lk.wallet;
     }
     CACHE.gigs.unshift(gig);
@@ -589,7 +589,7 @@ async function _gwSubmit() {
       msg = code === 'insufficient' ? 'Insufficient wallet balance. Top up first.'
         : code === 'script-missing' ? 'Please refresh the page and try again (an update is loading).'
         : code === 'network' ? 'Could not reach the payment service. Check your connection and try again.'
-        : 'Could not lock the escrow (' + code + '). Please try again or contact support.';
+        : 'Could not lock the escrow (' + code + ')' + (window.__escrowDetail ? ': ' + String(window.__escrowDetail).slice(0, 140) : '') + '. Please try again or contact support.';
     }
     toast(msg, 'bad');
   }
