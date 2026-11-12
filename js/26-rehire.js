@@ -14,10 +14,10 @@ window.openReHire=function(prevGigId,freelancerUid){
     +'<div style="font-size:11px;color:var(--td);margin-bottom:16px;">Previous: '+(prevGig?prevGig.title:'')+'</div>'
     +'</div>'
     +'<div class="fg"><label class="fl">New Project Title</label><input class="fi" id="rh-title" value="'+(prevGig?prevGig.title+' (follow-up)':'')+'"></div>'
-    +'<div class="fg"><label class="fl">Budget ($)</label><input class="fi" id="rh-budget" type="number" placeholder="e.g. 500" min="1" value="'+(prevGig&&prevGig.escrowAmount?prevGig.escrowAmount:'')+'"></div>'
+    +'<div class="fg"><label class="fl">Budget (₦)</label><input class="fi" id="rh-budget" type="number" placeholder="e.g. 50000" min="1" value="'+(prevGig&&prevGig.escrowAmount?prevGig.escrowAmount:'')+'"></div>'
     +'<div class="fg"><label class="fl">Timeline</label><select class="fi" id="rh-timeline"><option>3 days</option><option selected>1 week</option><option>2 weeks</option><option>1 month</option></select></div>'
     +'<div class="fg"><label class="fl">Description</label><textarea class="fi" id="rh-desc" rows="3" placeholder="What do you need this time around?" style="resize:vertical;"></textarea></div>'
-    +'<div style="font-size:10px;color:var(--td);margin-bottom:12px;">💳 Wallet: <strong style="color:var(--gld);">$'+Math.round((ME.wallet&&ME.wallet.balance)||0).toLocaleString()+'</strong> available</div>'
+    +'<div style="font-size:10px;color:var(--td);margin-bottom:12px;">💳 Wallet: <strong style="color:var(--gld);">₦'+Math.round((ME.wallet&&ME.wallet.balance)||0).toLocaleString()+'</strong> available</div>'
     +'<button class="btn" id="rh-submit-btn" style="width:100%;">Re-hire &amp; Lock Escrow →</button>');
   setTimeout(function(){
     var btn=document.getElementById('rh-submit-btn');
@@ -53,10 +53,10 @@ window.openReHire=function(prevGigId,freelancerUid){
         }
         ME.wallet=rlk.wallet;
       }
-      pushNotif(freelancerUid,'hired','🎉 Re-hired!',ME.name+' hired you again for: '+title+' — $'+budget,{type:'gig_hired',gigId:gig.id,clientUid:ME.uid});
-      sendAutoMsg(freelancerUid,'👋 Hi '+u.name.split(' ')[0]+'! I\'ve re-hired you for a new project: '+title+'. Budget: $'+budget+'. Timeline: '+timeline+'. Great working with you again!');
+      pushNotif(freelancerUid,'hired','🎉 Re-hired!',ME.name+' hired you again for: '+title+' — ₦'+budget,{type:'gig_hired',gigId:gig.id,clientUid:ME.uid});
+      sendAutoMsg(freelancerUid,'👋 Hi '+u.name.split(' ')[0]+'! I\'ve re-hired you for a new project: '+title+'. Budget: ₦'+budget+'. Timeline: '+timeline+'. Great working with you again!');
       closeModal();
-      toast('Re-hire complete! $'+budget+' locked in escrow.');
+      toast('Re-hire complete! ₦'+budget+' locked in escrow.');
       renderWallet();
     };
   },60);

@@ -13,7 +13,7 @@
   function DB() { return window.FB_DB; }
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function money(n) { n = Number(n) || 0; return '$' + (Math.round(n * 100) / 100).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
+  function money(n) { n = Number(n) || 0; return '₦' + (Math.round(n * 100) / 100).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
   function ago(ts) {
     if (!ts) return 'unknown';
     var s = Math.max(1, Math.floor((Date.now() - ts) / 1000));
@@ -169,7 +169,7 @@
     var h = '<div class="ap-opts">' + opts.map(function (o) {
       return '<label class="ap-opt' + (o[0] === RES.type ? ' on' : '') + '" id="ap-o-' + o[0] + '"><input type="radio" name="apd" ' + (o[0] === RES.type ? 'checked' : '') + ' onchange="apPick(\'' + o[0] + '\')"><span><b>' + o[1] + '</b><small>' + o[2] + '</small></span></label>';
     }).join('') + '</div>';
-    h += '<div id="ap-split" style="display:none;"><label class="ap-lbl">Refund to client ($)</label><input class="ap-in" id="ap-refund" type="number" min="0" max="' + escrowOf(g) + '" step="1" value="' + Math.round(escrowOf(g) / 2) + '" oninput="apPreview()"></div>';
+    h += '<div id="ap-split" style="display:none;"><label class="ap-lbl">Refund to client (₦)</label><input class="ap-in" id="ap-refund" type="number" min="0" max="' + escrowOf(g) + '" step="1" value="' + Math.round(escrowOf(g) / 2) + '" oninput="apPreview()"></div>';
     h += '<div class="ap-prev" id="ap-prev"></div>';
     h += '<label class="ap-lbl">Note to both people (required)</label><textarea class="ap-in" id="ap-note" rows="3" placeholder="Explain the decision. Both the client and freelancer will see this."></textarea>';
     h += '<button class="ap-btn ap-primary" id="ap-apply" onclick="apApply(\'' + esc(g.id) + '\',\'' + esc(dispId || '') + '\')">Apply decision</button>';

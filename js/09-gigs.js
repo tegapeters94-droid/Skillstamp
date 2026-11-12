@@ -42,7 +42,7 @@ function renderGigs(){
   var rows='';
   gigs.filter(function(g){return g.title&&g.title.trim();}).slice(0,40).forEach(function(g,i){
     var statusTag=g.status&&g.status!=='open'?'<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(77,159,255,.1);color:#4d9fff;border:1px solid rgba(77,159,255,.2);margin-left:5px;">'+g.status+'</span>':'';
-    var escrowTag=g.escrowAmount?'<span style="font-size:9px;color:#ffa500;margin-left:4px;">🔒 $'+g.escrowAmount.toLocaleString()+'</span>':'';
+    var escrowTag=g.escrowAmount?'<span style="font-size:9px;color:#ffa500;margin-left:4px;">🔒 ₦'+g.escrowAmount.toLocaleString()+'</span>':'';
     var skills='';
     (g.skills||[]).slice(0,3).forEach(function(s){
       skills+='<span style="display:inline-block;font-size:9px;background:rgba(232,197,71,.07);border:1px solid rgba(232,197,71,.2);color:var(--gld);padding:1px 6px;border-radius:3px;margin:2px;">'+s+'</span>';
@@ -55,7 +55,7 @@ function renderGigs(){
     rows+='<div style="margin-top:4px;">'+skills+'</div>';
     if(escrowTag) rows+='<div style="margin-top:2px;">'+escrowTag+'</div>';
     rows+='</div>';
-    rows+='<div style="text-align:right;flex-shrink:0;"><div class="gig-pay">'+g.pay+'</div><div style="font-size:9px;color:var(--td);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">'+g.type+'</div></div>';
+    rows+='<div style="text-align:right;flex-shrink:0;"><div class="gig-pay">'+ssPay(g.pay)+'</div><div style="font-size:9px;color:var(--td);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">'+g.type+'</div></div>';
     rows+='</div>';
   });
   list.innerHTML=rows;
@@ -417,16 +417,16 @@ function _gwStep4(d) {
   var pay = num - fee;
   var low = bal < num && num > 0;
   return '<div class="gw-field">'
-    + '<label class="gw-label">Budget ($) <span style="color:#ef4444;">*</span></label>'
+    + '<label class="gw-label">Budget (₦) <span style="color:#ef4444;">*</span></label>'
     + '<input id="gw-budget" class="gw-input" type="number" placeholder="e.g. 150000" value="' + (d.budget||'') + '" min="1" inputmode="numeric">'
-    + '<div style="font-size:11px;color:var(--td);margin-top:4px;">Wallet balance: <strong style="color:' + (low ? '#ef4444' : '#059669') + ';">$' + bal.toLocaleString() + '</strong></div>'
+    + '<div style="font-size:11px;color:var(--td);margin-top:4px;">Wallet balance: <strong style="color:' + (low ? '#ef4444' : '#059669') + ';">₦' + bal.toLocaleString() + '</strong></div>'
     + (low ? '<div class="gw-wallet-warn">⚠️ <div>Your balance is below this budget. <span onclick="showPage(\'wallet\');" style="color:#ea580c;font-weight:700;cursor:pointer;text-decoration:underline;">Top up →</span></div></div>' : '')
     + '</div>'
     + '<div id="gw-bp" style="' + (num ? '' : 'display:none') + '">'
     + '<div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px;">💰 Escrow Breakdown</div>'
-    + '<div class="gw-brow"><span style="color:var(--td);">Contract Value</span><span id="gw-bp-t">$' + num.toLocaleString() + '</span></div>'
+    + '<div class="gw-brow"><span style="color:var(--td);">Contract Value</span><span id="gw-bp-t">₦' + num.toLocaleString() + '</span></div>'
     + '<div class="gw-brow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span id="gw-bp-f" style="color:#ef4444;">-$' + fee.toLocaleString() + '</span></div>'
-    + '<div class="gw-brow total"><span>Freelancer Receives</span><span id="gw-bp-p" style="color:#059669;">$' + pay.toLocaleString() + '</span></div>'
+    + '<div class="gw-brow total"><span>Freelancer Receives</span><span id="gw-bp-p" style="color:#059669;">₦' + pay.toLocaleString() + '</span></div>'
     + '</div>'
     + '<div class="gw-tip">🔒 <div>Budget is <strong>locked in escrow</strong> when you post. Released only after you confirm delivery.</div></div>';
 }
@@ -438,7 +438,7 @@ function _gwStep5(d) {
     {label:'Title',       val:d.title,                                          step:1},
     {label:'Category',    val:d.category,                                       step:1},
     {label:'Scope',       val:d.scope.charAt(0).toUpperCase()+d.scope.slice(1)+' · '+d.duration, step:3},
-    {label:'Budget',      val:'$'+num.toLocaleString(),                         step:4},
+    {label:'Budget',      val:'₦'+num.toLocaleString(),                         step:4},
     {label:'Skills',      val:d.skills.length ? d.skills.join(', ') : 'None',  step:2},
     {label:'Description', val:d.description.slice(0,80)+(d.description.length>80?'…':''), step:2}
   ];
@@ -454,7 +454,7 @@ function _gwStep5(d) {
     + '</div>'
     + '<div id="gw-escrow-row">'
     + '<input type="checkbox" id="gw-escrow-cb"' + (d.escrowAgreed ? ' checked' : '') + '>'
-    + '<label for="gw-escrow-cb">I agree to lock <strong>$' + num.toLocaleString() + '</strong> in escrow. Funds release only after I confirm delivery.</label>'
+    + '<label for="gw-escrow-cb">I agree to lock <strong>₦' + num.toLocaleString() + '</strong> in escrow. Funds release only after I confirm delivery.</label>'
     + '</div>'
     + '<div class="gw-tip" style="margin-top:12px;">🛡️ <div>Your money is <strong>protected</strong>. SkillStamp holds funds securely until you are satisfied.</div></div>';
 }
@@ -505,12 +505,12 @@ function _gwWireStep(step, d) {
       bEl.addEventListener('input', function() {
         var num=parseFloat(bEl.value)||0, fee=Math.round(num*.1), pay=num-fee;
         var pr=document.getElementById('gw-bp'); if(pr) pr.style.display=num>0?'':'none';
-        var t=document.getElementById('gw-bp-t'); if(t) t.textContent='$'+num.toLocaleString();
+        var t=document.getElementById('gw-bp-t'); if(t) t.textContent='₦'+num.toLocaleString();
         var f=document.getElementById('gw-bp-f'); if(f) f.textContent='-$'+fee.toLocaleString();
-        var p=document.getElementById('gw-bp-p'); if(p) p.textContent='$'+pay.toLocaleString();
+        var p=document.getElementById('gw-bp-p'); if(p) p.textContent='₦'+pay.toLocaleString();
         var bal=(ME.wallet&&ME.wallet.balance)||0;
         var warn=document.querySelector('.gw-wallet-warn');
-        if(num>bal&&num>0){if(!warn){warn=document.createElement('div');warn.className='gw-wallet-warn';warn.innerHTML='⚠️ <div>Balance <strong>$'+bal.toLocaleString()+'</strong> is below this budget. <span onclick="showPage(\'wallet\');" style="color:#ea580c;font-weight:700;cursor:pointer;text-decoration:underline;">Top up →</span></div>';bEl.parentNode.appendChild(warn);}}
+        if(num>bal&&num>0){if(!warn){warn=document.createElement('div');warn.className='gw-wallet-warn';warn.innerHTML='⚠️ <div>Balance <strong>₦'+bal.toLocaleString()+'</strong> is below this budget. <span onclick="showPage(\'wallet\');" style="color:#ea580c;font-weight:700;cursor:pointer;text-decoration:underline;">Top up →</span></div>';bEl.parentNode.appendChild(warn);}}
         else if(warn){warn.remove();}
         _GW.data.budget=bEl.value;
       });
@@ -545,7 +545,7 @@ async function _gwSubmit() {
 
     var gig = {
       id:'g'+Date.now(), title:d.title, description:d.description,
-      pay:'$'+num.toLocaleString(), payNum:num, category:d.category, type:'Project',
+      pay:'₦'+num.toLocaleString(), payNum:num, category:d.category, type:'Project',
       scope:d.scope, duration:d.duration, skills:d.skills, screeningQ:(d.screeningQs&&d.screeningQs[0])||d.screeningQ||null, screeningQs:(d.screeningQs&&d.screeningQs.length)?d.screeningQs:(d.screeningQ?[d.screeningQ]:[]),
       posterUid:ME.uid, posterName:ME.name, created:Date.now(), applicants:[],
       status:'open', escrowAmount:num, deadline:null, hiredUid:null
@@ -566,11 +566,11 @@ async function _gwSubmit() {
     // Notify matching-category freelancers (up to 40)
     ssVisible(getAllUsers()).filter(function(u) { return u.role==='freelancer' && u.uid!==ME.uid && u.category===d.category; })
       .slice(0, 40).forEach(function(u) {
-        pushNotif(u.uid, 'gig_posted', '💼 New Gig: '+d.title, ME.name+' posted a '+d.category+' gig — $'+num.toLocaleString(), {type:'gig_posted',gigId:gig.id});
+        pushNotif(u.uid, 'gig_posted', '💼 New Gig: '+d.title, ME.name+' posted a '+d.category+' gig — ₦'+num.toLocaleString(), {type:'gig_posted',gigId:gig.id});
       });
 
     _gwClose();
-    toast('Gig posted! $'+num.toLocaleString()+' locked in escrow. ✅');
+    toast('Gig posted! ₦'+num.toLocaleString()+' locked in escrow. ✅');
     showPage('gigs');
     if (typeof renderWallet === 'function') setTimeout(renderWallet, 500);
 
@@ -609,9 +609,9 @@ window.showGigDetail=function(gid){
   // Escrow breakdown
   mh+='<div class="escrow">';
   mh+='<div style="font-size:11px;font-weight:600;margin-bottom:9px;">💰 Escrow Breakdown</div>';
-  mh+='<div class="erow"><span style="color:var(--td);">Contract Value</span><span>'+g.pay+'</span></div>';
+  mh+='<div class="erow"><span style="color:var(--td);">Contract Value</span><span>'+ssPay(g.pay)+'</span></div>';
   mh+='<div class="erow"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-$'+fee+'</span></div>';
-  mh+='<div class="erow" style="border-top:1px solid var(--br);padding-top:6px;margin-top:4px;font-weight:700;"><span>Freelancer Receives</span><span style="color:var(--grn);">$'+payout+'</span></div>';
+  mh+='<div class="erow" style="border-top:1px solid var(--br);padding-top:6px;margin-top:4px;font-weight:700;"><span>Freelancer Receives</span><span style="color:var(--grn);">₦'+payout+'</span></div>';
   mh+='</div>';
   // Action buttons — using ids, wired after render
   mh+='<div id="gd-actions" style="margin-top:14px;"></div>';
@@ -629,7 +629,7 @@ window.showGigDetail=function(gid){
     // Client view
     var status=g.status||'open';
     var statusColor={open:'#4ade80',hired:'#4d9fff',completed:'var(--gld)',disputed:'#ef4444',cancelled:'var(--td)'}[status]||'var(--td)';
-    acts.innerHTML='<div style="margin-bottom:10px;"><span style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.06);color:'+statusColor+';">'+status+'</span>'+(g.escrowAmount?'<span style="font-size:10px;color:#ffa500;margin-left:8px;">🔒 $'+g.escrowAmount.toLocaleString()+' in escrow</span>':'')+'</div>';
+    acts.innerHTML='<div style="margin-bottom:10px;"><span style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.06);color:'+statusColor+';">'+status+'</span>'+(g.escrowAmount?'<span style="font-size:10px;color:#ffa500;margin-left:8px;">🔒 ₦'+g.escrowAmount.toLocaleString()+' in escrow</span>':'')+'</div>';
     if(status==='open'){
       var hBtn=document.createElement('button');
       hBtn.className='btn';hBtn.style.cssText='width:100%;margin-bottom:8px;';
@@ -715,13 +715,13 @@ function openProposalCredits(){
     +'<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:14px;cursor:pointer;" onclick="purchaseProposalPack(5,3)">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;">'
     +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;">Starter Pack</div><div style="font-size:11px;color:var(--td);">5 extra proposals</div></div>'
-    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--gld);">$3</div>'
+    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--gld);">₦3</div>'
     +'</div></div>'
     +'<div style="background:var(--s2);border:2px solid var(--gld);border-radius:10px;padding:14px;cursor:pointer;position:relative;" onclick="purchaseProposalPack(15,8)">'
     +'<div style="position:absolute;top:-8px;right:12px;background:var(--gld);color:#000;font-size:8px;font-weight:800;padding:2px 8px;border-radius:8px;font-family:Plus Jakarta Sans,sans-serif;">BEST VALUE</div>'
     +'<div style="display:flex;justify-content:space-between;align-items:center;">'
     +'<div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:13px;">Pro Pack</div><div style="font-size:11px;color:var(--td);">15 extra proposals</div></div>'
-    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--gld);">$8</div>'
+    +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--gld);">₦8</div>'
     +'</div></div>'
     +'</div>'
     +'<button class="btn2" onclick="closeModal();openSubmitSkill();" style="width:100%;margin-bottom:8px;">⚡ Get Verified Instead (Unlimited)</button>'
@@ -803,7 +803,7 @@ window.applyGig=async function(gid,title,posterUid){
   }
 
   var isOpenBudget=!gig||!gig.pay||gig.pay==='Open'||gig.pay===0;
-  var rateSection=isOpenBudget?'<div class="fg"><label class="fl">Your Proposed Rate ($)</label><input class="fi" id="ap-rate" type="number" placeholder="e.g. 500" min="1"></div>':'';
+  var rateSection=isOpenBudget?'<div class="fg"><label class="fl">Your Proposed Rate (₦)</label><input class="fi" id="ap-rate" type="number" placeholder="e.g. 50000" min="1"></div>':'';
   var remaining=isVerified?null:(FREE_LIMIT-tracker.count+credits);
   var proposalNotice=!isVerified?('<div style="background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;">'
@@ -878,7 +878,7 @@ window.applyGig=async function(gid,title,posterUid){
           var appMsg='👋 Hi! I\'d like to apply for: '+title+'\n\n'+cover;
           screeningAnswers.forEach(function(x){ if(x.a) appMsg+='\n\n❓ '+x.q+'\n→ '+x.a; });
           appMsg+='\n\n📅 Project timeline: '+gigDuration;
-          if(rate) appMsg+='\n💰 Proposed rate: $'+rate;
+          if(rate) appMsg+='\n💰 Proposed rate: ₦'+rate;
           appMsg+='\n\n🏷 SkillID: '+(ME.skillId||'Pending Verification')+' · '+(isVerified?'✓ Verified':'Unverified');
           sendAutoMsg(posterUid,appMsg);
           pushNotif(posterUid,'gig_application','💼 New Proposal',ME.name+' submitted a proposal for: '+title+'. Tap to review.',{type:'gig_application',gigId:gid,applicantUid:ME.uid});

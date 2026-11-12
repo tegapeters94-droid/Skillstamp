@@ -57,7 +57,7 @@
       + '<div class="ap-note" style="margin-bottom:8px;">These members deleted their account. They are already hidden from the platform. Delete them permanently within 30 days, after checking they have no money held in escrow.</div>'
       + list.map(function (u) {
         var days = Math.floor((Date.now() - (u.deletedAt || Date.now())) / DAY), left = WINDOW - days;
-        var pend = u.wallet && Number(u.wallet.pending) > 0 ? ' · <b style="color:#b45309;">$' + Number(u.wallet.pending) + ' in escrow</b>' : '';
+        var pend = u.wallet && Number(u.wallet.pending) > 0 ? ' · <b style="color:#b45309;">₦' + Number(u.wallet.pending) + ' in escrow</b>' : '';
         return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--br);">'
           + '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">' + esc(u.name || 'Member') + '</div>'
           + '<div style="font-size:11px;color:var(--td);">Requested ' + (days <= 0 ? 'today' : days + ' day' + (days === 1 ? '' : 's') + ' ago') + ' · ' + (left > 0 ? left + ' days left' : '<b style="color:#dc2626;">past 30 days</b>') + pend + '</div></div>'

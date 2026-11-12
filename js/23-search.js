@@ -83,7 +83,7 @@ window.runGlobalSearch=function(q){
       html+='<div style="width:40px;height:40px;border-radius:10px;background:rgba(232,197,71,.1);border:1px solid rgba(232,197,71,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">'+(CAT_ICONS[g.category]||'💼')+'</div>';
       html+='<div style="flex:1;min-width:0;">';
       html+='<div class="search-result-title">'+g.title+'</div>';
-      html+='<div class="search-result-sub">'+(g.category||'')+' · $'+(g.pay||'?')+' · '+(g.posterName||'Client')+'</div>';
+      html+='<div class="search-result-sub">'+(g.category||'')+' · '+ssPay(g.pay||'?')+' · '+(g.posterName||'Client')+'</div>';
       html+='</div></div>';
     });
   }

@@ -153,14 +153,14 @@ function fHero() {
   html += '<div onclick="showPage(\'wallet\')" style="background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.14);border-radius:16px;padding:13px 14px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);position:relative;overflow:hidden;" onmouseover="this.style.background=\'rgba(255,255,255,.10)\'" onmouseout="this.style.background=\'rgba(255,255,255,.06)\'">';
   html += '<div style="position:absolute;bottom:-8px;right:-8px;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle,rgba(74,222,128,.18) 0%,transparent 70%);pointer-events:none;"></div>';
   html += '<div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em;">Wallet</div>';
-  html += '<div style="'+D.font+';font-weight:900;font-size:20px;color:#4ade80;letter-spacing:-.03em;text-shadow:0 0 20px rgba(74,222,128,.4);">$'+balance.toLocaleString()+'</div>';
+  html += '<div style="'+D.font+';font-weight:900;font-size:20px;color:#4ade80;letter-spacing:-.03em;text-shadow:0 0 20px rgba(74,222,128,.4);">₦'+balance.toLocaleString()+'</div>';
   html += '</div>';
 
   // Earned card
   html += '<div onclick="showPage(\'wallet\')" style="background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.14);border-radius:16px;padding:13px 14px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);position:relative;overflow:hidden;" onmouseover="this.style.background=\'rgba(255,255,255,.10)\'" onmouseout="this.style.background=\'rgba(255,255,255,.06)\'">';
   html += '<div style="position:absolute;bottom:-8px;right:-8px;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle,rgba(232,197,71,.15) 0%,transparent 70%);pointer-events:none;"></div>';
   html += '<div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em;">Earned</div>';
-  html += '<div style="'+D.font+';font-weight:900;font-size:20px;color:#e8c547;letter-spacing:-.03em;text-shadow:0 0 20px rgba(232,197,71,.35);">$'+earned.toLocaleString()+'</div>';
+  html += '<div style="'+D.font+';font-weight:900;font-size:20px;color:#e8c547;letter-spacing:-.03em;text-shadow:0 0 20px rgba(232,197,71,.35);">₦'+earned.toLocaleString()+'</div>';
   html += '</div>';
   html += '</div>';
 
@@ -233,7 +233,7 @@ function fActiveWork() {
     html += statusPill(sm.label, sm.color, sm.bg);
     html += '</div>';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
-    html += '<div style="font-size:10px;color:var(--td);">📌 '+(g.posterName||'Client')+'&nbsp;·&nbsp;<span style="color:#4ade80;font-weight:800;">$'+(g.pay||g.escrowAmount||'—')+'</span></div>';
+    html += '<div style="font-size:10px;color:var(--td);">📌 '+(g.posterName||'Client')+'&nbsp;·&nbsp;<span style="color:#4ade80;font-weight:800;">'+ssPay(g.pay||g.escrowAmount||'—')+'</span></div>';
     html += '<button onclick="event.stopPropagation();openGigWorkspace(\''+g.id+'\')" style="'+D.font+';font-size:10px;font-weight:700;color:var(--gld);background:rgba(232,197,71,.1);border:1px solid rgba(232,197,71,.2);padding:5px 11px;border-radius:10px;cursor:pointer;">Workspace →</button>';
     html += '</div></div>';
   });
@@ -284,7 +284,7 @@ function fRecommendedGigs() {
     html += '<div style="'+D.font+';font-weight:700;font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:3px;letter-spacing:-.01em;">'+g.title+'</div>';
     html += '<div style="font-size:10px;color:var(--td);">'+(g.posterName||'Client')+'&nbsp;·&nbsp;'+g.category+'</div>';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:11px;">';
-    html += '<span style="'+D.font+';font-weight:900;font-size:15px;color:#4ade80;letter-spacing:-.02em;">$'+(g.pay||'Open')+'</span>';
+    html += '<span style="'+D.font+';font-weight:900;font-size:15px;color:#4ade80;letter-spacing:-.02em;">'+ssPay(g.pay||'Open')+'</span>';
     if (isApplied) {
       html += statusPill('Applied','var(--td)','var(--s2)');
     } else {
@@ -348,7 +348,7 @@ function cHero() {
   // Glassmorphism stat cards with semi-transparent border
   html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px;">';
   var stats = [
-    {val:'$'+balance.toLocaleString(), label:'Balance',    sub:pending?'$'+pending.toLocaleString()+' held':'Available', onclick:"showPage('wallet')", glow:'rgba(74,222,128,.15)'},
+    {val:'₦'+balance.toLocaleString(), label:'Balance',    sub:pending?'₦'+pending.toLocaleString()+' held':'Available', onclick:"showPage('wallet')", glow:'rgba(74,222,128,.15)'},
     {val:activeCount,                   label:'Active Gigs', sub:'Running',                                                onclick:"showPage('gigs')",   glow:'rgba(96,165,250,.12)'},
     {val:totalApplicants,               label:'Applicants',  sub:'To review',                                              onclick:"showPage('gigs')",   glow:'rgba(232,197,71,.12)'},
   ];
@@ -408,7 +408,7 @@ function cActiveGigs() {
     if (apCount > 0 && g.status === 'open') html += '<span style="background:var(--acc);color:#fff;'+D.font+';font-size:8px;font-weight:800;padding:2px 7px;border-radius:20px;">'+apCount+' new</span>';
     html += statusPill(g.status, sc.c, sc.bg);
     html += '</div></div>';
-    html += '<div style="font-size:10px;color:var(--td);margin-bottom:11px;">$'+(g.pay||g.escrowAmount||'—')+(g.deadline?' &nbsp;·&nbsp; Due: '+g.deadline:'')+'</div>';
+    html += '<div style="font-size:10px;color:var(--td);margin-bottom:11px;">'+ssPay(g.pay||g.escrowAmount||'—')+(g.deadline?' &nbsp;·&nbsp; Due: '+g.deadline:'')+'</div>';
     html += '<div style="display:flex;gap:6px;">';
     if (g.status === 'open' && apCount > 0) {
       html += btnPrimary('👥 Review ('+apCount+')', "openHireModal('"+g.id+"')");
@@ -477,7 +477,7 @@ function cRecentTransactions() {
     html += '<div style="'+D.font+';font-size:12px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+(t.desc||(isOut?'Payment sent':'Funds received'))+'</div>';
     html += '<div style="font-size:9px;color:var(--td);margin-top:2px;">'+timeAgo(t.ts)+'</div>';
     html += '</div>';
-    html += '<div style="'+D.font+';font-size:14px;font-weight:900;color:'+(isOut?'#f87171':'#4ade80')+';flex-shrink:0;letter-spacing:-.02em;">'+(isOut?'-':'+')+'$'+Math.round(t.amount||0).toLocaleString()+'</div>';
+    html += '<div style="'+D.font+';font-size:14px;font-weight:900;color:'+(isOut?'#f87171':'#4ade80')+';flex-shrink:0;letter-spacing:-.02em;">'+(isOut?'-':'+')+'₦'+Math.round(t.amount||0).toLocaleString()+'</div>';
     html += '</div>';
   });
   html += '</div></div>';

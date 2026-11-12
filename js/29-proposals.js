@@ -110,7 +110,7 @@ function _renderReceivedProposals(el, proposals) {
           + '<div style="padding:12px 14px;">'
           + '<div style="display:flex;gap:8px;margin-bottom:10px;">'
           + '<div style="background:var(--s2);border-radius:8px;padding:8px 12px;flex:1;text-align:center;">'
-          + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--grn);">$' + (p.budget||0).toLocaleString() + '</div>'
+          + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--grn);">₦' + (p.budget||0).toLocaleString() + '</div>'
           + '<div style="font-size:9px;color:var(--td);text-transform:uppercase;letter-spacing:.05em;">Budget</div>'
           + '</div>'
           + '<div style="background:var(--s2);border-radius:8px;padding:8px 12px;flex:1;text-align:center;">'
@@ -188,7 +188,7 @@ function _renderSentProposals(el, proposals) {
           + '<div style="font-size:10px;color:var(--td);">To: ' + freelancer.name + ' · ' + timeAgo(p.ts) + '</div>'
           + '</div>'
           + '<div style="text-align:right;flex-shrink:0;">'
-          + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--grn);">$' + (p.budget||0).toLocaleString() + '</div>'
+          + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:var(--grn);">₦' + (p.budget||0).toLocaleString() + '</div>'
           + '<div style="font-size:9px;color:var(--td);">' + p.timeline + '</div>'
           + '</div>'
           + '</div>'
@@ -244,12 +244,12 @@ window.sendDirectProposalToHub = async function(toUid, title, description, budge
   await pushNotif(
     toUid, 'proposal',
     '📋 New Direct Proposal',
-    ME.name + ' sent you a proposal: ' + title + ' — $' + budget,
+    ME.name + ' sent you a proposal: ' + title + ' — ₦' + budget,
     { type: 'proposal', proposalId: proposal.id, fromUid: ME.uid }
   );
   await sendAutoMsg(
     toUid,
-    '📋 Direct Proposal from ' + ME.name + '\n\nProject: ' + title + '\nBudget: $' + budget + '\nTimeline: ' + timeline + '\n\nGo to Gigs → Proposals tab to review and accept.'
+    '📋 Direct Proposal from ' + ME.name + '\n\nProject: ' + title + '\nBudget: ₦' + budget + '\nTimeline: ' + timeline + '\n\nGo to Gigs → Proposals tab to review and accept.'
   );
 
   return { ok: true, proposal: proposal };

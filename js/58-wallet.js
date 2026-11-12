@@ -13,6 +13,14 @@
   function isTest(u) { return !!(u && u.walletMode === 'test'); }
   function sym(u) { return isTest(u) ? 'T₦' : '₦'; }
   function fmt(u, n) { return sym(u) + (Math.round((Number(n) || 0) * 100) / 100).toLocaleString(); }
+  /* Format a gig price for display: always naira, whether it is stored as 5000, "5,000" or an old "$5,000". */
+  window.ssPay = function (v) {
+    if (v === null || v === undefined || v === '') return '';
+    if (typeof v === 'number') return '₦' + v.toLocaleString();
+    var s = String(v);
+    if (!/\d/.test(s)) return s;
+    return '₦' + s.replace(/^[₦$]+\s*/, '');
+  };
   window.ssWalletSym = function (u) { return sym(u || window.ME); };
   window.ssIsTestWallet = function (u) { return isTest(u || window.ME); };
 
@@ -24,7 +32,7 @@
       var me = window.ME; var page = $('page-wallet'); if (!me || !page) return;
       var s = sym(me), test = isTest(me), client = me.role === 'employer';
       ['w-balance', 'w-earned', 'w-pending'].forEach(function (id) {
-        var el = $(id); if (el && el.textContent.charAt(0) === '$') el.textContent = s + el.textContent.slice(1);
+        var el = $(id); if (el && (el.textContent.charAt(0) === '$' || el.textContent.charAt(0) === '₦')) el.textContent = el.textContent.replace(/^(T₦|₦|\$)/, s);
       });
       var rows = page.querySelectorAll('.tx-amount');
       for (var i = 0; i < rows.length; i++) rows[i].textContent = rows[i].textContent.replace('$', s);

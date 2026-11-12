@@ -15,7 +15,7 @@ window.openHireModal=async function(gid){
   mh+='<h3>👤 Hire a Freelancer</h3>';
   mh+='<p style="font-size:11px;color:var(--td);margin-bottom:12px;">Select who to hire for: '+gig.title+'</p>';
   mh+='<div id="hire-list"></div>';
-  if(gig.escrowAmount) mh+='<div style="background:rgba(255,165,0,.06);border:1px solid rgba(255,165,0,.18);border-radius:7px;padding:10px 12px;margin:12px 0;font-size:11px;color:#ffa500;">🔒 $'+gig.escrowAmount.toLocaleString()+' held in escrow — released when you mark complete.</div>';
+  if(gig.escrowAmount) mh+='<div style="background:rgba(255,165,0,.06);border:1px solid rgba(255,165,0,.18);border-radius:7px;padding:10px 12px;margin:12px 0;font-size:11px;color:#ffa500;">🔒 ₦'+gig.escrowAmount.toLocaleString()+' held in escrow — released when you mark complete.</div>';
   mh+='<button class="btn" id="hire-confirm-btn" style="width:100%;">Hire & Notify →</button>';
   setModal(mh);
   document.getElementById('hire-close').onclick=closeModal;
@@ -26,7 +26,7 @@ window.openHireModal=async function(gid){
     var proposal=gig.proposals&&gig.proposals[uid];
     var cover=proposal&&proposal.cover?proposal.cover:'';
     var timeline=proposal&&proposal.timeline?proposal.timeline:'';
-    var rate=proposal&&proposal.rate?'$'+proposal.rate:'';
+    var rate=proposal&&proposal.rate?'₦'+proposal.rate:'';
     var screeningAnswer=proposal&&proposal.screeningAnswer?proposal.screeningAnswer:'';
     rows+='<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;margin-bottom:10px;overflow:hidden;">';
     // Applicant header row
@@ -111,10 +111,10 @@ window.confirmHire=async function(gid){
   await fbSet('gigs',gig.id,gig);
   var idx=CACHE.gigs.findIndex(function(g){return g.id===gid;});
   if(idx>=0) CACHE.gigs[idx]=gig;
-  var notifMsg='Congratulations '+hiredUser.name+'! You have been hired for: '+gig.title+'. Budget: $'+(gig.escrowAmount||gig.payNum||0).toLocaleString()+'. Deliver your work and the client will release payment through escrow.';
+  var notifMsg='Congratulations '+hiredUser.name+'! You have been hired for: '+gig.title+'. Budget: ₦'+(gig.escrowAmount||gig.payNum||0).toLocaleString()+'. Deliver your work and the client will release payment through escrow.';
   sendAutoMsg(hiredUid,notifMsg);
   // Push notification to freelancer
-  pushNotif(hiredUid,'hired','🎉 You Got Hired!','You have been hired for: '+gig.title+' — $'+(gig.escrowAmount||gig.payNum||0).toLocaleString()+'. Tap to open chat with client.',{type:'gig_hired',gigId:gid,clientUid:ME.uid});
+  pushNotif(hiredUid,'hired','🎉 You Got Hired!','You have been hired for: '+gig.title+' — ₦'+(gig.escrowAmount||gig.payNum||0).toLocaleString()+'. Tap to open chat with client.',{type:'gig_hired',gigId:gid,clientUid:ME.uid});
 
   // ── SUCCESS CONFIRMATION MODAL ──────────────────────────
   var hiredAv=hiredU&&hiredU.avatar?'<img src="'+hiredU.avatar+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':initials(hiredUser.name);
@@ -128,7 +128,7 @@ window.confirmHire=async function(gid){
   mh+='<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,'+hiredGrad+','+hiredGrad+'88);display:flex;align-items:center;justify-content:center;font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:14px;color:#000;overflow:hidden;flex-shrink:0;">'+hiredAv+'</div>';
   mh+='<div><div style="font-weight:700;font-size:13px;">'+hiredUser.name+'</div><div style="font-size:10px;color:var(--td);">Hired for: '+gig.title+'</div></div>';
   mh+='</div>';
-  mh+='<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-top:1px solid var(--br);"><span style="color:var(--td);">Budget locked in escrow</span><span style="color:var(--grn);font-weight:700;">$'+(gig.escrowAmount||gig.payNum||0).toLocaleString()+'</span></div>';
+  mh+='<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-top:1px solid var(--br);"><span style="color:var(--td);">Budget locked in escrow</span><span style="color:var(--grn);font-weight:700;">₦'+(gig.escrowAmount||gig.payNum||0).toLocaleString()+'</span></div>';
   mh+='<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;"><span style="color:var(--td);">Status</span><span style="color:var(--gld);font-weight:600;">In Progress</span></div>';
   mh+='</div>';
   mh+='<button class="btn" style="width:100%;margin-bottom:10px;" onclick="event.stopPropagation();var mc=document.getElementById(\'mcontent\');var ov=document.getElementById(\'moverlay\');if(mc)mc.style.cssText=\'\';if(ov)ov.style.cssText=\'\';openMsg(\''+hiredUid+'\');">Open Chat with '+hiredUser.name+' →</button>';
@@ -148,9 +148,9 @@ window.openCompleteGig=function(gid){
   mh+='<h3>✅ Release Payment</h3>';
   mh+='<p>Confirm you are satisfied with the work delivered by '+freelancer.name+'.</p>';
   mh+='<div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:14px;margin-bottom:14px;">';
-  mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">Escrow Amount</span><span>$'+payNum.toLocaleString()+'</span></div>';
+  mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">Escrow Amount</span><span>₦'+payNum.toLocaleString()+'</span></div>';
   mh+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-$'+fee.toLocaleString()+'</span></div>';
-  mh+='<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;border-top:1px solid var(--br);margin-top:6px;padding-top:8px;"><span>'+freelancer.name+' Receives</span><span style="color:var(--grn);">$'+payout.toLocaleString()+'</span></div>';
+  mh+='<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;border-top:1px solid var(--br);margin-top:6px;padding-top:8px;"><span>'+freelancer.name+' Receives</span><span style="color:var(--grn);">₦'+payout.toLocaleString()+'</span></div>';
   mh+='</div>';
   mh+='<button class="btn" id="comp-confirm-btn" style="width:100%;">Release Payment →</button>';
   setModal(mh);
@@ -184,21 +184,21 @@ window.confirmComplete=async function(gid){
     ME.wallet.transactions.unshift({id:'rel_'+Date.now(),type:'out',amount:payout,from:freelancer.name,desc:'Released: '+gig.title,ts:Date.now()});
     ME.repPoints=(ME.repPoints||0)+10;
     saveUser(ME);
-    sendAutoMsg(gig.hiredUid,'Payment of $'+payout.toLocaleString()+' added to your wallet for: '+gig.title+'. Great work!');
-    pushNotif(gig.hiredUid,'payment','💰 Payment Received','$'+payout.toLocaleString()+' has been added to your wallet for: '+gig.title,{type:'payment',gigId:gig.id});
-    pushNotif(ME.uid,'payment','✅ Payment Released','You released $'+payout.toLocaleString()+' to '+freelancer.name+' for: '+gig.title,{type:'payment',gigId:gig.id});
+    sendAutoMsg(gig.hiredUid,'Payment of ₦'+payout.toLocaleString()+' added to your wallet for: '+gig.title+'. Great work!');
+    pushNotif(gig.hiredUid,'payment','💰 Payment Received','₦'+payout.toLocaleString()+' has been added to your wallet for: '+gig.title,{type:'payment',gigId:gig.id});
+    pushNotif(ME.uid,'payment','✅ Payment Released','You released ₦'+payout.toLocaleString()+' to '+freelancer.name+' for: '+gig.title,{type:'payment',gigId:gig.id});
     renderWallet();
     // Show success confirmation modal immediately
     setModal('<div style="text-align:center;padding:10px 0 6px;">'
       +'<div style="font-size:52px;margin-bottom:12px;">✅</div>'
       +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:18px;margin-bottom:6px;">Payment Released!</div>'
       +'<div style="font-size:12px;color:var(--td);margin-bottom:16px;line-height:1.7;">'
-      +'<strong style="color:var(--grn);">$'+payout.toLocaleString()+'</strong> has been sent to '+freelancer.name+'\'s wallet.<br>'
+      +'<strong style="color:var(--grn);">₦'+payout.toLocaleString()+'</strong> has been sent to '+freelancer.name+'\'s wallet.<br>'
       +'The gig is now marked complete.</div>'
       +'<div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:16px;font-size:11px;">'
-      +'<div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--td);">Escrow Released</span><span>$'+payNum.toLocaleString()+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--td);">Escrow Released</span><span>₦'+payNum.toLocaleString()+'</span></div>'
       +'<div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--td);">SkillStamp Fee (10%)</span><span style="color:var(--acc);">-$'+fee.toLocaleString()+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;padding:6px 0 3px;border-top:1px solid var(--br);font-weight:700;"><span>'+freelancer.name+' Received</span><span style="color:var(--grn);">$'+payout.toLocaleString()+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:6px 0 3px;border-top:1px solid var(--br);font-weight:700;"><span>'+freelancer.name+' Received</span><span style="color:var(--grn);">₦'+payout.toLocaleString()+'</span></div>'
       +'</div>'
       +'<button class="btn" onclick="closeModal();" style="width:100%;">Done</button>'
       +'</div>');

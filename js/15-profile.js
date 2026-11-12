@@ -153,7 +153,7 @@ function buildProfile(u,isOwn){
     var _rt=u.score>0?u.score.toFixed(1):'—';
     var _gc=u.gigsCount||0;
     var _rawEarned=(u.wallet&&u.wallet.earned)||u.earned||0;
-    var _earnedStr=_rawEarned>=1000?('$'+(_rawEarned/1000).toFixed(1)+'k'):('$'+_rawEarned.toLocaleString());
+    var _earnedStr=_rawEarned>=1000?('₦'+(_rawEarned/1000).toFixed(1)+'k'):('₦'+_rawEarned.toLocaleString());
     var _reviews=u.reviewCount||0;
     var respItem=respStr
       ?'<div class="prf-stat-div"></div><div class="prf-stat-item"><div class="prf-stat-icon-svg">'+icon('clock',16,'var(--td)')+'</div><div class="prf-stat-val">'+respStr+'</div><div class="prf-stat-sub">Avg. Response</div></div>'
@@ -315,15 +315,15 @@ function buildProfile(u,isOwn){
       walletCard='<div class="prf-side-card">'
         +'<div class="prf-side-title">'+icon('activity',13,'currentColor')+' Activity</div>'
         +'<div class="prf-side-row"><span class="prf-side-lbl">Gigs Posted</span><span class="prf-side-val" style="color:#4d9fff;">'+(myGigsW.length)+'</span></div>'
-        +'<div class="prf-side-row"><span class="prf-side-lbl">Total Paid</span><span class="prf-side-val" style="color:var(--grn);">$'+totalPaidW.toLocaleString()+'</span></div>'
-        +'<div class="prf-side-row"><span class="prf-side-lbl">Balance</span><span class="prf-side-val" style="color:var(--gld);">$'+((u.wallet&&u.wallet.balance)||0).toLocaleString()+'</span></div>'
+        +'<div class="prf-side-row"><span class="prf-side-lbl">Total Paid</span><span class="prf-side-val" style="color:var(--grn);">₦'+totalPaidW.toLocaleString()+'</span></div>'
+        +'<div class="prf-side-row"><span class="prf-side-lbl">Balance</span><span class="prf-side-val" style="color:var(--gld);">₦'+((u.wallet&&u.wallet.balance)||0).toLocaleString()+'</span></div>'
         +'<button class="prf-side-btn" onclick="goWallet()">View Wallet →</button>'
         +'</div>';
     } else {
       walletCard='<div class="prf-side-card">'
         +'<div class="prf-side-title">'+icon('wallet',13,'currentColor')+' Wallet</div>'
-        +'<div class="prf-side-row"><span class="prf-side-lbl">Balance</span><span class="prf-side-val" style="color:var(--grn);">$'+((u.wallet&&u.wallet.balance)||0).toLocaleString()+'</span></div>'
-        +'<div class="prf-side-row"><span class="prf-side-lbl">Total Earned</span><span class="prf-side-val">$'+((u.wallet&&u.wallet.earned)||u.earned||0).toLocaleString()+'</span></div>'
+        +'<div class="prf-side-row"><span class="prf-side-lbl">Balance</span><span class="prf-side-val" style="color:var(--grn);">₦'+((u.wallet&&u.wallet.balance)||0).toLocaleString()+'</span></div>'
+        +'<div class="prf-side-row"><span class="prf-side-lbl">Total Earned</span><span class="prf-side-val">₦'+((u.wallet&&u.wallet.earned)||u.earned||0).toLocaleString()+'</span></div>'
         +'<button class="prf-side-btn" onclick="goWallet()">View Full Wallet →</button>'
         +'</div>';
     }

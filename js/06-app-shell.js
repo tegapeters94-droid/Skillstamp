@@ -1024,7 +1024,7 @@ window.openGigWorkspace=async function(gid){
   mh+='<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;margin-bottom:4px;">\uD83D\uDCBC Gig Workspace</div>';
   mh+='<div style="font-size:11px;color:var(--td);margin-bottom:14px;">'+gig.title+'</div>';
   mh+=milestoneBar(step);
-  mh+='<div class="ws-escrow"><div><div style="font-size:10px;color:var(--td);margin-bottom:2px;">\uD83D\uDD12 Funds in Escrow</div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:18px;color:var(--grn);">$'+(gig.escrowAmount||gig.pay||0).toLocaleString()+'</div></div><div style="font-size:10px;color:var(--td);text-align:right;">Auto-releases on<br>completion</div></div>';
+  mh+='<div class="ws-escrow"><div><div style="font-size:10px;color:var(--td);margin-bottom:2px;">\uD83D\uDD12 Funds in Escrow</div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:18px;color:var(--grn);">'+ssPay(gig.escrowAmount||gig.pay||0)+'</div></div><div style="font-size:10px;color:var(--td);text-align:right;">Auto-releases on<br>completion</div></div>';
   if(deadlineHtml) mh+=deadlineHtml+'<div style="height:10px;"></div>';
   mh+='<div class="ws-card"><div class="ws-card-title">\uD83D\uDCCB Gig Brief</div><div style="font-size:12px;color:var(--tx);line-height:1.65;">'+gig.description+'</div></div>';
   if(gig.deliveryLink||gig.deliveryNote){
@@ -1303,22 +1303,22 @@ window.openDirectProposal = function(uid) {
     escrowNote +
 
     // ── Wallet balance (verified flow only) ──
-    (isVerif ? '<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:10px 13px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:11px;color:var(--td);">Your wallet balance</div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--grn);">$' + Math.round((ME.wallet && ME.wallet.balance) || 0).toLocaleString() + '</div></div>' : '') +
+    (isVerif ? '<div style="background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:10px 13px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:11px;color:var(--td);">Your wallet balance</div><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;color:var(--grn);">₦' + Math.round((ME.wallet && ME.wallet.balance) || 0).toLocaleString() + '</div></div>' : '') +
 
     // ── Form ──
     '<div class="fg"><label class="fl">Project Title <span style="color:var(--acc);">*</span></label>' +
     '<input class="fi" id="dp-title" placeholder="e.g. Design a logo for my startup" autocomplete="off"></div>' +
 
     (isVerif
-      ? '<div class="fg"><label class="fl">Budget ($) <span style="color:var(--acc);">*</span></label>' +
-        '<input class="fi" id="dp-budget" type="number" placeholder="e.g. 200" min="1" style="font-size:16px;"></div>'
+      ? '<div class="fg"><label class="fl">Budget (₦) <span style="color:var(--acc);">*</span></label>' +
+        '<input class="fi" id="dp-budget" type="number" placeholder="e.g. 50000" min="1" style="font-size:16px;"></div>'
       : '<div class="fg"><label class="fl">Budget Range</label>' +
         '<select class="fi" id="dp-budget-range">' +
-        '<option value="Under $100">Under $100</option>' +
-        '<option value="$100–$300" selected>$100–$300</option>' +
-        '<option value="$300–$500">$300–$500</option>' +
-        '<option value="$500–$1,000">$500–$1,000</option>' +
-        '<option value="$1,000+">$1,000+</option>' +
+        '<option value="Under ₦50,000">Under ₦50,000</option>' +
+        '<option value="₦50,000–₦150,000" selected>₦50,000–₦150,000</option>' +
+        '<option value="₦150,000–₦300,000">₦150,000–₦300,000</option>' +
+        '<option value="₦300,000–₦500,000">₦300,000–₦500,000</option>' +
+        '<option value="₦500,000+">₦500,000+</option>' +
         '</select></div>'
     ) +
 
@@ -1462,7 +1462,7 @@ window.openDirectProposal = function(uid) {
       var panel = document.getElementById('proposal-panel');
       if (panel) panel.remove();
       window._dpImages = [];
-      toast(isVerif ? 'Proposal sent! $' + budget + ' held in escrow. ✅' : 'Proposal sent to ' + firstName + '! 📩');
+      toast(isVerif ? 'Proposal sent! ₦' + budget + ' held in escrow. ✅' : 'Proposal sent to ' + firstName + '! 📩');
 
     } catch(err) {
       console.error('Proposal submit failed', err);
@@ -1508,7 +1508,7 @@ function buildWorkHistory(u){
     h+='<div class="wh-card">'
       +'<div class="wh-title">'+g.title+'</div>'
       +'<div class="wh-meta">'+(other?(isClient?'Freelancer: ':'Client: ')+other.name:'')
-      +' &middot; $'+(g.pay||g.escrowAmount||0).toLocaleString()+' &middot; '+timeAgo(g.created)+'</div>'
+      +' &middot; '+ssPay(g.pay||g.escrowAmount||0)+' &middot; '+timeAgo(g.created)+'</div>'
       +'<div style="'+starsColor+'">'+stars+'</div>'
       +(rating&&rating.comment?'<div style="font-size:11px;color:var(--td);margin-top:4px;font-style:italic;">"'+rating.comment+'"</div>':'')
       +(showReHire?'<div style="margin-top:8px;"><button onclick="openReHire(\''+g.id+'\',\''+g.hiredUid+'\')" style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:var(--grn);font-size:10px;font-family:Plus Jakarta Sans,sans-serif;font-weight:700;padding:5px 13px;border-radius:6px;cursor:pointer;">↩ Re-hire '+other.name.split(' ')[0]+'</button></div>':'')

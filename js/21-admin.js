@@ -750,7 +750,7 @@ function buildAdminHTML(){
     h+='<div id="gigcrd-'+g.id+'" style="background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:11px;margin-bottom:7px;">'
       +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
       +'<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:700;font-size:12px;flex:1;">'+g.title+'</div>'
-      +'<span style="font-size:10px;color:var(--grn);font-weight:700;">'+g.pay+'</span>'
+      +'<span style="font-size:10px;color:var(--grn);font-weight:700;">'+ssPay(g.pay)+'</span>'
       +'</div>'
       +'<div style="font-size:10px;color:var(--td);margin-bottom:8px;">By: '+_aEsc(g.posterName||'A client')+' · '+_aEsc(g.category||'General')+' · '+_aEsc(g.type||'Project')+'</div>'
       +'<button onclick="adminDeleteGig(\''+g.id+'\')" style="font-size:10px;padding:4px 10px;border:1px solid var(--acc);border-radius:5px;background:rgba(255,107,53,.08);color:var(--acc);cursor:pointer;">🗑 Delete Gig</button>'

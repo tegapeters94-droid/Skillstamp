@@ -178,7 +178,7 @@
           out2 += '<div class="xp-row" style="cursor:pointer;" onclick="showGigDetail(\'' + esc(g.id) + '\')">'
             + '<div class="xp-main"><div class="xp-name">' + esc(g.title) + (closed ? ' <span class="xp-tag">' + esc(g.status) + '</span>' : '') + '</div>'
             + '<div class="xp-meta">' + esc(g.posterName || '') + ' · ' + esc(g.category || '') + ' · ' + esc(g.type || '') + '</div></div>'
-            + '<div class="xp-pay">' + esc(g.pay || '') + '</div>'
+            + '<div class="xp-pay">' + esc(ssPay(g.pay || '')) + '</div>'
             + '<button class="ss-bm on xp-bm" data-bm-kind="gig" data-bm-id="' + esc(g.id) + '" onclick="event.stopPropagation();ssToggleSave(\'gig\',\'' + esc(g.id) + '\')">' + IC.bm + '</button></div>';
         });
         if (!out2) out2 = emptyBox('No saved gigs yet', 'Tap the bookmark on any gig to keep it here and apply later.');
