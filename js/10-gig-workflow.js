@@ -180,7 +180,7 @@ window.confirmComplete=async function(gid){
     // The freelancer's own client picks this up via reconcileFreelancerGigState()
     // (see js/10-gig-workflow.js) the next time they're in the app, and credits
     // their own wallet themselves — a self-write, which is always permitted.
-    ME.wallet.pending=Math.max(0,(ME.wallet.pending||0)-payNum);
+    if(ME.walletMode==='test') ME.wallet.pending=Math.max(0,(ME.wallet.pending||0)-payNum); /* live wallets: the Worker settles escrow when the freelancer collects */
     ME.wallet.transactions.unshift({id:'rel_'+Date.now(),type:'out',amount:payout,from:freelancer.name,desc:'Released: '+gig.title,ts:Date.now()});
     ME.repPoints=(ME.repPoints||0)+10;
     saveUser(ME);
@@ -340,7 +340,7 @@ window.reconcileFreelancerGigState=async function(){
       var g=completedMine[ci];
       var txId='pay_'+g.id;
       var already=ME.wallet.transactions.some(function(t){return t.id===txId;});
-      if(!already){
+      if(!already && ME.walletMode==='test'){ /* live wallets are paid by the Worker (js/61-escrow.js) */
         var payNum=g.escrowAmount||g.pay||0;
         var fee=Math.round(payNum*0.10);
         var payout=payNum-fee;
