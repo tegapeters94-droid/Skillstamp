@@ -190,6 +190,31 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════════
     //  USERS_PRIVATE: each member's email, readable only by the owner and admins
     // ═══════════════════════════════════════════════════════════════════════
+    // Bank account shown to clients for top-ups (signed-in members read, admin writes)
+    match /payment_settings/{id} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Bank-transfer top-up requests. Members start one and mark it paid; only an admin
+    // can confirm it and credit the wallet.
+    match /deposits/{depId} {
+      allow read: if isAdmin() || (isAuth() && resource.data.uid == request.auth.uid);
+      allow create: if isAuth() && isNotBanned() &&
+                       request.resource.data.keys().hasOnly(['uid', 'name', 'amount', 'ref', 'status', 'created', 'expires']) &&
+                       request.resource.data.uid == request.auth.uid &&
+                       request.resource.data.status == 'awaiting' &&
+                       request.resource.data.amount is number &&
+                       request.resource.data.amount >= 1000 && request.resource.data.amount <= 5000000 &&
+                       request.resource.data.ref is string && request.resource.data.ref.size() <= 20 &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('walletMode', 'live') != 'test';
+      allow update: if isAuth() && resource.data.uid == request.auth.uid &&
+                       resource.data.status == 'awaiting' &&
+                       request.resource.data.status == 'claimed' &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'claimedAt']);
+      allow write: if isAdmin();
+    }
+
     // Copies of wallets cleared by an admin reset (admin only)
     match /wallet_archive/{id} {
       allow read, write: if isAdmin();
