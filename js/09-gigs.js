@@ -555,7 +555,7 @@ async function _gwSubmit() {
     var savedGig = await fbGet('gigs', gig.id);
     if (!savedGig) throw new Error('Gig was not saved');
     if (ME.walletMode !== 'test') {
-      var lk = await window.ssEscrowLock('gig', gig.id);
+      var lk = window.ssEscrowLock ? await window.ssEscrowLock('gig', gig.id) : { ok: false, error: 'script-missing' };
       if (!lk.ok) { try { window.FB_FNS.deleteDoc(window.FB_FNS.doc(window.FB_DB, 'gigs', gig.id)); } catch (e2) {} throw new Error('escrow ' + (lk.error || 'failed')); }
       ME.wallet = lk.wallet;
     }
@@ -582,7 +582,16 @@ async function _gwSubmit() {
     ME.wallet.transactions.shift();
     }
     if (btn) { btn.disabled = false; btn.textContent = '🔒 Post Gig & Lock Escrow'; }
-    toast('Failed to post gig. Please try again.', 'bad');
+    var why = String((err && err.message) || '');
+    var msg = 'Failed to post gig. Please try again.';
+    if (why.indexOf('escrow ') === 0) {
+      var code = why.slice(7);
+      msg = code === 'insufficient' ? 'Insufficient wallet balance. Top up first.'
+        : code === 'script-missing' ? 'Please refresh the page and try again (an update is loading).'
+        : code === 'network' ? 'Could not reach the payment service. Check your connection and try again.'
+        : 'Could not lock the escrow (' + code + '). Please try again or contact support.';
+    }
+    toast(msg, 'bad');
   }
 }
 
