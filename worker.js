@@ -865,6 +865,70 @@ async function handleAdminAlert(req, env) {
   return json({ ok: true, sent: sent }, 200, req, env);
 }
 
+/* ---------- daily data backup (no billing plan needed) ----------
+   Copies the important collections into Worker storage once a day and keeps 8 days.
+   The admin can run it now or download a day from Admin > Backup. */
+const BACKUP_COLLS = ['users', 'deposits', 'withdrawals', 'escrow_locks', 'escrow_paid', 'escrow_done', 'wallet_archive', 'gigs', 'proposals', 'reviews', 'payment_settings'];
+async function backupCollection(env, tok, coll) {
+  const out = []; let pageToken = '';
+  for (let i = 0; i < 200; i++) {
+    const u = 'https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents/' + coll + '?pageSize=300' + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
+    const r = await fetch(u, { headers: { Authorization: 'Bearer ' + tok } });
+    if (r.status === 404) return out;
+    if (!r.ok) throw new Error(coll + ' ' + r.status);
+    const j = await r.json();
+    (j.documents || []).forEach((d) => { const o = { _id: d.name.split('/').pop() }; for (const k in (d.fields || {})) o[k] = fromFS(d.fields[k]); out.push(o); });
+    if (!j.nextPageToken) break; pageToken = j.nextPageToken;
+  }
+  return out;
+}
+async function runBackup(env) {
+  if (!env.SA_JSON) return { ok: false, error: 'not configured' };
+  const tok = await getSaToken(env, 'SA_JSON', 'https://www.googleapis.com/auth/datastore');
+  const day = today(), meta = { ts: Date.now(), counts: {}, errors: {} };
+  for (const c of BACKUP_COLLS) {
+    try {
+      const rows = await backupCollection(env, tok, c);
+      const txt = JSON.stringify(rows);
+      if (txt.length > 24 * 1024 * 1024) { meta.errors[c] = 'too large'; continue; }
+      await env.SS_KV.put('bk:' + day + ':' + c, txt, { expirationTtl: 8 * 86400 });
+      meta.counts[c] = rows.length;
+    } catch (e) { meta.errors[c] = String(e && e.message || e).slice(0, 120); }
+  }
+  await env.SS_KV.put('bk:meta:' + day, JSON.stringify(meta), { expirationTtl: 8 * 86400 });
+  if (!Object.keys(meta.errors).length) await env.SS_KV.put('bk:last', day);
+  return { ok: true, day: day, meta: meta };
+}
+async function runBackupDaily(env) {
+  if (!env.SA_JSON || new Date().getUTCHours() < 3) return;
+  if ((await env.SS_KV.get('bk:last')) === today()) return;
+  const n = parseInt((await env.SS_KV.get('bk:try:' + today())) || '0', 10);
+  if (n >= 3) return; /* at most 3 tries a day */
+  await env.SS_KV.put('bk:try:' + today(), String(n + 1), { expirationTtl: 172800 });
+  await runBackup(env);
+}
+async function handleBackup(req, env) {
+  const a = await requireAdmin(req, env); if (a.err) return a.err;
+  let body = {}; try { body = await req.json(); } catch (e) {}
+  if (body.action === 'run') {
+    const r = await runBackup(env); return json(r, r.ok ? 200 : 503, req, env);
+  }
+  if (body.action === 'get') {
+    const day = String(body.date || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return json({ ok: false, error: 'bad-date' }, 400, req, env);
+    const data = {};
+    for (const c of BACKUP_COLLS) { const t = await env.SS_KV.get('bk:' + day + ':' + c); if (t) { try { data[c] = JSON.parse(t); } catch (e) {} } }
+    return json({ ok: true, date: day, data: data }, 200, req, env);
+  }
+  const days = [];
+  for (let i = 0; i < 8; i++) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const m = await env.SS_KV.get('bk:meta:' + d);
+    if (m) { try { days.push({ date: d, meta: JSON.parse(m) }); } catch (e) {} }
+  }
+  return json({ ok: true, days: days }, 200, req, env);
+}
+
 /* cancel (or collect the refund for) a direct proposal the freelancer has not accepted */
 async function handleProposalCancel(req, env) {
   const c = await escrowCtx(req, env); if (c.err) return c.err;
@@ -1378,6 +1442,7 @@ export default {
       try { await runErrorAlerts(env); } catch (e) { console.error('error alerts failed', e && e.message); }
       try { await runNotifyJob(env); } catch (e) { console.error('notify job failed', e && e.message); }
       try { await runCampaignJob(env); } catch (e) { console.error('campaign job failed', e && e.message); }
+      try { await runBackupDaily(env); } catch (e) { console.error('backup job failed', e && e.message); }
     })());
   },
   async fetch(req, env) {
@@ -1446,6 +1511,10 @@ export default {
     if (url.pathname === '/escrow/cancel-proposal' && req.method === 'POST') {
       if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
       try { return await handleProposalCancel(req, env); } catch (e) { console.error('cancel error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if (url.pathname === '/admin/backup' && req.method === 'POST') {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try { return await handleBackup(req, env); } catch (e) { console.error('backup error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
     }
     if (url.pathname === '/admin/alert' && req.method === 'POST') {
       if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
