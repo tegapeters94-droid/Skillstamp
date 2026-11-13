@@ -839,12 +839,13 @@ async function handleAdminAlert(req, env) {
       { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: want } } } ] } }, limit: 10 } }),
   });
   if (!r.ok) return json({ ok: false, error: 'query-' + r.status }, 502, req, env);
-  const rows = await r.json(); let sent = 0;
+  const rows = await r.json(); let sent = 0, found = 0, dup = 0, mailErr = '';
   for (const x of (Array.isArray(rows) ? rows : [])) {
     if (!x.document || !x.document.fields) continue;
+    found++;
     const id = x.document.name.split('/').pop();
     const key = 'adm:' + kind + ':' + id;
-    if (await env.SS_KV.get(key)) continue;
+    if (await env.SS_KV.get(key)) { dup++; continue; }
     const capK = 'admcap:' + today();
     const used = parseInt((await env.SS_KV.get(capK)) || '0', 10);
     if (used >= 100) break;
@@ -860,9 +861,9 @@ async function handleAdminAlert(req, env) {
       await env.SS_KV.put(key, '1', { expirationTtl: 2592000 });
       await env.SS_KV.put(capK, String(used + 1), { expirationTtl: 172800 });
       sent++;
-    } catch (e) { console.error('admin alert mail failed', e && e.message); }
+    } catch (e) { mailErr = String(e && e.message || e).slice(0, 200); console.error('admin alert mail failed', mailErr); }
   }
-  return json({ ok: true, sent: sent }, 200, req, env);
+  return json({ ok: true, sent: sent, found: found, already: dup, mailError: mailErr || undefined, to: String(env.ALERT_EMAIL).replace(/^(.).*(@.*)$/, '$1***$2') }, 200, req, env);
 }
 
 /* ---------- daily data backup (no billing plan needed) ----------
