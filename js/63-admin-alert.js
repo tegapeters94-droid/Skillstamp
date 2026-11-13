@@ -8,7 +8,9 @@
     try {
       var u = window.FB_AUTH && window.FB_AUTH.currentUser; if (!u) return;
       var tok = await u.getIdToken();
-      await fetch(API + '/admin/alert', { method: 'POST', headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: kind }) });
+      var r = await fetch(API + '/admin/alert', { method: 'POST', headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: kind }) });
+      var j = {}; try { j = await r.json(); } catch (e2) {}
+      console.log('[admin alert]', kind, r.status, JSON.stringify(j));
     } catch (e) { /* the admin page still shows it; ignore */ }
   }
   function wrap(name, kind) {
