@@ -825,6 +825,46 @@ async function handleEscrowLock(req, env) {
   return json({ ok: true, wallet: w }, 200, req, env);
 }
 
+/* email the admin when a member claims a deposit or requests a withdrawal.
+   The Worker finds the member's own waiting requests itself, so the browser cannot fake one. */
+async function handleAdminAlert(req, env) {
+  const c = await escrowCtx(req, env); if (c.err) return c.err;
+  if (!env.ALERT_EMAIL || !env.BREVO_API_KEY) return json({ ok: true, skipped: 'not-configured' }, 200, req, env);
+  const kind = c.body.kind === 'withdrawal' ? 'withdrawal' : 'deposit';
+  const coll = kind === 'withdrawal' ? 'withdrawals' : 'deposits', want = kind === 'withdrawal' ? 'pending' : 'claimed';
+  const r = await fetch('https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents:runQuery', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + c.tok, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: coll }], where: { compositeFilter: { op: 'AND', filters: [
+      { fieldFilter: { field: { fieldPath: 'uid' }, op: 'EQUAL', value: { stringValue: c.uid } } },
+      { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: want } } } ] } }, limit: 10 } }),
+  });
+  if (!r.ok) return json({ ok: false, error: 'query-' + r.status }, 502, req, env);
+  const rows = await r.json(); let sent = 0;
+  for (const x of (Array.isArray(rows) ? rows : [])) {
+    if (!x.document || !x.document.fields) continue;
+    const id = x.document.name.split('/').pop();
+    const key = 'adm:' + kind + ':' + id;
+    if (await env.SS_KV.get(key)) continue;
+    const capK = 'admcap:' + today();
+    const used = parseInt((await env.SS_KV.get(capK)) || '0', 10);
+    if (used >= 100) break;
+    const d = {}; for (const k in x.document.fields) d[k] = fromFS(x.document.fields[k]);
+    const amt = '₦' + (Number(d.amount) || 0).toLocaleString('en-US');
+    const nm = String(d.name || 'A member').slice(0, 80);
+    const title = kind === 'withdrawal' ? 'Withdrawal request: ' + amt : 'Deposit to confirm: ' + amt;
+    const tab = kind === 'withdrawal' ? 'Withdrawals' : 'Deposits';
+    const lines = [nm + ' ' + (kind === 'withdrawal' ? 'requested a withdrawal of ' : 'says they paid ') + amt + '.', 'Reference: ' + String(d.ref || '-'), kind === 'withdrawal' ? 'Bank: ' + String(d.bankName || '-') : '', 'Open skillstamp.cv, then Admin, then the ' + tab + ' tab to ' + (kind === 'withdrawal' ? 'pay and mark it paid.' : 'check your bank and confirm.')].filter(Boolean);
+    const html = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.55;color:#111;">' + lines.map((l) => '<p style="margin:0 0 10px;">' + esc(l) + '</p>').join('') + '</div>';
+    try {
+      await sendBrevo(env, env.ALERT_EMAIL, 'Admin', { subject: 'SkillStamp: ' + title, html, text: lines.join('\n') });
+      await env.SS_KV.put(key, '1', { expirationTtl: 2592000 });
+      await env.SS_KV.put(capK, String(used + 1), { expirationTtl: 172800 });
+      sent++;
+    } catch (e) { console.error('admin alert mail failed', e && e.message); }
+  }
+  return json({ ok: true, sent: sent }, 200, req, env);
+}
+
 /* cancel (or collect the refund for) a direct proposal the freelancer has not accepted */
 async function handleProposalCancel(req, env) {
   const c = await escrowCtx(req, env); if (c.err) return c.err;
@@ -1406,6 +1446,10 @@ export default {
     if (url.pathname === '/escrow/cancel-proposal' && req.method === 'POST') {
       if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
       try { return await handleProposalCancel(req, env); } catch (e) { console.error('cancel error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if (url.pathname === '/admin/alert' && req.method === 'POST') {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try { return await handleAdminAlert(req, env); } catch (e) { console.error('alert error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
     }
     if (url.pathname === '/escrow/settle' && req.method === 'POST') {
       if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
