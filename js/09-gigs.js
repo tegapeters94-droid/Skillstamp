@@ -550,6 +550,7 @@ async function _gwSubmit() {
       posterUid:ME.uid, posterName:ME.name, created:Date.now(), applicants:[],
       status:'open', escrowAmount:num, deadline:null, hiredUid:null
     };
+    if (ME.walletMode === 'test') gig.escrowTest = true; /* test credits: counted as funded (rules allow this only for test wallets) */
     await fbSet('gigs', gig.id, gig);
     // fbSet swallows errors, so confirm the gig really saved before charging escrow
     var savedGig = await fbGet('gigs', gig.id);
