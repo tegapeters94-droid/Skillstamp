@@ -814,10 +814,13 @@ async function handleEscrowLock(req, env) {
   const now = Date.now();
   w.balance -= amount; w.pending = (w.pending || 0) + amount;
   w.transactions.unshift({ id: 'escrow_' + id, type: 'out', amount: amount, from: 'Escrow', desc: 'Escrow: ' + (src.data.title || 'Gig'), ts: now });
-  const ok = await fsCommit(env, c.tok, [
+  const wr = [
     { update: { name: docName(env, 'users/' + c.uid), fields: { wallet: toFS(w) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: me.updateTime } },
     { update: { name: docName(env, 'escrow_locks/' + id), fields: { key: toFS(id), kind: toFS(kind), uid: toFS(c.uid), amount: toFS(amount), status: toFS('locked'), at: toFS(now) } }, currentDocument: { exists: false } },
-  ]);
+  ];
+  /* mark the gig as really funded; members cannot set this flag themselves (rules) */
+  if (kind === 'gig') wr.push({ update: { name: docName(env, 'gigs/' + id), fields: { escrowOk: toFS(true) } }, updateMask: { fieldPaths: ['escrowOk'] }, currentDocument: { exists: true } });
+  const ok = await fsCommit(env, c.tok, wr);
   if (!ok) return commitErr(req, env);
   return json({ ok: true, wallet: w }, 200, req, env);
 }

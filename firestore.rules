@@ -349,7 +349,13 @@ service cloud.firestore {
       allow create: if isAuth() && isNotBanned() &&
                        request.resource.data.posterUid == request.auth.uid &&
                        request.resource.data.status in ['open'] &&
-                       !('resolution' in request.resource.data);
+                       !('resolution' in request.resource.data) &&
+                       // "Funded" mark: only the Worker (server) can set escrowOk. A test-credit
+                       // poster may set escrowTest, and only while their wallet is in test mode.
+                       !('escrowOk' in request.resource.data) &&
+                       (!('escrowTest' in request.resource.data) ||
+                         (request.resource.data.escrowTest == true &&
+                          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('walletMode', 'live') == 'test'));
 
       allow update: if isAuth() && isNotBanned() &&
                        // Only the poster can update the gig
@@ -358,6 +364,9 @@ service cloud.firestore {
                        fieldUnchanged('posterUid') &&
                        // Dispute decisions are written by admins only
                        fieldUnchanged('resolution') &&
+                       // The funded marks can never be changed by the poster
+                       fieldUnchanged('escrowOk') &&
+                       fieldUnchanged('escrowTest') &&
                        // Once someone is hired the money terms are frozen
                        (resource.data.get('hiredUid', null) == null ||
                          (same('escrowAmount') && same('pay') && same('hiredUid'))) &&
