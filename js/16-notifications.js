@@ -337,6 +337,7 @@ function _nxCat(type) { return _NX_CAT[type] || 'account'; }
 // Small round avatar of the sender when we know who it is.
 function _nxAvatar(n, size) {
   try {
+    if (n.type === 'payment') return ''; /* money notices come from SkillStamp, not from the admin who clicked confirm */
     var u = n.fromUid && typeof getUser === 'function' ? getUser(n.fromUid) : null;
     if (!u || (ME && u.uid === ME.uid)) return '';
     if (u.avatar && /^(data:image\/|https?:)/.test(u.avatar)) return '<img class="nx-av" src="' + _nxEsc(u.avatar) + '" alt="" style="width:' + size + 'px;height:' + size + 'px;">';
