@@ -174,6 +174,10 @@ window.confirmComplete=async function(gid){
     await fbSet('gigs',gig.id,gig);
     var cidx=CACHE.gigs.findIndex(function(g){return g.id===gig.id;});
     if(cidx>=0) CACHE.gigs[cidx]=gig;
+    /* live wallets: the Worker pays the freelancer right now and returns the client's updated wallet */
+    if(ME.walletMode!=='test' && window.ssEscrowRelease){
+      try{ var rr=await window.ssEscrowRelease(gig.id); if(rr&&rr.ok&&rr.wallet) ME.wallet=rr.wallet; else if(rr&&!rr.ok) console.warn('[escrow] release',rr.error); }catch(e){ console.warn('[escrow] release',e); }
+    }
     // NOTE: we intentionally do NOT write to the freelancer's own user/wallet
     // doc here — a client can only write their own Firestore documents, so a
     // direct cross-user wallet credit is always rejected by security rules.

@@ -4,6 +4,17 @@
 (function () {
   'use strict';
   var MIN = 1000, MAX = 5000000;
+  var API = window.SS_API || 'https://skillstamp-email.tegapeters94.workers.dev';
+  var LIM = { min: 1000, daily: 500000, holdHours: 24 };
+  async function loadLim() {
+    try { var d = await F().getDoc(doc('payment_settings', 'limits')); if (d.exists()) { var x = d.data() || {}; LIM = { min: Number(x.min) >= 100 ? Number(x.min) : 1000, daily: Number(x.daily) >= 1000 ? Number(x.daily) : 500000, holdHours: Number(x.holdHours) >= 0 ? Number(x.holdHours) : 24 }; } } catch (e) {}
+  }
+  async function callWorker(path, body) {
+    var u = window.FB_AUTH && window.FB_AUTH.currentUser; if (!u) throw new Error('signed-out');
+    var tok = await u.getIdToken();
+    var r = await fetch(API + path, { method: 'POST', headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    var j = {}; try { j = await r.json(); } catch (e) {} j._status = r.status; return j;
+  }
   function $(id) { return document.getElementById(id); }
   function F() { return window.FB_FNS; }
   function DB() { return window.FB_DB; }
@@ -26,6 +37,7 @@
   window.openWithdraw = async function () {
     var u = me(); if (!u) return;
     if (u.walletMode === 'test') return modal('<button class="mclose" onclick="closeModal()">✕</button><h3>Withdrawals are off</h3><p style="font-size:13px;line-height:1.6;">You are using test credits, which are not real money. Withdrawals open once your wallet is reset to the live ₦ wallet.</p><button class="btn" style="width:100%;" onclick="closeModal()">Okay</button>');
+    await loadLim();
     var fresh = u;
     try { var s = await F().getDoc(doc('users', u.uid)); if (s.exists()) fresh = Object.assign({}, u, s.data()); } catch (e) {}
     var w = Object.assign(blank(), fresh.wallet || {});
@@ -34,8 +46,8 @@
     if (open) return modal('<button class="mclose" onclick="closeModal()">✕</button><h3>Withdrawal in progress</h3><p style="font-size:13px;line-height:1.6;">Your request for <b>' + ngn(open.amount) + '</b> to ' + esc(open.bankName) + ' ' + esc(open.accountNumber) + ' is being processed (ref ' + esc(open.ref) + '). You can request another one once it is paid.</p><button class="btn" style="width:100%;" onclick="closeModal()">Okay</button>');
     var sv = saved();
     modal('<button class="mclose" onclick="closeModal()">✕</button><h3>Withdraw to your bank</h3>'
-      + '<p style="font-size:13px;line-height:1.6;">Available: <b>' + ngn(w.balance) + '</b>. Minimum ' + ngn(MIN) + '. We send the money to your bank account after a quick review.</p>'
-      + '<div class="fg"><label class="fl">Amount (₦)</label><input class="fi" id="wd-amt" type="number" min="' + MIN + '" max="' + (w.balance || 0) + '" placeholder="e.g. 10000"></div>'
+      + '<p style="font-size:13px;line-height:1.6;">Available: <b>' + ngn(w.balance) + '</b>. Minimum ' + ngn(LIM.min) + '. Daily limit ' + ngn(LIM.daily) + (LIM.holdHours > 0 ? '. Money from a new top-up can be withdrawn ' + LIM.holdHours + ' hours after it is confirmed' : '') + '. We send the money to your bank account after a quick review.</p>'
+      + '<div class="fg"><label class="fl">Amount (₦)</label><input class="fi" id="wd-amt" type="number" min="' + LIM.min + '" max="' + (w.balance || 0) + '" placeholder="e.g. 10000"></div>'
       + '<div class="fg"><label class="fl">Bank name</label><input class="fi" id="wd-bank" value="' + esc(sv.bankName || '') + '" placeholder="e.g. GTBank"></div>'
       + '<div class="fg"><label class="fl">Account number</label><input class="fi" id="wd-num" inputmode="numeric" maxlength="10" value="' + esc(sv.accountNumber || '') + '" placeholder="10 digits"></div>'
       + '<div class="fg"><label class="fl">Account name</label><input class="fi" id="wd-acc" value="' + esc(sv.accountName || fresh.name || '') + '" placeholder="Name on the account"></div>'
@@ -46,25 +58,30 @@
   window.ssWithdrawGo = async function () {
     var u = me(), amt = Math.floor(Number($('wd-amt').value));
     var bank = $('wd-bank').value.trim(), num = $('wd-num').value.replace(/\s/g, ''), acc = $('wd-acc').value.trim();
-    if (!(amt >= MIN)) return say('Minimum withdrawal is ' + ngn(MIN) + '.', true);
+    if (!(amt >= LIM.min)) return say('Minimum withdrawal is ' + ngn(LIM.min) + '.', true);
     if (amt > MAX) return say('Maximum single withdrawal is ' + ngn(MAX) + '.', true);
     if (!bank || !acc) return say('Enter your bank name and account name.', true);
     if (!/^[0-9]{10}$/.test(num)) return say('Account number must be 10 digits.', true);
     var btn = $('wd-go'); btn.disabled = true; btn.textContent = 'Please wait...';
+    function fail(m) { say(m, true); btn.disabled = false; btn.textContent = 'Request withdrawal'; }
     try {
-      var s = await F().getDoc(doc('users', u.uid)); var cur = s.data() || {};
-      var w = Object.assign(blank(), cur.wallet || {}); w.transactions = (w.transactions || []).slice();
-      if (cur.walletMode === 'test') throw new Error('test');
-      if (amt > (w.balance || 0)) { say('That is more than your available balance.', true); btn.disabled = false; btn.textContent = 'Request withdrawal'; return; }
-      var id = 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ref = newRef();
-      await F().setDoc(doc('withdrawals', id), { uid: u.uid, name: u.name || '', amount: amt, ref: ref, status: 'pending', created: Date.now(), bankName: bank, accountNumber: num, accountName: acc });
-      w.balance = (w.balance || 0) - amt; w.held = (w.held || 0) + amt;
-      w.transactions.unshift({ id: 'wd_' + id, type: 'out', amount: amt, to: bank, desc: 'Withdrawal requested (' + ref + ')', ts: Date.now() });
-      await F().updateDoc(doc('users', u.uid), { wallet: w });
-      try { localStorage.setItem('ss_wd_bank', JSON.stringify({ bankName: bank, accountNumber: num, accountName: acc })); } catch (e) {}
-      try { u.wallet = w; window.renderWallet(); } catch (e) {}
-      modal('<button class="mclose" onclick="closeModal()">✕</button><h3>Request received</h3><p style="font-size:13px;line-height:1.6;">We have set aside <b>' + ngn(amt) + '</b> and will send it to ' + esc(bank) + ' ' + esc(num) + '. You will see it marked paid in your wallet. Reference: <b>' + esc(ref) + '</b>.</p><button class="btn" style="width:100%;" onclick="closeModal()">Done</button>');
-    } catch (e) { console.warn(e); say('Could not place the request. Please check your balance and try again.', true); btn.disabled = false; btn.textContent = 'Request withdrawal'; }
+      /* the Worker checks the limits and moves the money; the browser cannot do it directly */
+      var j = await callWorker('/withdraw/request', { amount: amt, bankName: bank, accountNumber: num, accountName: acc });
+      if (!j.ok) {
+        var e = j.error;
+        if (e === 'min') return fail('Minimum withdrawal is ' + ngn(j.min) + '.');
+        if (e === 'daily') return fail('Daily limit reached. You can withdraw up to ' + ngn(j.remaining) + ' more in the next 24 hours.');
+        if (e === 'fresh') return fail('Money from a recent top-up can be withdrawn after ' + new Date(j.until).toLocaleString() + '. You can withdraw up to ' + ngn(j.withdrawable) + ' now.');
+        if (e === 'insufficient') return fail('That is more than your available balance.');
+        if (e === 'in-progress') return fail('You already have a withdrawal waiting. Wait until it is paid.');
+        if (e === 'bad-account') return fail('Check your bank name, account number and account name.');
+        if (e === 'test-mode') return fail('Withdrawals are off while you use test credits.');
+        return fail('Could not place the request. Please try again.');
+      }
+      try { localStorage.setItem('ss_wd_bank', JSON.stringify({ bankName: bank, accountNumber: num, accountName: acc })); } catch (e2) {}
+      try { if (j.wallet) u.wallet = j.wallet; window.renderWallet(); } catch (e3) {}
+      modal('<button class="mclose" onclick="closeModal()">✕</button><h3>Request received</h3><p style="font-size:13px;line-height:1.6;">We have set aside <b>' + ngn(amt) + '</b> and will send it to ' + esc(bank) + ' ' + esc(num) + '. You will see it marked paid in your wallet. Reference: <b>' + esc(j.ref || '') + '</b>.</p><button class="btn" style="width:100%;" onclick="closeModal()">Done</button>');
+    } catch (e) { console.warn(e); fail('Could not place the request. Please check your connection and try again.'); }
   };
 
   async function pendingCard() {
@@ -104,6 +121,7 @@
   function admin() { return !!(me() && me().isAdmin); }
   var WDS = [], HOLD = {};
   async function load() {
+    await loadLim();
     try {
       var s = await F().getDocs(F().collection(DB(), 'withdrawals'));
       WDS = s.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
@@ -127,11 +145,23 @@
           + '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn wd-b" onclick="ssWdPaid(\'' + d.id + '\')">Mark as paid</button><button class="btn wd-b" style="background:var(--s2);color:var(--tx);border:1px solid var(--br);" onclick="ssWdReject(\'' + d.id + '\')">Reject and return money</button></div>' : '') + '</div>';
     }
     el.innerHTML = '<style>#admtab-withdrawals .wd-b{width:auto!important;display:inline-block!important;flex:none;padding:9px 14px!important;border-radius:10px;font-size:12px}</style>'
+      + '<div style="border:1px solid var(--br);border-radius:12px;padding:12px;margin-bottom:14px;background:var(--s);"><div style="font-weight:800;font-size:13px;margin-bottom:8px;">Withdrawal limits</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">'
+      + '<label style="font-size:11px;color:var(--td);">Minimum (₦)<br><input class="fi" id="wl-min" type="number" value="' + LIM.min + '" style="width:110px;"></label>'
+      + '<label style="font-size:11px;color:var(--td);">Daily limit (₦)<br><input class="fi" id="wl-day" type="number" value="' + LIM.daily + '" style="width:130px;"></label>'
+      + '<label style="font-size:11px;color:var(--td);">Hold new top-ups (hours)<br><input class="fi" id="wl-hold" type="number" value="' + LIM.holdHours + '" style="width:110px;"></label>'
+      + '<button class="btn wd-b" onclick="ssWdSaveLimits()">Save</button></div><div style="font-size:11px;color:var(--td);margin-top:8px;line-height:1.5;">Members cannot withdraw money from a top-up until it has been confirmed for this many hours. Set 0 to turn the hold off.</div></div>'
       + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;margin-bottom:6px;">Pending withdrawals (' + pend.length + ')</div><div style="font-size:12px;color:var(--td);margin-bottom:8px;">Send the money from your bank first, then tap Mark as paid. The account name should match the member.</div>'
       + (pend.map(card).join('') || '<div style="font-size:12px;color:var(--td);margin-bottom:14px;">Nothing waiting.</div>')
       + '<div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:800;font-size:15px;margin:16px 0 6px;">Recent</div>' + (done.map(card).join('') || '<div style="font-size:12px;color:var(--td);">None yet.</div>');
     badge(pend.length);
   }
+  window.ssWdSaveLimits = async function () {
+    if (!admin()) return;
+    var mn = Math.floor(Number($('wl-min').value)), dy = Math.floor(Number($('wl-day').value)), hd = Math.floor(Number($('wl-hold').value));
+    if (!(mn >= 100) || !(dy >= mn) || !(hd >= 0 && hd <= 720)) return say('Check the numbers: minimum at least 100, daily limit at least the minimum, hold between 0 and 720 hours.', true);
+    try { await F().setDoc(doc('payment_settings', 'limits'), { min: mn, daily: dy, holdHours: hd, updated: Date.now(), by: me().uid }); LIM = { min: mn, daily: dy, holdHours: hd }; say('Limits saved.'); }
+    catch (e) { console.warn(e); say('Could not save the limits (is the panel unlocked?).', true); }
+  };
   var lock = {};
   async function settle(id, paid, note) {
     var cur = (await F().getDoc(doc('withdrawals', id))).data();

@@ -27,6 +27,8 @@
   };
   window.ssEscrowCancel = function (proposalId) { return post('/escrow/cancel-proposal', { proposalId: proposalId }); };
   window.ssEscrowSettle = function (gigId) { return post('/escrow/settle', { gigId: gigId }); };
+  /* client: pay the freelancer straight away when the work is approved */
+  window.ssEscrowRelease = function (gigId) { return post('/escrow/claim', { gigId: gigId }); };
 
   /* client: collect the escrow back for proposals the freelancer declined */
   var refunding = false;
@@ -59,6 +61,16 @@
     if (claiming || !me() || me().role !== 'freelancer' || !live()) return;
     claiming = true;
     try {
+      /* payouts the client released while we were away: add the reputation for them, one gig per save (the rules allow small steps) */
+      var due = Array.isArray(me().repDue) ? me().repDue.slice() : [];
+      for (var d = 0; d < due.length && d < 10; d++) {
+        var gd = (window.CACHE && CACHE.gigs || []).filter(function (x) { return x.id === due[d]; })[0];
+        me().repPoints = (me().repPoints || 0) + 20; me().gigsCount = (me().gigsCount || 0) + 1;
+        me().repDue = me().repDue.filter(function (x) { return x !== due[d]; });
+        try { await window.saveUser(me()); } catch (e) { console.warn('[escrow] save rep', e); }
+        say('Payment received for: ' + ((gd && gd.title) || 'your gig') + '.');
+        try { if (window.renderWallet) window.renderWallet(); if (window.updateHomeStats) window.updateHomeStats(); } catch (e) {}
+      }
       var all = await window.fbGetAll('gigs');
       var mine = (all || []).filter(function (g) { return g.hiredUid === me().uid && g.status === 'completed'; });
       for (var i = 0; i < mine.length; i++) {
