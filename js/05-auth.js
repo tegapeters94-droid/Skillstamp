@@ -47,12 +47,8 @@ function showLsScreen(screen){
 window.showLsScreen=showLsScreen;
 
 // Load saved credentials
-// Force browser to always check for fresh version
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(function(regs){
-    regs.forEach(function(r){ r.unregister(); });
-  });
-}
+// (removed) This used to unregister every service worker on each page load. That also deleted the device's push
+// subscription, so the notification switch turned itself off. sw.js is network-first and registered by js/56-pwa.js.
 
 window.addEventListener('load',()=>{
   generateUsers();

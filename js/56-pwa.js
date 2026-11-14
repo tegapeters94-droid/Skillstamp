@@ -41,11 +41,20 @@
   }
   function currentSub() { return getReg().then(function (r) { return r.pushManager.getSubscription(); }); }
 
+  /* remember, per member and per device, that they switched alerts on, so the switch survives logging out and in */
+  function intentKey() { var u = window.FB_AUTH && window.FB_AUTH.currentUser; return u ? 'ss_push_on_' + u.uid : null; }
+  function setIntent(on) { try { var k = intentKey(); if (!k) return; if (on) localStorage.setItem(k, '1'); else localStorage.removeItem(k); } catch (e) {} }
+  function hasIntent() { try { var k = intentKey(); return !!(k && localStorage.getItem(k)); } catch (e) { return false; } }
+
   function enablePush() {
     return Notification.requestPermission().then(function (perm) {
       if (perm !== 'granted') throw new Error(perm === 'denied' ? 'denied' : 'dismissed');
-      return fetch(API + '/push/key').then(function (r) { if (!r.ok) throw new Error('key'); return r.json(); });
-    }).then(function (k) {
+      return ensureSub();
+    }).then(function () { setIntent(true); });
+  }
+  /* get (or create) this device's subscription and make sure the server has it for the signed-in member */
+  function ensureSub() {
+    return fetch(API + '/push/key').then(function (r) { if (!r.ok) throw new Error('key'); return r.json(); }).then(function (k) {
       return getReg().then(function (r) {
         return r.pushManager.getSubscription().then(function (s) {
           return s || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToArr(k.key) });
@@ -58,6 +67,7 @@
     });
   }
   function disablePush() {
+    setIntent(false);
     return currentSub().then(function (s) {
       if (!s) return;
       var ep = s.endpoint;
@@ -127,7 +137,7 @@
     if (!card) return;
     var perm = canPush ? Notification.permission : 'default';
     if (!canPush || perm !== 'granted') return render(card, false, perm);
-    currentSub().then(function (s) { render(card, !!s, perm); }).catch(function () { render(card, false, perm); });
+    currentSub().then(function (s) { render(card, !!s && hasIntent(), perm); }).catch(function () { render(card, false, perm); });
   }
 
   function inject() {
@@ -146,6 +156,19 @@
       refresh();
     } catch (e) {}
   }
+  /* after signing in, quietly put alerts back on for a member who had them on (no prompt: permission is already granted) */
+  var lastUid = null;
+  setInterval(function () {
+    try {
+      var u = window.FB_AUTH && window.FB_AUTH.currentUser;
+      if (!u) { lastUid = null; return; }
+      if (u.uid === lastUid) return;
+      lastUid = u.uid;
+      if (!canPush || Notification.permission !== 'granted' || !hasIntent()) return;
+      setTimeout(function () { ensureSub().catch(function () {}); }, 2500);
+    } catch (e) {}
+  }, 3000);
+
   var prev = window.openSettings;
   if (typeof prev === 'function') {
     window.openSettings = function () { var r = prev.apply(this, arguments); inject(); return r; };

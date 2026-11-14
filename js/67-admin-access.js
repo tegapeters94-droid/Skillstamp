@@ -10,16 +10,16 @@
   var API = window.SS_API || 'https://skillstamp-email.tegapeters94.workers.dev';
   var URL_FS = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
   var SCOPES = [
-    ['payments', '💰 Payments', 'Deposits, Withdrawals, Wallets, bank details and limits'],
+    ['payments', '💰 Payments', 'Deposits, Withdrawals, Wallets, Risk review, bank details and limits'],
     ['disputes', '⚖️ Disputes & gigs', 'Disputes and Gigs & Escrow'],
     ['moderation', '🛡️ Moderation', 'Moderation, Reports, reviews and the message guard'],
     ['users', '👤 Users & verification', 'Users, Skills verification, account deletion, data protection'],
     ['campaigns', '📣 Campaigns', 'Broadcast and email campaigns'],
     ['analytics', '📊 Analytics', 'Overview stats, Analytics, Activity log, monitoring']
   ];
-  var TAB_SCOPE = { overview: 'overview', users: 'users', disputes: 'disputes', gigs: 'disputes', content: 'moderation', skills: 'users', announce: 'campaigns', campaigns: 'campaigns', analytics: 'analytics', reports: 'moderation', activity: 'analytics', deposits: 'payments', withdrawals: 'payments', wallets: 'payments', backup: 'owner', security: 'any', team: 'owner' };
+  var TAB_SCOPE = { overview: 'overview', users: 'users', disputes: 'disputes', gigs: 'disputes', content: 'moderation', skills: 'users', announce: 'campaigns', campaigns: 'campaigns', analytics: 'analytics', reports: 'moderation', activity: 'analytics', deposits: 'payments', withdrawals: 'payments', wallets: 'payments', risk: 'payments', backup: 'owner', security: 'any', team: 'owner' };
   var HOST_SCOPE = { 'rva-host': 'moderation', 'mg-host': 'moderation', 'rg-card': 'moderation', 'mon-host': 'analytics', 'ap-ov-host': 'disputes' };
-  var ORDER = ['overview', 'users', 'disputes', 'gigs', 'content', 'skills', 'announce', 'campaigns', 'analytics', 'reports', 'activity', 'deposits', 'withdrawals', 'wallets', 'backup', 'team', 'security'];
+  var ORDER = ['overview', 'users', 'disputes', 'gigs', 'content', 'skills', 'announce', 'campaigns', 'analytics', 'reports', 'activity', 'deposits', 'withdrawals', 'wallets', 'risk', 'backup', 'team', 'security'];
   function $(id) { return document.getElementById(id); }
   function F() { return window.FB_FNS; }
   function me() { return window.ME; }
