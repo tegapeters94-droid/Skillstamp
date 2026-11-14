@@ -909,7 +909,7 @@ async function runBackupDaily(env) {
   await runBackup(env);
 }
 async function handleBackup(req, env) {
-  const a = await requireAdmin(req, env); if (a.err) return a.err;
+  const a = await requireAdmin(req, env, 'owner'); if (a.err) return a.err;
   let body = {}; try { body = await req.json(); } catch (e) {}
   if (body.action === 'run') {
     const r = await runBackup(env); return json(r, r.ok ? 200 : 503, req, env);
@@ -928,6 +928,132 @@ async function handleBackup(req, env) {
     if (m) { try { days.push({ date: d, meta: JSON.parse(m) }); } catch (e) {} }
   }
   return json({ ok: true, days: days }, 200, req, env);
+}
+
+/* ---------- withdrawal requests with safeguards ----------
+   The Worker is the only way to request a withdrawal (rules block members from doing it directly), so the
+   minimum, the daily limit and the hold on fresh top-ups cannot be skipped. Limits live in payment_settings/limits. */
+async function wdLimits(env, tok) {
+  const d = await fsRead(env, tok, 'payment_settings/limits');
+  const x = d ? d.data : {};
+  const n = (v, def, lo, hi) => { v = Number(v); return v >= lo && v <= hi ? v : def; };
+  return { min: n(x.min, 1000, 100, 5000000), daily: n(x.daily, 500000, 1000, 50000000), holdHours: n(x.holdHours, 24, 0, 720) };
+}
+async function listByUid(env, tok, coll, uid) {
+  const r = await fetch('https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents:runQuery', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: coll }], where: { fieldFilter: { field: { fieldPath: 'uid' }, op: 'EQUAL', value: { stringValue: uid } } }, limit: 300 } }),
+  });
+  if (!r.ok) throw new Error(coll + ' query ' + r.status);
+  const rows = await r.json(); const out = [];
+  (Array.isArray(rows) ? rows : []).forEach((x) => { if (x.document && x.document.fields) { const o = {}; for (const k in x.document.fields) o[k] = fromFS(x.document.fields[k]); out.push(o); } });
+  return out;
+}
+function randCode(n) { const a = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; const b = crypto.getRandomValues(new Uint8Array(n)); let r = ''; for (let i = 0; i < n; i++) r += a[b[i] % a.length]; return r; }
+async function handleWithdrawRequest(req, env) {
+  const c = await escrowCtx(req, env); if (c.err) return c.err;
+  const amount = Math.floor(Number(c.body.amount)), bank = String(c.body.bankName || '').trim().slice(0, 60);
+  const num = String(c.body.accountNumber || '').replace(/\s/g, ''), acc = String(c.body.accountName || '').trim().slice(0, 80);
+  if (!(amount >= 1) || amount > 5000000) return json({ ok: false, error: 'bad-amount' }, 400, req, env);
+  if (!/^[0-9]{10}$/.test(num) || bank.length < 2 || acc.length < 2) return json({ ok: false, error: 'bad-account' }, 400, req, env);
+  const me = await fsRead(env, c.tok, 'users/' + c.uid);
+  if (!me) return json({ ok: false, error: 'no-user' }, 404, req, env);
+  if (me.data.walletMode === 'test') return json({ ok: false, error: 'test-mode' }, 400, req, env);
+  if (me.data.isBanned === true || me.data.badgeStatus === 'suspended') return json({ ok: false, error: 'not-allowed' }, 403, req, env);
+  const lim = await wdLimits(env, c.tok);
+  if (amount < lim.min) return json({ ok: false, error: 'min', min: lim.min }, 400, req, env);
+  const w = walletOf(me.data);
+  if ((w.balance || 0) < amount) return json({ ok: false, error: 'insufficient' }, 402, req, env);
+  const now = Date.now();
+  const wds = await listByUid(env, c.tok, 'withdrawals', c.uid);
+  if (wds.some((d) => d.status === 'pending')) return json({ ok: false, error: 'in-progress' }, 409, req, env);
+  const usedToday = wds.filter((d) => (d.created || 0) > now - 86400000 && (d.status === 'paid')).reduce((t, d) => t + (Number(d.amount) || 0), 0);
+  if (usedToday + amount > lim.daily) return json({ ok: false, error: 'daily', remaining: Math.max(0, lim.daily - usedToday), daily: lim.daily }, 400, req, env);
+  const holdMs = lim.holdHours * 3600000;
+  if (holdMs > 0) {
+    const deps = await listByUid(env, c.tok, 'deposits', c.uid);
+    const fresh = deps.filter((d) => d.status === 'confirmed' && (d.confirmedAt || 0) > now - holdMs);
+    const freshSum = fresh.reduce((t, d) => t + (Number(d.creditedAmount) || Number(d.amount) || 0), 0);
+    const withdrawable = Math.max(0, (w.balance || 0) - freshSum);
+    if (amount > withdrawable) {
+      const until = fresh.reduce((m, d) => Math.min(m, (d.confirmedAt || now) + holdMs), now + holdMs);
+      return json({ ok: false, error: 'fresh', withdrawable: withdrawable, until: until, holdHours: lim.holdHours }, 400, req, env);
+    }
+  }
+  const id = 'w' + now.toString(36) + randCode(4).toLowerCase(), ref = 'WD-' + randCode(6);
+  w.balance = (w.balance || 0) - amount; w.held = (w.held || 0) + amount;
+  w.transactions.unshift({ id: 'wd_' + id, type: 'out', amount: amount, to: bank, desc: 'Withdrawal requested (' + ref + ')', ts: now });
+  const ok = await fsCommit(env, c.tok, [
+    { update: { name: docName(env, 'users/' + c.uid), fields: { wallet: toFS(w) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: me.updateTime } },
+    { update: { name: docName(env, 'withdrawals/' + id), fields: { uid: toFS(c.uid), name: toFS(String(me.data.name || '')), amount: toFS(amount), ref: toFS(ref), status: toFS('pending'), created: toFS(now), bankName: toFS(bank), accountNumber: toFS(num), accountName: toFS(acc) } }, currentDocument: { exists: false } },
+  ]);
+  if (!ok) return commitErr(req, env);
+  return json({ ok: true, id: id, ref: ref, wallet: w }, 200, req, env);
+}
+
+/* ---------- admin password gate ----------
+   An admin can protect the admin tools with a password. After entering it, a 30 minute session is stored
+   in admin_sessions (the rules and the Worker both check it before money moves or access is changed). */
+async function gateHash(pw, saltB64) {
+  const salt = Uint8Array.from(atob(saltB64), (ch) => ch.charCodeAt(0));
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' }, key, 256);
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(bits)));
+}
+function sameStr(a, b) { a = String(a); b = String(b); if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
+async function handleGate(req, env) {
+  const a = await requireAdmin(req, env, null, { noGate: true }); if (a.err) return a.err;
+  let body = {}; try { body = await req.json(); } catch (e) {}
+  const uid = a.claims.sub, action = String(body.action || 'status'), tok = a.dsToken;
+  const sessMs = Math.max(5, parseInt(env.ADMIN_SESSION_MIN || '30', 10)) * 60000;
+  const gate = await fsRead(env, tok, 'admin_gate/' + uid);
+  const sess = await fsRead(env, tok, 'admin_sessions/' + uid);
+  const exp = sess ? Number(sess.data.exp) || 0 : 0;
+  const open = async () => {
+    const e2 = Date.now() + sessMs;
+    await fsCommit(env, tok, [{ update: { name: docName(env, 'admin_sessions/' + uid), fields: { exp: toFS(e2), at: toFS(Date.now()) } } }]);
+    return e2;
+  };
+  if (action === 'status') return json({ ok: true, hasPassword: !!gate, unlocked: !gate || exp > Date.now(), exp: exp, full: a.full, scope: a.scope }, 200, req, env);
+  if (action === 'lock') {
+    if (sess) await fsCommit(env, tok, [{ delete: docName(env, 'admin_sessions/' + uid) }]);
+    return json({ ok: true }, 200, req, env);
+  }
+  if (action === 'verify') {
+    if (!gate) return json({ ok: true, unlocked: true }, 200, req, env);
+    const fk = 'agf:' + uid, fails = parseInt((await env.SS_KV.get(fk)) || '0', 10);
+    if (fails >= 5) return json({ ok: false, error: 'too-many-tries' }, 429, req, env);
+    const h = await gateHash(String(body.password || ''), String(gate.data.salt || ''));
+    if (!sameStr(h, gate.data.hash)) { await env.SS_KV.put(fk, String(fails + 1), { expirationTtl: 900 }); return json({ ok: false, error: 'wrong-password', left: Math.max(0, 4 - fails) }, 401, req, env); }
+    await env.SS_KV.delete(fk);
+    return json({ ok: true, unlocked: true, exp: await open() }, 200, req, env);
+  }
+  if (action === 'set') {
+    const pw = String(body.password || '');
+    if (pw.length < 8 || pw.length > 100) return json({ ok: false, error: 'weak-password' }, 400, req, env);
+    if (gate) {
+      const fk = 'agf:' + uid, fails = parseInt((await env.SS_KV.get(fk)) || '0', 10);
+      if (fails >= 5) return json({ ok: false, error: 'too-many-tries' }, 429, req, env);
+      const h0 = await gateHash(String(body.current || ''), String(gate.data.salt || ''));
+      if (!sameStr(h0, gate.data.hash)) { await env.SS_KV.put(fk, String(fails + 1), { expirationTtl: 900 }); return json({ ok: false, error: 'wrong-password' }, 401, req, env); }
+    }
+    const salt = btoa(String.fromCharCode.apply(null, crypto.getRandomValues(new Uint8Array(16))));
+    const hash = await gateHash(pw, salt);
+    const ok = await fsCommit(env, tok, [{ update: { name: docName(env, 'admin_gate/' + uid), fields: { salt: toFS(salt), hash: toFS(hash), updated: toFS(Date.now()) } } }]);
+    if (!ok) return commitErr(req, env);
+    return json({ ok: true, exp: await open() }, 200, req, env);
+  }
+  if (action === 'reset-user') { /* the owner clears a team member's password so they must choose a new one */
+    if (!a.full) return json({ ok: false, error: 'no-access' }, 403, req, env);
+    if (gate && !(exp > Date.now())) return json({ ok: false, error: 'locked' }, 403, req, env);
+    const target = String(body.uid || '');
+    if (!/^[A-Za-z0-9_-]{6,128}$/.test(target) || target === uid) return json({ ok: false, error: 'bad-uid' }, 400, req, env);
+    const t = await fsRead(env, tok, 'users/' + target);
+    if (!t || t.data.isAdmin !== true || !Array.isArray(t.data.adminScope)) return json({ ok: false, error: 'not-a-team-member' }, 400, req, env);
+    await fsCommit(env, tok, [{ delete: docName(env, 'admin_gate/' + target) }, { delete: docName(env, 'admin_sessions/' + target) }]);
+    return json({ ok: true }, 200, req, env);
+  }
+  return json({ ok: false, error: 'bad-action' }, 400, req, env);
 }
 
 /* cancel (or collect the refund for) a direct proposal the freelancer has not accepted */
@@ -959,7 +1085,7 @@ async function handleProposalCancel(req, env) {
 
 /* admin: a dispute decision already moved the money, so retire the escrow lock */
 async function handleEscrowSettle(req, env) {
-  const a = await requireAdmin(req, env); if (a.err) return a.err;
+  const a = await requireAdmin(req, env, 'disputes'); if (a.err) return a.err;
   let body = {}; try { body = await req.json(); } catch (e) {}
   const gigId = String(body.gigId || '');
   if (!/^[A-Za-z0-9_-]{3,64}$/.test(gigId)) return json({ ok: false, error: 'bad-gig' }, 400, req, env);
@@ -991,12 +1117,18 @@ async function handleEscrow(req, env, kind) {
   const now = Date.now();
 
   if (kind === 'claim') {
-    if (g.hiredUid !== uid || g.status !== 'completed') return json({ ok: false, error: 'not-eligible' }, 403, req, env);
+    /* the freelancer collects it, or the client triggers it the moment they approve the work */
+    const payee = String(g.hiredUid || '');
+    if (!payee || g.status !== 'completed' || (uid !== payee && uid !== g.posterUid)) return json({ ok: false, error: 'not-eligible' }, 403, req, env);
+    const byPoster = uid !== payee;
     const done = await fsRead(env, tok, 'escrow_paid/' + gigId);
-    const fl = await fsRead(env, tok, 'users/' + uid);
+    const fl = await fsRead(env, tok, 'users/' + payee);
     if (!fl) return json({ ok: false, error: 'no-user' }, 404, req, env);
     const fw = walletOf(fl.data);
-    if (done || fw.transactions.some((t) => t && t.id === 'pay_' + gigId)) return json({ ok: true, already: true, wallet: fw }, 200, req, env);
+    if (done || fw.transactions.some((t) => t && t.id === 'pay_' + gigId)) {
+      if (byPoster) { const pq = await fsRead(env, tok, 'users/' + uid); return json({ ok: true, already: true, wallet: pq ? walletOf(pq.data) : undefined }, 200, req, env); }
+      return json({ ok: true, already: true, wallet: fw }, 200, req, env);
+    }
     if (fl.data.walletMode === 'test') return json({ ok: false, error: 'test-mode' }, 400, req, env);
     const posterUid = String(g.posterUid || '');
     const po = await fsRead(env, tok, 'users/' + posterUid);
@@ -1017,12 +1149,13 @@ async function handleEscrow(req, env, kind) {
     fw.balance = (fw.balance || 0) + payout; fw.earned = (fw.earned || 0) + payout;
     fw.transactions.unshift({ id: 'pay_' + gigId, type: 'in', amount: payout, from: po.data.name || 'Client', desc: 'Payment: ' + (g.title || 'Gig'), ts: now });
     const writes = [
-      { update: { name: docName(env, 'users/' + uid), fields: { wallet: toFS(fw) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: fl.updateTime } },
-      { update: { name: docName(env, 'escrow_paid/' + gigId), fields: { gigId: toFS(gigId), amount: toFS(amount), payout: toFS(payout), fee: toFS(fee), posterUid: toFS(posterUid), freelancerUid: toFS(uid), trusted: toFS(trusted), at: toFS(now) } }, currentDocument: { exists: false } },
+      { update: { name: docName(env, 'users/' + payee), fields: byPoster ? { wallet: toFS(fw), repDue: toFS((Array.isArray(fl.data.repDue) ? fl.data.repDue : []).filter((x) => x !== gigId).concat(gigId).slice(-50)) } : { wallet: toFS(fw) } }, updateMask: { fieldPaths: byPoster ? ['wallet', 'repDue'] : ['wallet'] }, currentDocument: { updateTime: fl.updateTime } },
+      { update: { name: docName(env, 'escrow_paid/' + gigId), fields: { gigId: toFS(gigId), amount: toFS(amount), payout: toFS(payout), fee: toFS(fee), posterUid: toFS(posterUid), freelancerUid: toFS(payee), trusted: toFS(trusted), by: toFS(byPoster ? 'client' : 'freelancer'), at: toFS(now) } }, currentDocument: { exists: false } },
     ];
     if (lockedHere) writes.push({ update: { name: docName(env, 'escrow_locks/' + lock.key), fields: { status: toFS('released'), releasedAt: toFS(now) } }, updateMask: { fieldPaths: ['status', 'releasedAt'] }, currentDocument: { updateTime: lock.updateTime } });
     if (!trusted) { pw.pending = (pw.pending || 0) - amount; writes.unshift({ update: { name: docName(env, 'users/' + posterUid), fields: { wallet: toFS(pw) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: po.updateTime } }); }
     if (!(await fsCommit(env, tok, writes))) return commitErr(req, env);
+    if (byPoster) return json({ ok: true, paid: true, payout: payout, wallet: pw }, 200, req, env);
     return json({ ok: true, wallet: fw, payout: payout }, 200, req, env);
   }
 
@@ -1068,6 +1201,7 @@ async function handleDeleteUser(req, env) {
   if (!me.ok) return json({ ok: false, error: 'forbidden' }, 403, req, env);
   const mf = (await me.json()).fields || {};
   if (!(mf.isAdmin && mf.isAdmin.booleanValue === true)) return json({ ok: false, error: 'forbidden' }, 403, req, env);
+  if (mf.adminScope && !(((mf.adminScope.arrayValue && mf.adminScope.arrayValue.values) || []).some((v) => v.stringValue === 'users'))) return json({ ok: false, error: 'no-access' }, 403, req, env);
   // never delete another admin
   const tr = await fetch(base + encodeURIComponent(target), { headers: { Authorization: 'Bearer ' + dsToken } });
   if (tr.ok) {
@@ -1194,7 +1328,7 @@ ${ctaUrl && ctaText ? `<tr><td align="left" style="padding:22px 36px 34px;">
   };
 }
 
-async function requireAdmin(req, env) {
+async function requireAdmin(req, env, need, opts) {
   if (!env.SA_JSON) return { err: json({ ok: false, error: 'not configured' }, 503, req, env) };
   const auth = req.headers.get('Authorization') || '';
   let claims;
@@ -1206,7 +1340,20 @@ async function requireAdmin(req, env) {
   if (!me.ok) return { err: json({ ok: false, error: 'forbidden' }, 403, req, env) };
   const mf = (await me.json()).fields || {};
   if (!(mf.isAdmin && mf.isAdmin.booleanValue === true)) return { err: json({ ok: false, error: 'forbidden' }, 403, req, env) };
-  return { claims, dsToken, base, name: fv(mf.name) };
+  /* an admin with no adminScope is the full admin (the owner); anyone else only gets the tools listed in adminScope */
+  const full = !mf.adminScope;
+  const scope = full ? null : ((mf.adminScope.arrayValue && mf.adminScope.arrayValue.values) || []).map((v) => v.stringValue).filter(Boolean);
+  if (need === 'owner' && !full) return { err: json({ ok: false, error: 'no-access' }, 403, req, env) };
+  if (need && need !== 'owner' && !full && scope.indexOf(need) < 0) return { err: json({ ok: false, error: 'no-access' }, 403, req, env) };
+  /* if this admin set a password, the panel must be unlocked */
+  if (!(opts && opts.noGate)) {
+    const g = await fsRead(env, dsToken, 'admin_gate/' + claims.sub);
+    if (g) {
+      const ss = await fsRead(env, dsToken, 'admin_sessions/' + claims.sub);
+      if (!ss || !(Number(ss.data.exp) > Date.now())) return { err: json({ ok: false, error: 'locked' }, 403, req, env) };
+    }
+  }
+  return { claims, dsToken, base, name: fv(mf.name), full, scope };
 }
 
 function campSummary(c) {
@@ -1214,7 +1361,7 @@ function campSummary(c) {
 }
 
 async function handleCampaign(req, env) {
-  const a = await requireAdmin(req, env);
+  const a = await requireAdmin(req, env, 'campaigns');
   if (a.err) return a.err;
   let body = {};
   try { body = await req.json(); } catch (e) {}
@@ -1512,6 +1659,14 @@ export default {
     if (url.pathname === '/escrow/cancel-proposal' && req.method === 'POST') {
       if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
       try { return await handleProposalCancel(req, env); } catch (e) { console.error('cancel error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if (url.pathname === '/withdraw/request' && req.method === 'POST') {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try { return await handleWithdrawRequest(req, env); } catch (e) { console.error('withdraw error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if (url.pathname === '/admin/gate' && req.method === 'POST') {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try { return await handleGate(req, env); } catch (e) { console.error('gate error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
     }
     if (url.pathname === '/admin/backup' && req.method === 'POST') {
       if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);

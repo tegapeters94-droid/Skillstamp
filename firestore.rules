@@ -31,6 +31,39 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
     }
 
+    // ── Admin access levels ───────────────────────────────────────────────
+    // An admin whose profile has NO `adminScope` is the full admin (the owner).
+    // Anyone else with isAdmin == true only gets the tools listed in their `adminScope`
+    // (payments, disputes, moderation, users, campaigns, analytics). Only the full admin can change it.
+    function meDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function fullAdmin() {
+      return isAdmin() && !('adminScope' in meDoc());
+    }
+    function scopeHas(p) {
+      return fullAdmin() || (isAdmin() && meDoc().get('adminScope', []).hasAny([p]));
+    }
+    // An admin who set a password must have unlocked the panel (Worker writes admin_sessions).
+    // A delegated admin with no password yet cannot touch money until they set one.
+    function gateOk() {
+      return exists(/databases/$(database)/documents/admin_gate/$(request.auth.uid))
+        ? (exists(/databases/$(database)/documents/admin_sessions/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/admin_sessions/$(request.auth.uid)).data.exp > request.time.toMillis())
+        : fullAdmin();
+    }
+    // What an admin may change on a member's profile
+    function adminKeysOk(k) {
+      return (!k.hasAny(['isAdmin', 'adminScope']) || (fullAdmin() && gateOk())) &&
+             (!k.hasAny(['wallet', 'walletMode']) || ((scopeHas('payments') || scopeHas('disputes')) && gateOk())) &&
+             (k.hasOnly(['wallet', 'walletMode']) || scopeHas('users') || scopeHas('moderation'));
+    }
+    function adminUserWrite() {
+      return isAdmin() && (request.method == 'update'
+        ? adminKeysOk(request.resource.data.diff(resource.data).affectedKeys())
+        : (scopeHas('users') && gateOk()));
+    }
+
     // Caller is not banned
     // (.get(...) with a default so older accounts missing these fields are not locked out)
     function isNotBanned() {
@@ -97,7 +130,7 @@ service cloud.firestore {
       // older client-side behaviour.
       let test = resource.data.get('walletMode', 'live') == 'test';
       return wb(nw) >= 0 && wp(nw) >= 0 && we(nw) >= 0 && (
-        (we(nw) == we(ow) && wh(nw) >= wh(ow) && (test || wp(nw) >= wp(ow)) &&
+        (we(nw) == we(ow) && (test ? wh(nw) >= wh(ow) : wh(nw) == wh(ow)) && (test || wp(nw) >= wp(ow)) &&
           wb(nw) + wp(nw) + wh(nw) <= wb(ow) + wp(ow) + wh(ow)) ||
         (test && claimOk(ow, nw))
       );
@@ -161,6 +194,7 @@ service cloud.firestore {
       // Only the user themselves can create their own profile (during signup)
       allow create: if isOwner(uid) &&
                        request.resource.data.get('isAdmin', false) == false &&
+                       !('adminScope' in request.resource.data) &&
                        request.resource.data.get('isBanned', false) == false &&
                        request.resource.data.get('badgeStatus', 'beginner') in ['beginner'] &&
                        // Emails live in users_private, never in the public profile
@@ -173,6 +207,8 @@ service cloud.firestore {
       allow update: if isOwner(uid) &&
                        // Cannot promote themselves to admin
                        fieldUnchanged('isAdmin') &&
+                       // Cannot change which admin tools they have been given
+                       same('adminScope') &&
                        // Cannot change their ban status
                        fieldUnchanged('isBanned') &&
                        // Cannot change their badge/verification status
@@ -191,7 +227,7 @@ service cloud.firestore {
                        statsUpdateOk();
 
       // Admin can write anything (used for ban, badge, verify operations)
-      allow write: if isAdmin();
+      allow write: if adminUserWrite();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -200,13 +236,13 @@ service cloud.firestore {
     // Bank account shown to clients for top-ups (signed-in members read, admin writes)
     match /payment_settings/{id} {
       allow read: if isAuth();
-      allow write: if isAdmin();
+      allow write: if (scopeHas('payments') && gateOk());
     }
 
     // Bank-transfer top-up requests. Members start one and mark it paid; only an admin
     // can confirm it and credit the wallet.
     match /deposits/{depId} {
-      allow read: if isAdmin() || (isAuth() && resource.data.uid == request.auth.uid);
+      allow read: if scopeHas('payments') || (isAuth() && resource.data.uid == request.auth.uid);
       allow create: if isAuth() && isNotBanned() &&
                        request.resource.data.keys().hasOnly(['uid', 'name', 'amount', 'ref', 'status', 'created', 'expires']) &&
                        request.resource.data.uid == request.auth.uid &&
@@ -219,45 +255,40 @@ service cloud.firestore {
                        resource.data.status == 'awaiting' &&
                        request.resource.data.status == 'claimed' &&
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'claimedAt']);
-      allow write: if isAdmin();
+      allow write: if scopeHas('payments') && gateOk();
     }
 
     // Withdrawal requests. A member asks for money out (their wallet amount is moved to
     // `held`); only an admin can mark it paid or send the held money back.
     match /withdrawals/{wdId} {
-      allow read: if isAdmin() || (isAuth() && resource.data.uid == request.auth.uid);
-      allow create: if isAuth() && isNotBanned() &&
-                       request.resource.data.keys().hasOnly(['uid', 'name', 'amount', 'ref', 'status', 'created', 'bankName', 'accountNumber', 'accountName']) &&
-                       request.resource.data.uid == request.auth.uid &&
-                       request.resource.data.status == 'pending' &&
-                       request.resource.data.amount is number &&
-                       request.resource.data.amount >= 1000 && request.resource.data.amount <= 5000000 &&
-                       request.resource.data.ref is string && request.resource.data.ref.size() <= 20 &&
-                       request.resource.data.accountNumber.matches('^[0-9]{10}$') &&
-                       request.resource.data.bankName is string && request.resource.data.bankName.size() <= 60 &&
-                       request.resource.data.accountName is string && request.resource.data.accountName.size() <= 80 &&
-                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('walletMode', 'live') != 'test';
-      allow write: if isAdmin();
+      allow read: if scopeHas('payments') || (isAuth() && resource.data.uid == request.auth.uid);
+      // Members request withdrawals through the Worker (/withdraw/request), which enforces the limits.
+      // They cannot create the document themselves.
+      allow write: if scopeHas('payments') && gateOk();
     }
 
     // Escrow payout / refund records, written only by the Worker (never by members)
-    match /escrow_paid/{id} { allow read: if isAdmin(); allow write: if false; }
-    match /escrow_done/{id} { allow read: if isAdmin(); allow write: if false; }
-    match /escrow_locks/{id} { allow read: if isAdmin() || (isAuth() && resource.data.uid == request.auth.uid); allow write: if false; }
+    match /escrow_paid/{id} { allow read: if (scopeHas('payments') || scopeHas('disputes')); allow write: if false; }
+    match /escrow_done/{id} { allow read: if (scopeHas('payments') || scopeHas('disputes')); allow write: if false; }
+    match /escrow_locks/{id} { allow read: if (scopeHas('payments') || scopeHas('disputes')) || (isAuth() && resource.data.uid == request.auth.uid); allow write: if false; }
 
     // Copies of wallets cleared by an admin reset (admin only)
     match /wallet_archive/{id} {
-      allow read, write: if isAdmin();
+      allow read, write: if (scopeHas('payments') && gateOk());
     }
 
+    // Admin password and unlock sessions are written only by the Worker
+    match /admin_gate/{uid} { allow read, write: if false; }
+    match /admin_sessions/{uid} { allow read, write: if false; }
+
     match /users_private/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      allow read: if isOwner(uid) || scopeHas('users') || scopeHas('payments');
       allow create, update: if isOwner(uid) &&
                        request.resource.data.keys().hasOnly(['uid', 'email', 'phone']) &&
                        request.resource.data.get('phone', '+000000').matches('^\\+?[0-9]{7,15}$') &&
                        request.resource.data.get('uid', uid) == uid &&
                        request.resource.data.get('email', '').lower() == request.auth.token.email.lower();
-      allow write: if isAdmin();
+      allow write: if scopeHas('users');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -269,7 +300,7 @@ service cloud.firestore {
                        request.resource.data.keys().hasOnly(['sig','type','msg','stack','path','ua','ts','day','n','col','code','uid','role']) &&
                        request.resource.data.get('msg','').size() <= 400 &&
                        request.resource.data.get('stack','').size() <= 900;
-      allow read, delete: if isAdmin();
+      allow read, delete: if scopeHas('analytics');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -280,18 +311,18 @@ service cloud.firestore {
                        request.resource.data.uid == request.auth.uid &&
                        request.resource.data.keys().hasOnly(['uid','to','label','sev','act','prev','ts']) &&
                        request.resource.data.get('prev','').size() <= 130;
-      allow read, delete: if isAdmin();
+      allow read, delete: if scopeHas('moderation');
     }
     match /guard_reports/{id} {
       allow create: if isAuth() &&
                        request.resource.data.uid == request.auth.uid &&
                        request.resource.data.keys().hasOnly(['uid','against','text','ts']) &&
                        request.resource.data.get('text','').size() <= 520;
-      allow read, update, delete: if isAdmin();
+      allow read, update, delete: if scopeHas('moderation');
     }
     match /guard_terms/{id} {
       allow read: if isAuth();
-      allow write: if isAdmin();
+      allow write: if scopeHas('moderation');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -323,7 +354,7 @@ service cloud.firestore {
                        !('reply' in resource.data) &&
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply', 'replyTs']) &&
                        request.resource.data.get('reply', '').size() <= 400;
-      allow update, delete: if isAdmin();
+      allow update, delete: if scopeHas('moderation');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -333,7 +364,7 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════════
     match /avatars/{uid} {
       allow read:  if isAuth();
-      allow write: if isOwner(uid) || isAdmin();
+      allow write: if isOwner(uid) || scopeHas('moderation');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -412,7 +443,7 @@ service cloud.firestore {
                        resource.data.posterUid == request.auth.uid &&
                        resource.data.status == 'open';
 
-      allow write: if isAdmin();
+      allow write: if (scopeHas('disputes') || scopeHas('moderation'));
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -423,7 +454,7 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════════
     match /conversations/{convId} {
       allow read:   if isAuth() &&
-                       (request.auth.uid in resource.data.participants || isAdmin());
+                       (request.auth.uid in resource.data.participants || (scopeHas('moderation') || scopeHas('disputes')));
 
       allow create: if isAuth() && isNotBanned() &&
                        request.auth.uid in request.resource.data.participants &&
@@ -434,7 +465,7 @@ service cloud.firestore {
                        // Cannot add/remove people from a conversation
                        request.resource.data.participants == resource.data.participants;
 
-      allow write: if isAdmin();
+      allow write: if (scopeHas('moderation') || scopeHas('disputes'));
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -450,7 +481,7 @@ service cloud.firestore {
                        resource.data.uid == request.auth.uid;
       allow delete: if isAuth() &&
                        resource.data.uid == request.auth.uid;
-      allow write:  if isAdmin();
+      allow write:  if scopeHas('moderation');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -463,7 +494,7 @@ service cloud.firestore {
                        request.resource.data.fromUid == request.auth.uid &&
                        // Cannot endorse yourself
                        request.resource.data.fromUid != request.resource.data.toUid;
-      allow write:  if isAdmin();
+      allow write:  if scopeHas('moderation');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -475,7 +506,7 @@ service cloud.firestore {
       allow read: if isAuth() &&
                      (resource.data.fromUid == request.auth.uid ||
                       resource.data.toUid   == request.auth.uid ||
-                      isAdmin());
+                      (scopeHas('disputes') || scopeHas('moderation')));
 
       allow create: if isAuth() && isNotBanned() &&
                        request.resource.data.fromUid == request.auth.uid &&
@@ -490,7 +521,7 @@ service cloud.firestore {
                        fieldUnchanged('toUid') &&
                        fieldUnchanged('budget');
 
-      allow write: if isAdmin();
+      allow write: if (scopeHas('disputes') || scopeHas('moderation'));
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -531,23 +562,23 @@ service cloud.firestore {
     //  SKILL VERIFICATIONS — submitted by users, reviewed by admin
     // ═══════════════════════════════════════════════════════════════════════
     match /skillVerifications/{svId} {
-      allow read:   if isAuth() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow read:   if isAuth() && (resource.data.uid == request.auth.uid || scopeHas('users'));
       allow create: if isAuth() && isNotBanned() &&
                        request.resource.data.uid == request.auth.uid &&
                        request.resource.data.status == 'pending';
       // Only admin can approve/reject (via backend function)
-      allow update: if isAdmin();
-      allow write:  if isAdmin();
+      allow update: if scopeHas('users');
+      allow write:  if scopeHas('users');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  DISPUTES — raised by participants, resolved by admin
     // ═══════════════════════════════════════════════════════════════════════
     match /disputes/{disputeId} {
-      allow read:   if isAuth() && (resource.data.raisedBy == request.auth.uid || isAdmin());
+      allow read:   if isAuth() && (resource.data.raisedBy == request.auth.uid || scopeHas('disputes'));
       allow create: if isAuth() && isNotBanned() &&
                        request.resource.data.raisedBy == request.auth.uid;
-      allow write:  if isAdmin();
+      allow write:  if scopeHas('disputes');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -556,15 +587,15 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════════
     match /analytics_events/{eventId} {
       allow create: if isAuth();
-      allow read:   if isAdmin();
-      allow write:  if isAdmin();
+      allow read:   if scopeHas('analytics');
+      allow write:  if scopeHas('analytics');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  ADMIN AUDIT LOG — admin append-only, admin read only
     // ═══════════════════════════════════════════════════════════════════════
     match /admin_audit_log/{logId} {
-      allow read:   if isAdmin();
+      allow read:   if scopeHas('analytics');
       // Admins append entries describing their own actions; entries are immutable
       allow create: if isAdmin() && request.resource.data.get('adminUid', '') == request.auth.uid;
       allow update, delete: if false;
@@ -577,7 +608,7 @@ service cloud.firestore {
       allow create: if isAuth() && isNotBanned() &&
                        request.resource.data.get('reporterUid', '') == request.auth.uid &&
                        request.resource.data.get('status', 'open') == 'open';
-      allow read, update, delete: if isAdmin();
+      allow read, update, delete: if scopeHas('moderation');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -585,7 +616,7 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════════
     match /meta/{docId} {
       allow read:  if true;    // maintenance banner needs public read
-      allow write: if isAdmin();
+      allow write: if scopeHas('campaigns');
     }
 
     // ═══════════════════════════════════════════════════════════════════════
