@@ -277,6 +277,16 @@ service cloud.firestore {
       allow read, write: if (scopeHas('payments') && gateOk());
     }
 
+    // Flags raised by the Worker for payouts and withdrawals that look risky. Only the Worker creates them;
+    // the payments admin reviews them (status and note only).
+    match /risk_flags/{id} {
+      allow read: if scopeHas('payments') || scopeHas('disputes');
+      allow create, delete: if false;
+      allow update: if scopeHas('payments') && gateOk() &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'note', 'reviewedBy', 'reviewedAt']) &&
+                       request.resource.data.status in ['open', 'cleared', 'confirmed'];
+    }
+
     // Admin password and unlock sessions are written only by the Worker
     match /admin_gate/{uid} { allow read, write: if false; }
     match /admin_sessions/{uid} { allow read, write: if false; }

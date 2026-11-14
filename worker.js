@@ -939,6 +939,48 @@ async function wdLimits(env, tok) {
   const n = (v, def, lo, hi) => { v = Number(v); return v >= lo && v <= hi ? v : def; };
   return { min: n(x.min, 1000, 100, 5000000), daily: n(x.daily, 500000, 1000, 50000000), holdHours: n(x.holdHours, 24, 0, 720) };
 }
+/* ---------- risk review (flags for the admin; nothing is blocked automatically) ---------- */
+async function listBy(env, tok, coll, field, val) {
+  const r = await fetch('https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents:runQuery', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: coll }], where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: String(val) } } }, limit: 300 } }),
+  });
+  if (!r.ok) throw new Error(coll + ' query ' + r.status);
+  const rows = await r.json(); const out = [];
+  (Array.isArray(rows) ? rows : []).forEach((x) => { if (x.document && x.document.fields) { const o = { _id: x.document.name.split('/').pop() }; for (const k in x.document.fields) o[k] = fromFS(x.document.fields[k]); out.push(o); } });
+  return out;
+}
+const NGN = (n) => '₦' + (Number(n) || 0).toLocaleString('en-US');
+const RISK_DAY = 86400000;
+function ageDays(u, now) { return Math.max(0, Math.floor((now - (Number(u.created) || now)) / RISK_DAY)); }
+async function riskPayout(env, tok, gigId, g, po, fl, amount, now) {
+  const reasons = []; let score = 0; const add = (n, t) => { score += n; reasons.push(t); };
+  const fa = ageDays(fl.data, now), pa = ageDays(po.data, now);
+  if (fa < 7) add(30, 'Freelancer account is only ' + fa + ' day(s) old'); else if (fa < 30) add(10, 'Freelancer account is ' + fa + ' days old');
+  if (pa < 7) add(30, 'Client account is only ' + pa + ' day(s) old'); else if (pa < 30) add(10, 'Client account is ' + pa + ' days old');
+  if (amount >= 100000) add(25, 'Large payout: ' + NGN(amount)); else if (amount >= 50000) add(15, 'Sizeable payout: ' + NGN(amount));
+  if (g.hiredAt && g.completedAt && g.completedAt - g.hiredAt < 2 * 3600000) add(20, 'Approved ' + Math.max(1, Math.round((g.completedAt - g.hiredAt) / 60000)) + ' minute(s) after hiring');
+  try {
+    const paid = await listBy(env, tok, 'escrow_paid', 'posterUid', g.posterUid);
+    const pair = paid.filter((x) => x.freelancerUid === g.hiredUid && (x.at || 0) > now - 14 * RISK_DAY && x._id !== gigId).length;
+    if (pair >= 2) add(20, 'This client has paid this freelancer ' + (pair + 1) + ' times in 14 days');
+  } catch (e) {}
+  try {
+    const deps = await listBy(env, tok, 'deposits', 'uid', g.posterUid);
+    const fresh = deps.filter((d) => d.status === 'confirmed' && (d.confirmedAt || 0) > now - RISK_DAY).reduce((t, d) => t + (Number(d.creditedAmount) || Number(d.amount) || 0), 0);
+    if (fresh >= amount) add(15, 'Client topped up ' + NGN(fresh) + ' less than 24 hours ago');
+  } catch (e) {}
+  if (!(Number(fl.data.gigsCount) > 0)) add(10, 'Freelancer has no completed gigs before this one');
+  return { score: score, reasons: reasons };
+}
+async function raiseFlag(env, tok, id, fields, score, subject, lines) {
+  const ok = await fsCommit(env, tok, [{ update: { name: docName(env, 'risk_flags/' + id), fields: Object.fromEntries(Object.entries(Object.assign({ status: 'open', created: Date.now(), score: score }, fields)).map(([k, v]) => [k, toFS(v)])) }, currentDocument: { exists: false } }]);
+  if (ok && score >= 70 && env.ALERT_EMAIL && env.BREVO_API_KEY) {
+    try { await sendBrevo(env, env.ALERT_EMAIL, 'Admin', { subject: 'SkillStamp: ' + subject, html: '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.55;">' + lines.map((l) => '<p style="margin:0 0 8px;">' + esc(l) + '</p>').join('') + '<p style="margin:10px 0 0;">Open Admin, then the Risk tab to review it.</p></div>', text: lines.join('\n') }); } catch (e) {}
+  }
+  return ok;
+}
+
 async function listByUid(env, tok, coll, uid) {
   const r = await fetch('https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents:runQuery', {
     method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
@@ -981,13 +1023,26 @@ async function handleWithdrawRequest(req, env) {
     }
   }
   const id = 'w' + now.toString(36) + randCode(4).toLowerCase(), ref = 'WD-' + randCode(6);
+  /* risk review: only adds a warning for the admin who pays by hand */
+  const rReasons = []; let rScore = 0; const rAdd = (n, t) => { rScore += n; rReasons.push(t); };
+  try {
+    const ag = ageDays(me.data, now);
+    if (ag < 7) rAdd(25, 'Account is only ' + ag + ' day(s) old'); else if (ag < 30) rAdd(10, 'Account is ' + ag + ' days old');
+    if (amount >= 100000) rAdd(20, 'Large withdrawal: ' + NGN(amount));
+    if (!wds.length) rAdd(10, 'First withdrawal from this account');
+    const recentIn = (w.transactions || []).filter((t) => t && t.type === 'in' && String(t.id || '').indexOf('pay_') === 0 && (t.ts || 0) > now - RISK_DAY).reduce((t, x) => t + (Number(x.amount) || 0), 0);
+    if (recentIn > 0 && amount >= 0.8 * recentIn) rAdd(15, 'Withdrawing money received from a gig less than 24 hours ago');
+    const fl = (await listBy(env, c.tok, 'risk_flags', 'payeeUid', c.uid)).filter((x) => x.status === 'open' || x.status === 'confirmed');
+    if (fl.length) rAdd(40, fl.length + ' recent payout(s) to this member were flagged' + (fl.some((x) => x.status === 'confirmed') ? ' (one confirmed suspicious)' : ' and not yet reviewed'));
+  } catch (e) { console.error('withdraw risk failed', e && e.message); }
   w.balance = (w.balance || 0) - amount; w.held = (w.held || 0) + amount;
   w.transactions.unshift({ id: 'wd_' + id, type: 'out', amount: amount, to: bank, desc: 'Withdrawal requested (' + ref + ')', ts: now });
   const ok = await fsCommit(env, c.tok, [
     { update: { name: docName(env, 'users/' + c.uid), fields: { wallet: toFS(w) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: me.updateTime } },
-    { update: { name: docName(env, 'withdrawals/' + id), fields: { uid: toFS(c.uid), name: toFS(String(me.data.name || '')), amount: toFS(amount), ref: toFS(ref), status: toFS('pending'), created: toFS(now), bankName: toFS(bank), accountNumber: toFS(num), accountName: toFS(acc) } }, currentDocument: { exists: false } },
+    { update: { name: docName(env, 'withdrawals/' + id), fields: { uid: toFS(c.uid), name: toFS(String(me.data.name || '')), amount: toFS(amount), ref: toFS(ref), status: toFS('pending'), created: toFS(now), bankName: toFS(bank), accountNumber: toFS(num), accountName: toFS(acc), riskScore: toFS(rScore), riskReasons: toFS(rReasons) } }, currentDocument: { exists: false } },
   ]);
   if (!ok) return commitErr(req, env);
+  if (rScore >= 35) { try { await raiseFlag(env, c.tok, 'wd_' + id, { kind: 'withdrawal', withdrawalId: id, ref: ref, payeeUid: c.uid, payeeName: String(me.data.name || ''), amount: amount, reasons: rReasons }, rScore, 'withdrawal needs a look (' + rScore + ')', ['Withdrawal of ' + NGN(amount) + ' requested by ' + (me.data.name || 'a member') + ' (' + ref + ').'].concat(rReasons)); } catch (e) {} }
   return json({ ok: true, id: id, ref: ref, wallet: w }, 200, req, env);
 }
 
@@ -1155,6 +1210,10 @@ async function handleEscrow(req, env, kind) {
     if (lockedHere) writes.push({ update: { name: docName(env, 'escrow_locks/' + lock.key), fields: { status: toFS('released'), releasedAt: toFS(now) } }, updateMask: { fieldPaths: ['status', 'releasedAt'] }, currentDocument: { updateTime: lock.updateTime } });
     if (!trusted) { pw.pending = (pw.pending || 0) - amount; writes.unshift({ update: { name: docName(env, 'users/' + posterUid), fields: { wallet: toFS(pw) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: po.updateTime } }); }
     if (!(await fsCommit(env, tok, writes))) return commitErr(req, env);
+    try { /* never blocks the payout */
+      const rk = await riskPayout(env, tok, gigId, g, po, fl, amount, now);
+      if (rk.score >= 40) await raiseFlag(env, tok, 'po_' + gigId, { kind: 'payout', gigId: gigId, gigTitle: String(g.title || '').slice(0, 120), posterUid: posterUid, posterName: String(po.data.name || ''), payeeUid: payee, payeeName: String(fl.data.name || ''), amount: amount, payout: payout, reasons: rk.reasons }, rk.score, 'suspicious payout flagged (' + rk.score + ')', ['Payout of ' + NGN(payout) + ' to ' + (fl.data.name || 'a freelancer') + ' for "' + (g.title || 'a gig') + '".'].concat(rk.reasons));
+    } catch (e) { console.error('risk check failed', e && e.message); }
     if (byPoster) return json({ ok: true, paid: true, payout: payout, wallet: pw }, 200, req, env);
     return json({ ok: true, wallet: fw, payout: payout }, 200, req, env);
   }
