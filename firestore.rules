@@ -279,6 +279,15 @@ service cloud.firestore {
 
     // Flags raised by the Worker for payouts and withdrawals that look risky. Only the Worker creates them;
     // the payments admin reviews them (status and note only).
+    // Referrals are written only by the Worker. Admins with the Payments tool can read them (members use the Worker).
+    match /referrals/{id} {
+      allow read: if scopeHas('payments');
+      allow write: if false;
+    }
+    match /referral_codes/{id} {
+      allow read, write: if false;
+    }
+
     match /risk_flags/{id} {
       allow read: if scopeHas('payments') || scopeHas('disputes');
       allow create, delete: if false;

@@ -1642,6 +1642,124 @@ async function runErrorAlerts(env) {
   await env.SS_KV.put(capKey, String(sentToday + 1), { expirationTtl: 172800 });
 }
 
+/* ---------- referrals ----------
+   Every member has a code (referral_codes/{CODE} -> uid). A new member claims a code once, within a few days of signing up
+   (referrals/{newMemberUid}). The bonus is paid by the Worker only, after it re-checks the rules itself:
+   freelancer = skill verification approved; client = profile complete + a live-funded gig of at least the minimum, with a freelancer hired. */
+const REF_VERIFIED = ['verified', 'expert', 'elite'];
+async function refSettings(env, tok) {
+  const d = await fsRead(env, tok, 'payment_settings/referral'); const x = d ? d.data : {};
+  const n = (v, def, lo, hi) => { v = Number(v); return v >= lo && v <= hi ? v : def; };
+  return { enabled: x.enabled !== false, freelancerBonus: n(x.freelancerBonus, 500, 0, 100000), clientBonus: n(x.clientBonus, 1000, 0, 100000), minGig: n(x.minGig, 10000, 0, 10000000), windowDays: n(x.windowDays, 7, 0, 365) };
+}
+function clientProfileDone(u) {
+  return !!u.avatar && !!String(u.name || '').trim() && String(u.bio || '').length >= 30 && !!String(u.country || '').trim() && !!String(u.city || '').trim() && !!String(u.industry || '').trim() && Array.isArray(u.projectTypes) && u.projectTypes.length >= 1;
+}
+async function refEvaluate(env, tok, rid) {
+  const rf = await fsRead(env, tok, 'referrals/' + rid);
+  if (!rf) return { status: 'none' };
+  if (rf.data.status !== 'pending') return { status: rf.data.status, progress: rf.data.progress || {} };
+  const s = await refSettings(env, tok);
+  const ru = await fsRead(env, tok, 'users/' + rid), rr = await fsRead(env, tok, 'users/' + rf.data.referrerUid);
+  if (!ru || !rr) return { status: 'pending', progress: rf.data.progress || {} };
+  let prog, met, bonus;
+  if (rf.data.role === 'freelancer') {
+    prog = { verified: ru.data.role === 'freelancer' && REF_VERIFIED.indexOf(ru.data.badgeStatus) >= 0 }; met = prog.verified; bonus = s.freelancerBonus;
+  } else {
+    const gigs = await listBy(env, tok, 'gigs', 'posterUid', rid);
+    const live = gigs.filter((g) => g.escrowOk === true && Number(g.escrowAmount) >= s.minGig);
+    prog = { profile: ru.data.role === 'employer' && clientProfileDone(ru.data), posted: live.length > 0, hired: live.some((g) => g.hiredUid && g.hiredUid !== rid && g.hiredUid !== rf.data.referrerUid) };
+    met = prog.profile && prog.posted && prog.hired; bonus = s.clientBonus;
+  }
+  const changed = JSON.stringify(prog) !== JSON.stringify(rf.data.progress || null);
+  const keep = async (extra) => {
+    if (changed || extra) await fsCommit(env, tok, [{ update: { name: docName(env, 'referrals/' + rid), fields: { progress: toFS(prog), checkedAt: toFS(Date.now()) } }, updateMask: { fieldPaths: ['progress', 'checkedAt'] }, currentDocument: { updateTime: rf.updateTime } }]);
+  };
+  if (!met || !s.enabled || !(bonus > 0) || rr.data.isBanned === true || ru.data.isBanned === true) { await keep(false); return { status: 'pending', progress: prog }; }
+  if (rr.data.walletMode === 'test') { await keep(false); return { status: 'pending', progress: prog, blocked: 'test-wallet' }; }
+  const now = Date.now(), w = walletOf(rr.data), tid = 'ref_' + rid;
+  if (w.transactions.some((t) => t && t.id === tid)) { await fsCommit(env, tok, [{ update: { name: docName(env, 'referrals/' + rid), fields: { status: toFS('paid'), progress: toFS(prog), bonus: toFS(bonus), paidAt: toFS(now) } }, updateMask: { fieldPaths: ['status', 'progress', 'bonus', 'paidAt'] }, currentDocument: { updateTime: rf.updateTime } }]); return { status: 'paid', progress: prog }; }
+  w.balance = (w.balance || 0) + bonus;
+  w.transactions.unshift({ id: tid, type: 'in', amount: bonus, from: 'SkillStamp', desc: 'Referral bonus: ' + String(rf.data.referredName || 'new member'), ts: now });
+  const nid = 'notif_ref_' + rid;
+  const ok = await fsCommit(env, tok, [
+    { update: { name: docName(env, 'users/' + rf.data.referrerUid), fields: { wallet: toFS(w) } }, updateMask: { fieldPaths: ['wallet'] }, currentDocument: { updateTime: rr.updateTime } },
+    { update: { name: docName(env, 'referrals/' + rid), fields: { status: toFS('paid'), progress: toFS(prog), bonus: toFS(bonus), paidAt: toFS(now), checkedAt: toFS(now) } }, updateMask: { fieldPaths: ['status', 'progress', 'bonus', 'paidAt', 'checkedAt'] }, currentDocument: { updateTime: rf.updateTime } },
+    { update: { name: docName(env, 'notifications/' + nid), fields: { id: toFS(nid), uid: toFS(rf.data.referrerUid), type: toFS('payment'), title: toFS('🎁 Referral bonus earned'), body: toFS(String(rf.data.referredName || 'Your referral') + ' met the requirements. ' + NGN(bonus) + ' was added to your wallet.'), meta: toFS({ type: 'referral' }), read: toFS(false), ts: toFS(now), fromUid: toFS(null) } }, currentDocument: { exists: false } },
+  ]);
+  if (!ok) return { status: 'pending', progress: prog, error: 'busy' };
+  return { status: 'paid', progress: prog, bonus: bonus };
+}
+async function handleReferral(req, env, kind) {
+  const c = await escrowCtx(req, env); if (c.err) return c.err;
+  const uid = c.uid, now = Date.now();
+  if (kind === 'claim') {
+    const code = String(c.body.code || '').trim().toUpperCase();
+    if (!/^SS[A-Z0-9]{6}$/.test(code)) return json({ ok: false, error: 'bad-code' }, 400, req, env);
+    const cd = await fsRead(env, c.tok, 'referral_codes/' + code);
+    if (!cd) return json({ ok: false, error: 'unknown-code' }, 404, req, env);
+    const referrerUid = String(cd.data.uid || '');
+    if (referrerUid === uid) return json({ ok: false, error: 'own-code' }, 400, req, env);
+    if (await fsRead(env, c.tok, 'referrals/' + uid)) return json({ ok: true, already: true }, 200, req, env);
+    const me = await fsRead(env, c.tok, 'users/' + uid), rr = await fsRead(env, c.tok, 'users/' + referrerUid);
+    if (!me || !rr) return json({ ok: false, error: 'no-user' }, 404, req, env);
+    if (me.data.role !== 'freelancer' && me.data.role !== 'employer') return json({ ok: false, error: 'not-eligible' }, 400, req, env);
+    if (me.data.isAdmin === true || rr.data.isBanned === true) return json({ ok: false, error: 'not-eligible' }, 400, req, env);
+    const s = await refSettings(env, c.tok);
+    if (now - (Number(me.data.created) || 0) > s.windowDays * 86400000) return json({ ok: false, error: 'too-late', days: s.windowDays }, 400, req, env);
+    if (await fsRead(env, c.tok, 'referrals/' + referrerUid) && (await fsRead(env, c.tok, 'referrals/' + referrerUid)).data.referrerUid === uid) return json({ ok: false, error: 'not-eligible' }, 400, req, env);
+    const ok = await fsCommit(env, c.tok, [{ update: { name: docName(env, 'referrals/' + uid), fields: { referredUid: toFS(uid), referredName: toFS(String(me.data.name || '').slice(0, 80)), role: toFS(me.data.role), referrerUid: toFS(referrerUid), referrerName: toFS(String(rr.data.name || '').slice(0, 80)), code: toFS(code), status: toFS('pending'), created: toFS(now), progress: toFS({}) } }, currentDocument: { exists: false } }]);
+    if (!ok) return commitErr(req, env);
+    const ev = await refEvaluate(env, c.tok, uid).catch(() => ({ status: 'pending' }));
+    return json({ ok: true, claimed: true, status: ev.status }, 200, req, env);
+  }
+  if (kind === 'check') {
+    const ev = await refEvaluate(env, c.tok, uid).catch(() => ({ status: 'none' }));
+    return json({ ok: true, status: ev.status }, 200, req, env);
+  }
+  /* kind === 'me': my code, the people I referred (re-checked now so a due bonus is paid), and whether someone referred me */
+  const codes = (await listBy(env, c.tok, 'referral_codes', 'uid', uid)).sort((a, b) => (a.created || 0) - (b.created || 0));
+  let code = codes[0] && codes[0]._id;
+  for (let i = 0; !code && i < 5; i++) {
+    const cand = 'SS' + randCode(6);
+    if (await fsCommit(env, c.tok, [{ update: { name: docName(env, 'referral_codes/' + cand), fields: { uid: toFS(uid), created: toFS(now) } }, currentDocument: { exists: false } }])) code = cand;
+  }
+  if (!code) return commitErr(req, env);
+  let list = await listBy(env, c.tok, 'referrals', 'referrerUid', uid);
+  let paidNow = false;
+  for (const r of list.filter((x) => x.status === 'pending').slice(0, 15)) { try { const ev = await refEvaluate(env, c.tok, r._id); if (ev.status === 'paid') paidNow = true; } catch (e) {} }
+  if (list.some((x) => x.status === 'pending')) list = await listBy(env, c.tok, 'referrals', 'referrerUid', uid);
+  const mine = await fsRead(env, c.tok, 'referrals/' + uid);
+  const s = await refSettings(env, c.tok);
+  const out = list.sort((a, b) => (b.created || 0) - (a.created || 0)).slice(0, 100).map((r) => ({ name: String(r.referredName || 'Member'), role: r.role, status: r.status, bonus: r.bonus || 0, created: r.created || 0, paidAt: r.paidAt || 0, progress: r.progress || {} }));
+  const pu = paidNow ? await fsRead(env, c.tok, 'users/' + uid) : null;
+  return json({ ok: true, code: code, referrals: out, earned: list.filter((x) => x.status === 'paid').reduce((t, x) => t + (Number(x.bonus) || 0), 0), referredBy: !!mine, referredStatus: mine ? mine.data.status : null, settings: { enabled: s.enabled, freelancerBonus: s.freelancerBonus, clientBonus: s.clientBonus, minGig: s.minGig, windowDays: s.windowDays }, wallet: pu ? walletOf(pu.data) : undefined }, 200, req, env);
+}
+async function refSweep(env, tok) {
+  const pend = await listBy(env, tok, 'referrals', 'status', 'pending'); let paid = 0;
+  for (const r of pend.slice(0, 100)) { try { const ev = await refEvaluate(env, tok, r._id); if (ev.status === 'paid') paid++; } catch (e) {} }
+  return { checked: Math.min(pend.length, 100), paid: paid };
+}
+async function handleReferralAdmin(req, env) {
+  const a = await requireAdmin(req, env, 'payments'); if (a.err) return a.err;
+  let body = {}; try { body = await req.json(); } catch (e) {}
+  if (body.action === 'sweep') return json(Object.assign({ ok: true }, await refSweep(env, a.dsToken)), 200, req, env);
+  const id = String(body.id || '');
+  if (!/^[A-Za-z0-9_-]{3,80}$/.test(id) || (body.action !== 'void' && body.action !== 'reopen')) return json({ ok: false, error: 'bad-request' }, 400, req, env);
+  const rf = await fsRead(env, a.dsToken, 'referrals/' + id);
+  if (!rf) return json({ ok: false, error: 'not-found' }, 404, req, env);
+  const from = body.action === 'void' ? 'pending' : 'void', to = body.action === 'void' ? 'void' : 'pending';
+  if (rf.data.status !== from) return json({ ok: false, error: 'wrong-status', status: rf.data.status }, 409, req, env);
+  const ok = await fsCommit(env, a.dsToken, [{ update: { name: docName(env, 'referrals/' + id), fields: { status: toFS(to), note: toFS(String(body.note || '').slice(0, 200)), reviewedBy: toFS(a.claims.sub), reviewedAt: toFS(Date.now()) } }, updateMask: { fieldPaths: ['status', 'note', 'reviewedBy', 'reviewedAt'] }, currentDocument: { updateTime: rf.updateTime } }]);
+  if (!ok) return commitErr(req, env);
+  return json({ ok: true, status: to }, 200, req, env);
+}
+async function runReferralSweep(env) {
+  if (!env.SA_JSON) return;
+  const tok = await getSaToken(env, 'SA_JSON', 'https://www.googleapis.com/auth/datastore');
+  await refSweep(env, tok);
+}
+
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
@@ -1650,6 +1768,7 @@ export default {
       try { await runNotifyJob(env); } catch (e) { console.error('notify job failed', e && e.message); }
       try { await runCampaignJob(env); } catch (e) { console.error('campaign job failed', e && e.message); }
       try { await runBackupDaily(env); } catch (e) { console.error('backup job failed', e && e.message); }
+      try { await runReferralSweep(env); } catch (e) { console.error('referral sweep failed', e && e.message); }
     })());
   },
   async fetch(req, env) {
@@ -1738,6 +1857,15 @@ export default {
     if (url.pathname === '/escrow/settle' && req.method === 'POST') {
       if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
       try { return await handleEscrowSettle(req, env); } catch (e) { console.error('settle error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
+    }
+    if (url.pathname.indexOf('/referral/') === 0 && req.method === 'POST') {
+      if (!originOk(req, env)) return json({ ok: false, error: 'origin not allowed' }, 403, req, env);
+      try {
+        const k = url.pathname.slice(10);
+        if (k === 'admin') return await handleReferralAdmin(req, env);
+        if (k === 'me' || k === 'claim' || k === 'check') return await handleReferral(req, env, k);
+        return json({ ok: false, error: 'not-found' }, 404, req, env);
+      } catch (e) { console.error('referral error', e && e.message); return json({ ok: false, error: 'failed' }, 502, req, env); }
     }
     if (url.pathname === '/welcome' && req.method === 'POST') {
       const origin = req.headers.get('Origin') || '';
