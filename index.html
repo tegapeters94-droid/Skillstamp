@@ -394,6 +394,8 @@
 
               <div class="ls-fg"><label class="av2-label" for="ri-ph">Mobile number</label><div class="ls-input-wrap"><input class="ls-input" id="ri-ph" type="tel" inputmode="tel" autocomplete="tel" placeholder="+234 801 234 5678" maxlength="20"/></div><div class="av2-opt" style="margin-top:6px;font-size:11px;">Kept private. Used to keep accounts real and for future SMS sign-in.</div></div>
 
+              <div class="ls-fg"><label class="av2-label" for="ri-ref">Referral code <span class="av2-opt">optional</span></label><div class="ls-input-wrap"><input class="ls-input" id="ri-ref" type="text" placeholder="e.g. SSK3M9QR" maxlength="8" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;" oninput="try{var v=this.value.trim().toUpperCase();if(v)localStorage.setItem('ss_ref',v);else localStorage.removeItem('ss_ref');}catch(e){}"/></div></div>
+
               <input type="hidden" id="ri-cat" value=""/>
 
               <label class="ls-remember"><input checked="" id="save-creds-s" type="checkbox"/> Remember me on this device</label>
