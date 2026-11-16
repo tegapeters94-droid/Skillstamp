@@ -128,19 +128,30 @@
     return r;
   };
 
-  /* 5. a "Refer & Earn" row in Settings */
-  var oS = window.openSettings;
-  if (typeof oS === 'function') window.openSettings = function () {
-    var r = oS.apply(this, arguments);
-    try {
-      var panel = $('settings-panel'); if (!panel || $('rf-set')) return r;
-      var sec = document.createElement('div'); sec.id = 'rf-set'; sec.style.cssText = 'margin:0 16px 8px;';
-      sec.innerHTML = '<div style="font-size:10px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.08em;padding:0 4px;margin-bottom:6px;">Refer &amp; Earn</div>'
-        + '<div onclick="openReferral()" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;background:var(--s);border:1px solid var(--br);border-radius:14px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(232,197,71,.12);display:flex;align-items:center;justify-content:center;font-size:18px;">🎁</div><div style="flex:1;min-width:0;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;">Your referral code and link</div><div style="font-size:10px;color:var(--td);margin-top:1px;">Invite friends and earn money in your wallet</div></div><div style="color:var(--td);font-size:18px;">&rsaquo;</div></div>';
-      var kids = panel.children, target = null;
-      for (var i = 0; i < kids.length; i++) { var h = kids[i].firstElementChild; if (h && /^support$/i.test((h.textContent || '').trim())) { target = kids[i]; break; } }
-      if (target) panel.insertBefore(sec, target); else panel.appendChild(sec);
-    } catch (e) {}
-    return r;
-  };
+  /* 5. a gentle reminder pop-up: at most 3 times a calendar month, at least a week apart, never over another window */
+  var POP_MAX = 3, POP_GAP = 7 * 86400000, T0 = Date.now();
+  function popKey(u) { return 'ss_rf_pop:' + u; }
+  function popState(u) {
+    var mo = new Date().toISOString().slice(0, 7), st = {};
+    try { st = JSON.parse(ls(popKey(u)) || '{}') || {}; } catch (e) {}
+    if (st.month !== mo) st = { month: mo, count: 0, last: st.last || 0 };
+    return st;
+  }
+  function closePop() { var e = $('rf-pop'); if (e && e.parentNode) e.parentNode.removeChild(e); }
+  window.ssRefPopClose = function (go) { closePop(); if (go) open(); };
+  function maybePop() {
+    var u = me(); if (!u || !u.uid || u.isAdmin || $('rf-pop') || Date.now() - T0 < 30000) return;
+    if (document.hidden) return;
+    var ov = $('moverlay'); if ((ov && ov.classList.contains('show')) || $('settings-panel')) return;
+    var st = popState(u.uid);
+    if (st.count >= POP_MAX || Date.now() - (st.last || 0) < POP_GAP) return;
+    st.count++; st.last = Date.now(); ls(popKey(u.uid), JSON.stringify(st));
+    var el = document.createElement('div'); el.id = 'rf-pop';
+    el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:76px;z-index:1900;max-width:420px;margin:0 auto;background:var(--s);border:1px solid var(--br);border-radius:16px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);';
+    el.innerHTML = '<div style="display:flex;gap:12px;align-items:flex-start;"><div style="font-size:28px;">🎁</div><div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:14px;">Invite a friend, earn money</div><div style="font-size:12px;color:var(--td);line-height:1.55;margin-top:3px;">Share your referral code. When someone you invite gets verified or hires on SkillStamp, you get paid in your wallet.</div></div><button onclick="ssRefPopClose(false)" aria-label="Close" style="background:none;border:none;color:var(--td);font-size:20px;line-height:1;cursor:pointer;padding:0 2px;">&times;</button></div>'
+      + '<div style="display:flex;gap:8px;margin-top:10px;"><button class="rf-b p" style="flex:1;" onclick="ssRefPopClose(true)">Get my code</button><button class="rf-b" onclick="ssRefPopClose(false)">Maybe later</button></div>' + CSS;
+    document.body.appendChild(el);
+    setTimeout(closePop, 45000);
+  }
+  setInterval(function () { try { maybePop(); } catch (e) {} }, 5000);
 })();
