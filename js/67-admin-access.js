@@ -17,9 +17,9 @@
     ['campaigns', '📣 Campaigns', 'Broadcast and email campaigns'],
     ['analytics', '📊 Analytics', 'Overview stats, Analytics, Activity log, monitoring']
   ];
-  var TAB_SCOPE = { overview: 'overview', users: 'users', disputes: 'disputes', gigs: 'disputes', content: 'moderation', skills: 'users', announce: 'campaigns', campaigns: 'campaigns', analytics: 'analytics', reports: 'moderation', activity: 'analytics', deposits: 'payments', withdrawals: 'payments', wallets: 'payments', risk: 'payments', backup: 'owner', security: 'any', team: 'owner' };
+  var TAB_SCOPE = { overview: 'overview', users: 'users', disputes: 'disputes', gigs: 'disputes', content: 'moderation', skills: 'users', announce: 'campaigns', campaigns: 'campaigns', analytics: 'analytics', reports: 'moderation', activity: 'analytics', deposits: 'payments', withdrawals: 'payments', wallets: 'payments', risk: 'payments', referrals: 'payments', backup: 'owner', security: 'any', team: 'owner' };
   var HOST_SCOPE = { 'rva-host': 'moderation', 'mg-host': 'moderation', 'rg-card': 'moderation', 'mon-host': 'analytics', 'ap-ov-host': 'disputes' };
-  var ORDER = ['overview', 'users', 'disputes', 'gigs', 'content', 'skills', 'announce', 'campaigns', 'analytics', 'reports', 'activity', 'deposits', 'withdrawals', 'wallets', 'risk', 'backup', 'team', 'security'];
+  var ORDER = ['overview', 'users', 'disputes', 'gigs', 'content', 'skills', 'announce', 'campaigns', 'analytics', 'reports', 'activity', 'deposits', 'withdrawals', 'wallets', 'risk', 'referrals', 'backup', 'team', 'security'];
   function $(id) { return document.getElementById(id); }
   function F() { return window.FB_FNS; }
   function me() { return window.ME; }
