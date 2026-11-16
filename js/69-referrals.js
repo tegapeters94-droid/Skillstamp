@@ -37,6 +37,8 @@
       if (code) {
         var r = await call('/referral/claim', { code: code });
         if (r.ok || FINAL.indexOf(r.error) >= 0) ls('ss_ref', null);
+        if (!r.ok && r.error === 'unknown-code') say('That referral code does not exist, so it was not applied.', true);
+        else if (!r.ok && r.error === 'too-late') say('Referral codes can only be added in the first ' + (r.days || 7) + ' days.', true);
         else if (r._status >= 500 || !r._status) DONE[u.uid] = 0;
         if (r.ok && r.claimed) say('Referral code applied.');
       } else {
@@ -44,7 +46,10 @@
       }
     } catch (e) { DONE[u.uid] = 0; }
   }
-  setInterval(function () { try { afterLogin(); } catch (e) {} }, 4000);
+  setInterval(function () {
+    try { afterLogin(); } catch (e) {}
+    try { var i = $('ri-ref'), c = ls('ss_ref'); if (i && c && !i.value && document.activeElement !== i) i.value = c; } catch (e) {}
+  }, 1500);
 
   /* 3. the Refer & Earn window */
   var CSS = '<style>.rf-b{padding:9px 14px;font-size:12px;font-weight:700;border-radius:9px;border:1px solid var(--br);background:var(--s);color:var(--tx);cursor:pointer;font-family:inherit}.rf-b.p{background:var(--acc);color:#fff;border-color:var(--acc)}.rf-t{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800}</style>';
@@ -100,22 +105,42 @@
   };
 
   /* 4. the card on the wallet screen */
+  function cardEl(id) {
+    var c = document.createElement('div'); c.id = id;
+    c.style.cssText = 'margin:12px 0;border:1px solid var(--br);border-radius:14px;background:var(--s);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;';
+    c.setAttribute('onclick', 'openReferral()');
+    c.innerHTML = '<div style="font-size:26px;">🎁</div><div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:13px;">Refer &amp; Earn</div><div style="font-size:11px;color:var(--td);margin-top:2px;">Get your code and link. Earn money in your wallet for every friend who joins.</div></div><div style="font-size:18px;color:var(--td);">&rsaquo;</div>';
+    return c;
+  }
   function paintCard() {
     try {
       if (!me() || $('rf-card')) return;
-      var t = $('tx-list'); if (!t) return;
-      var host = t.parentElement && t.parentElement.parentElement ? t.parentElement : t;
-      var c = document.createElement('div'); c.id = 'rf-card';
-      c.style.cssText = 'margin:12px 16px;border:1px solid var(--br);border-radius:14px;background:var(--s);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;';
-      c.setAttribute('onclick', 'openReferral()');
-      c.innerHTML = '<div style="font-size:26px;">🎁</div><div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:13px;">Refer &amp; Earn</div><div style="font-size:11px;color:var(--td);margin-top:2px;">Invite friends and earn money in your wallet.</div></div><div style="font-size:18px;color:var(--td);">&rsaquo;</div>';
-      host.parentElement.insertBefore(c, host);
+      var host = document.querySelector('#page-wallet .section') || ($('tx-list') && $('tx-list').parentElement);
+      if (!host) return;
+      var c = cardEl('rf-card'), first = host.children[1] || null;
+      host.insertBefore(c, first);
     } catch (e) {}
   }
   var orig = window._doRenderWallet;
   if (typeof orig === 'function') window._doRenderWallet = function () {
     var r = orig.apply(this, arguments);
     try { setTimeout(paintCard, 120); } catch (e) {}
+    return r;
+  };
+
+  /* 5. a "Refer & Earn" row in Settings */
+  var oS = window.openSettings;
+  if (typeof oS === 'function') window.openSettings = function () {
+    var r = oS.apply(this, arguments);
+    try {
+      var panel = $('settings-panel'); if (!panel || $('rf-set')) return r;
+      var sec = document.createElement('div'); sec.id = 'rf-set'; sec.style.cssText = 'margin:0 16px 8px;';
+      sec.innerHTML = '<div style="font-size:10px;font-weight:700;color:var(--td);text-transform:uppercase;letter-spacing:.08em;padding:0 4px;margin-bottom:6px;">Refer &amp; Earn</div>'
+        + '<div onclick="openReferral()" style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;background:var(--s);border:1px solid var(--br);border-radius:14px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(232,197,71,.12);display:flex;align-items:center;justify-content:center;font-size:18px;">🎁</div><div style="flex:1;min-width:0;"><div style="font-family:Plus Jakarta Sans,sans-serif;font-weight:600;font-size:13px;">Your referral code and link</div><div style="font-size:10px;color:var(--td);margin-top:1px;">Invite friends and earn money in your wallet</div></div><div style="color:var(--td);font-size:18px;">&rsaquo;</div></div>';
+      var kids = panel.children, target = null;
+      for (var i = 0; i < kids.length; i++) { var h = kids[i].firstElementChild; if (h && /^support$/i.test((h.textContent || '').trim())) { target = kids[i]; break; } }
+      if (target) panel.insertBefore(sec, target); else panel.appendChild(sec);
+    } catch (e) {}
     return r;
   };
 })();
